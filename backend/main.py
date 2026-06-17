@@ -1,5 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from api.entities import router as entites_router
+from api.enrichment import router as enrichment_router
+from api.graph import router as graph_router
 
 app = FastAPI()
 
@@ -9,3 +12,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+app.include_router(entites_router, prefix = "/api/entities", tags = ["Entities"])
+
+app.include_router(enrichment_router, prefix = "/api/enrichment", tags = ["Enrichment"])
+
+app.include_router(graph_router, prefix = "/api/graph", tags = ["Graph"])
+
+@app.get("/")
+def root():
+    return {
+        "status": "Online",
+        "message": "Welcome to Entity management for SOC"
+    }

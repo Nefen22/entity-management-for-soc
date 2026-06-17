@@ -1,0 +1,100 @@
+[
+  {
+    "event_id": "evt-001",
+    "timestamp": "2024-06-01T08:00:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "john.doe",
+    "source_ip": "192.168.1.100",
+    "destination_host": "DESKTOP-001"
+  },
+  {
+    "event_id": "evt-002",
+    "timestamp": "2024-06-01T08:05:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "john.doe",
+    "destination_host": "DESKTOP-001",
+    "file_hash": "44d88612fea8a8f36de82e1278abb02f"
+  },
+  {
+    "event_id": "evt-003",
+    "timestamp": "2024-06-01T08:10:00Z",
+    "source_type": "edr",
+    "event_type": "network_connection",
+    "source_host": "DESKTOP-001",
+    "destination_ip": "185.220.101.45",
+    "destination_domain": "malicious.ru"
+  },
+  {
+    "event_id": "evt-004",
+    "timestamp": "2024-06-01T08:20:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "alice",
+    "source_ip": "192.168.1.120",
+    "destination_host": "DESKTOP-002"
+  },
+  {
+    "event_id": "evt-005",
+    "timestamp": "2024-06-01T08:25:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "alice",
+    "destination_host": "DESKTOP-002",
+    "file_hash": "abcd1234567890efabcd1234567890ef"
+  },
+  {
+    "event_id": "evt-006",
+    "timestamp": "2024-06-01T08:30:00Z",
+    "source_type": "cloud",
+    "event_type": "dns_request",
+    "source_host": "DESKTOP-002",
+    "destination_domain": "updates.microsoft.com"
+  },
+  {
+    "event_id": "evt-007",
+    "timestamp": "2024-06-01T08:35:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "admin",
+    "source_ip": "192.168.1.100",
+    "destination_host": "FILE-SERVER-01"
+  },
+  {
+    "event_id": "evt-008",
+    "timestamp": "2024-06-01T08:40:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "admin",
+    "destination_host": "FILE-SERVER-01",
+    "file_hash": "f1e2d3c4b5a697887766554433221100"
+  },
+  {
+    "event_id": "evt-009",
+    "timestamp": "2024-06-01T08:45:00Z",
+    "source_type": "cloud",
+    "event_type": "network_connection",
+    "source_host": "FILE-SERVER-01",
+    "destination_ip": "8.8.8.8",
+    "destination_domain": "google.com"
+  },
+  {
+    "event_id": "evt-010",
+    "timestamp": "2024-06-01T08:50:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "service.account",
+    "source_ip": "10.10.10.5",
+    "destination_host": "DB-SERVER-01"
+  },
+  {
+    "event_id": "evt-011",
+    "timestamp": "2024-06-01T08:55:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "service.account",
+    "destination_host": "DB-SERVER-01",
+    "file_hash": "99887766554433221100aabbccddeeff"
+  }
+]
