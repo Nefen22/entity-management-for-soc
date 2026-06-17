@@ -18,7 +18,12 @@ async def post_relationship(edge: EdgePaser):
                 ON MATCH SET r.last_seen = datetime(),
                                 r.count = r.count + 1,
                                 r.last_seen = datetime(),
-                                r.evidences = r.evidences + $evidence
+                                r.evidences =
+                                CASE
+                                    WHEN $evidence IN r.evidences
+                                    THEN r.evidences
+                                    ELSE r.evidences + $evidence
+                                END
                 """.format(from_label=src.type,from_key=src.key, 
                            to_label=dest.type, to_key=dest.key,
                            connect_type=connect_type)

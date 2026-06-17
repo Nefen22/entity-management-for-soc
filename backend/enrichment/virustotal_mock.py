@@ -1,0 +1,32 @@
+import asyncio
+import geoip2.database
+import ipaddress
+import json
+from cachetools import TTLCache
+from database.neo4j import driver
+
+hash_cache = TTLCache(maxsize=1000, ttl=3500)
+with open("/data/virustotal.json") as f:
+    load_hash = json.load(f) 
+
+
+def lookup_hash(hash_value: str):
+    return load_hash.get(hash_value)
+
+async def enrichment_file_hash_func(hash_value:str):
+    enrich_element={}
+    if hash_value in hash_cache:
+        enrich_element = hash_cache[hash_value]
+    else:
+        enrich_element = lookup_hash(hash_value = hash_value)
+        if enrich_element is None:
+            return None
+        hash_cache[hash_value] = enrich_element
+    query = """MATCH (f: FileHash {hash_value: $hash_value})
+            SET f += $props"""
+    async with driver.session() as session:
+        await session.run(query, hash_value = hash_value, props = enrich_element)
+    return enrich_element
+
+async def hash_cache_check():
+    return dict(hash_cache)

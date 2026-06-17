@@ -1,23 +1,23 @@
 MAPPING_ENTITIES_TYPE={
-    "ip": "IP",
+    "ips": "IP",
     "users": "User",
     "hosts": "Host",
     "domains": "Domains",
-    "file-hash": "FileHash"
+    "file-hashes": "FileHash"
 }
 
 MAPPING_ENTITIES_KEY={
-    "ip": "value",
+    "ips": "value",
     "users": "username",
     "hosts": "hostname",
     "domains": "name",
-    "file-hash": "hash_value"
+    "file-hashes": "hash_value"
 }
 
 MAPPING_ENTITY= {
-    "ip": "ip",
+    "ips": "ip",
     "users": "user",
     "hosts": "host",
     "domains": "domain",
-    "file-hash": "hash"
+    "file-hashes": "hash"
 }
