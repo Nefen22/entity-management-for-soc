@@ -1,5 +1,6 @@
 from database.neo4j import driver
 from parsers.edge_parser import EdgePaser
+from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MAPPING_ENTITY
 
 async def post_relationship(edge: EdgePaser):
     src = edge.src
@@ -22,3 +23,10 @@ async def post_relationship(edge: EdgePaser):
                            to_label=dest.type, to_key=dest.key,
                            connect_type=connect_type)
         await session.run(query, from_value=src.value, to_value=dest.value, evidence=evidence)
+
+async def get_relationship_n_hop(type: str, value: str, hop: int):
+    async with driver.session() as session:
+        query="""MATCH ({entity}: {type} {{{key}: $value}})-[r*1..{hop}]-(to)
+                RETURN {entity}, r, to""".format(entity=type, type=MAPPING_ENTITIES_TYPE[type], key=MAPPING_ENTITIES_KEY[type], hop=hop)
+        result = await session.run(query, value=value)
+        return await result.data()

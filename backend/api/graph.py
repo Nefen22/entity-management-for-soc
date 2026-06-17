@@ -4,9 +4,10 @@ from parsers.base_parser import BaseParser
 from parsers.siem_parser import SiemPaser
 from parsers.edr_parser import EdrPaser
 from parsers.cloud_parser import CloudPaser
-import respositories.graph as repo
+import repositories.graph as repo
 import json
 from models.responses import APIResponse
+import repositories.graph as repo
 
 router = APIRouter()
 
@@ -30,3 +31,8 @@ async def ingest_sample():
     for event in data:
         await ingest(event)
     return APIResponse(message="Sample data ingested!")
+
+@router.get("/{type}/{value}/graph/{hop}")
+async def get_relationship_n_hop(type:str, value:str, hop:int):
+    result = await repo.get_relationship_n_hop(type=type, value=value, hop=hop)
+    return APIResponse(message=f"Get query {hop} hop frrom {value} completed", data=result)
