@@ -1,12 +1,6 @@
 from database.neo4j import driver
 from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MAPPING_ENTITY
 
-async def post_entity(type: str, value: str):
-    type = type if type != "file-hashes" else "file_hashes"
-    async with driver.session() as session:
-        query ="""MERGE ({entity_name}: {type} {{{key}: $value}}) RETURN {entity_name}""".format(entity_name=type, type=MAPPING_ENTITIES_TYPE[type], key=MAPPING_ENTITIES_KEY[type])
-        await session.run(query, value=value)
-
 async def get_entity(type: str, value: str):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
