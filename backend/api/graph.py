@@ -4,7 +4,7 @@ from parsers.base_parser import BaseParser
 from parsers.siem_parser import SiemPaser
 from parsers.edr_parser import EdrPaser
 from parsers.cloud_parser import CloudPaser
-import repositories.graph as repo
+from parsers.alert_parser import AlertParser
 import json
 from models.responses import APIResponse
 import repositories.graph as repo
@@ -17,14 +17,22 @@ async def ingest(events: dict):
         sub_event = SiemPaser.from_event(events)
     elif events.get("source_type") == "edr":
         sub_event = EdrPaser.from_event(events)
-    else:
+    elif events.get("source_type") == "cloud":
         sub_event = CloudPaser.from_event(events)
-    await repo.post_relationship(sub_event.get_relationship())
+    elif events.get("source_type") == "alert":
+        sub_event = AlertParser.from_event(events)
+    rel = sub_event.get_relationship()
+    for type, value in sub_event.get_nodes().items():
+        if value == [] or value in [ele.src.value for ele in rel] + [ele.dest.value for ele in rel]:
+            continue 
+        for node in value:
+            await repo.post_entities(type, node)
+    await repo.post_relationship(rel)
     return APIResponse(message="Ingest completed")
 
 @router.post("/ingest/sample")
 async def ingest_sample():
-    with open('./datasets/sample_data.json', 'r', encoding='utf-8') as file:
+    with open('./datasets/sample_data1.json', 'r', encoding='utf-8') as file:
         data = json.load(file)
     for event in data:
         await ingest(event)

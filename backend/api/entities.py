@@ -12,4 +12,4 @@ async def get_entities(type:str):
 @router.get("/{type}/{value}")
 async def get_entity(type:str, value):
     result = await repo.get_entity(type, value)
-    return APIResponse(message=f"Post {value}: Completed", data=result)
+    return APIResponse(message=f"Get {value}: Completed", data=result)

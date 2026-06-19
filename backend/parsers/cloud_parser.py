@@ -1,4 +1,4 @@
-from .base_parser import BaseParser
+from .base_parser import BaseParser, clean
 
 class CloudPaser(BaseParser):
     @classmethod
@@ -6,10 +6,10 @@ class CloudPaser(BaseParser):
         return cls(
             source_type=event.get("source_type"),
 
-            host=event.get("source_host"),
+            host=clean(lst=event.get("source_host")),
 
-            ip=event.get("destination_ip"),
-            domain=event.get("destination_domain"),
+            ip=clean(lst=event.get("destination_ip")),
+            domain=clean(lst=event.get("destination_domain")),
 
             evidence=event.get("event_id", "")
         )

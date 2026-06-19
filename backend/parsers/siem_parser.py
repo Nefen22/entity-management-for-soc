@@ -1,4 +1,4 @@
-from .base_parser import BaseParser
+from .base_parser import BaseParser, clean
 
 class SiemPaser(BaseParser):
     @classmethod
@@ -6,9 +6,9 @@ class SiemPaser(BaseParser):
         return cls(
             source_type=event.get("source_type"),
 
-            user=event.get("user"),
-            ip=event.get("source_ip"),
-            host=event.get("destination_host"),
+            user=clean(lst=event.get("user")),
+            ip=clean(lst=event.get("source_ip")),
+            host=clean(lst=event.get("destination_host")),
 
             evidence=event.get("event_id", "")
         )

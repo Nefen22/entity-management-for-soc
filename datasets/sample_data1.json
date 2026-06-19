@@ -124,5 +124,108 @@
     "source_type": "alert",
     "event_type": "free_text_alert",
     "message": "CVE-2024-12345 exploited from 185.220.101.45 against host WEB-SERVER-01"
+  },
+  {
+    "event_id": "evt-012",
+    "timestamp": "2024-06-01T09:00:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "bob",
+    "source_ip": "192.168.1.150",
+    "destination_host": "DESKTOP-003"
+  },
+  {
+    "event_id": "evt-013",
+    "timestamp": "2024-06-01T09:05:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "bob",
+    "destination_host": "DESKTOP-003",
+    "file_hash": "11111111111111111111111111111111"
+  },
+  {
+    "event_id": "evt-014",
+    "timestamp": "2024-06-01T09:10:00Z",
+    "source_type": "cloud",
+    "event_type": "dns_request",
+    "source_host": "DESKTOP-003",
+    "destination_domain": "evil-download.com"
+  },
+  {
+    "event_id": "evt-015",
+    "timestamp": "2024-06-01T09:15:00Z",
+    "source_type": "edr",
+    "event_type": "network_connection",
+    "source_host": "DESKTOP-003",
+    "destination_ip": "45.33.32.156",
+    "destination_domain": "evil-download.com"
+  },
+  {
+    "event_id": "evt-016",
+    "timestamp": "2024-06-01T09:20:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "john",
+    "source_ip": "192.168.1.100",
+    "destination_host": "FILE-SERVER-01"
+  },
+  {
+    "event_id": "evt-017",
+    "timestamp": "2024-06-01T09:25:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "john",
+    "destination_host": "FILE-SERVER-01",
+    "file_hash": "11111111111111111111111111111111"
+  },
+  {
+    "event_id": "evt-018",
+    "timestamp": "2024-06-01T09:30:00Z",
+    "source_type": "cloud",
+    "event_type": "network_connection",
+    "source_host": "FILE-SERVER-01",
+    "destination_ip": "45.33.32.156",
+    "destination_domain": "evil-download.com"
+  },
+  {
+    "event_id": "evt-019",
+    "timestamp": "2024-06-01T09:35:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "backupsvc",
+    "source_ip": "10.10.10.5",
+    "destination_host": "DB-SERVER-01"
+  },
+  {
+    "event_id": "evt-020",
+    "timestamp": "2024-06-01T09:40:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "backupsvc",
+    "destination_host": "DB-SERVER-01",
+    "file_hash": "22222222222222222222222222222222"
+  },
+  {
+    "event_id": "evt-021",
+    "timestamp": "2024-06-01T09:45:00Z",
+    "source_type": "cloud",
+    "event_type": "dns_request",
+    "source_host": "DB-SERVER-01",
+    "destination_domain": "database-update.net"
+  },
+  {
+    "event_id": "alert-001",
+    "source_type": "alert",
+    "message": "Detected outbound connection to 185.220.101.45 and domain malicious.ru. Related hash: 44d88612fea8a8f36de82e1278abb02f"
+  },
+  {
+    "event_id": "alert-002",
+    "source_type": "alert",
+    "message": "Threat intelligence feed reports evil-download.com communicating with 45.33.32.156. MD5: 11111111111111111111111111111111"
+  },
+  {
+    "event_id": "alert-003",
+    "source_type": "alert",
+    "message": "Suspicious activity detected from IP 8.8.8.8 contacting google.com"
   }
 ]

@@ -1,4 +1,4 @@
-from .base_parser import BaseParser
+from .base_parser import BaseParser, clean
 
 class EdrPaser(BaseParser):
     @classmethod
@@ -6,13 +6,13 @@ class EdrPaser(BaseParser):
         return cls(
             source_type=event.get("source_type"),
 
-            user=event.get("user"),
-            host=event.get("destination_host")
-                  or event.get("source_host"),
+            user=clean(lst=event.get("user")),
+            host=clean(lst=event.get("destination_host"))
+                  or clean(lst=event.get("source_host")),
 
-            ip=event.get("destination_ip"),
-            domain=event.get("destination_domain"),
-            file_hash=event.get("file_hash"),
+            ip=clean(lst=event.get("destination_ip")),
+            domain=clean(lst=event.get("destination_domain")),
+            file_hash=clean(lst=event.get("file_hash")),
 
             evidence=event.get("event_id", "")
         )
