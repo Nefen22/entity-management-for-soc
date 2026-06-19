@@ -22,10 +22,6 @@ async def enrichment_file_hash_func(hash_value:str):
         if enrich_element is None:
             return None
         hash_cache[hash_value] = enrich_element
-    query = """MATCH (f: FileHash {hash_value: $hash_value})
-            SET f += $props"""
-    async with driver.session() as session:
-        await session.run(query, hash_value = hash_value, props = enrich_element)
     return enrich_element
 
 async def hash_cache_check():

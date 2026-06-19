@@ -3,6 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.entities import router as entites_router
 from api.enrichment import router as enrichment_router
 from api.graph import router as graph_router
+from contextlib import asynccontextmanager
+from pathlib import Path
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    Path("/app/backend/logs/audit_log.json").write_text("[]")
+
+    yield
 
 app = FastAPI()
 
@@ -25,3 +34,4 @@ def root():
         "status": "Online",
         "message": "Welcome to Entity management for SOC"
     }
+

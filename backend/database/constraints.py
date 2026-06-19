@@ -2,9 +2,11 @@ MAPPING_ENTITIES_TYPE={
     "ips": "IP",
     "users": "User",
     "hosts": "Host",
-    "domains": "Domains",
+    "domains": "Domain",
     "file_hashes": "FileHash"
 }
+
+REVERSED_TYPE= {v:k for k,v in MAPPING_ENTITIES_TYPE.items()}
 
 MAPPING_ENTITIES_KEY={
     "ips": "value",

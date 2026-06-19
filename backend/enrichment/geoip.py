@@ -3,7 +3,6 @@ import geoip2.database
 import ipaddress
 import json
 from cachetools import TTLCache
-from database.neo4j import driver
 
 geoip2_cache = TTLCache(maxsize=1000, ttl=3600)
 
@@ -46,12 +45,7 @@ async def enrichment_ip_func(value: str):
             sub_dict = {"country": None, "note": "Private or unregistered IP"}
 
         geoip2_cache[value] = sub_dict
-
-    query = """MATCH (ip: IP {value: $value})
-        SET ip += $props
-    """
-    async with driver.session() as session:
-        await session.run(query, value = value, props = sub_dict)
+    return sub_dict
 
 async def ip_cache_check():
     return dict(geoip2_cache)

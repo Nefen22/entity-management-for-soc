@@ -13,7 +13,6 @@ class AlertParser(BaseParser):
     @classmethod
     def from_event(cls, event: dict):
         message = event.get("message")
-        print(message)
         list_ip=[]
         list_domain=[]
         list_hash=[]
