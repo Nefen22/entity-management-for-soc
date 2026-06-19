@@ -1,0 +1,9 @@
+Event
+   ↓
+Parser
+   ↓
+Repository
+   ↓
+Neo4j
+   ↓
+Visualization

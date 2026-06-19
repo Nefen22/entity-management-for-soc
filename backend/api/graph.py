@@ -19,9 +19,7 @@ async def ingest(events: dict):
         sub_event = EdrPaser.from_event(events)
     else:
         sub_event = CloudPaser.from_event(events)
-    for edge in sub_event.get_relationship():
-        print(edge)
-        await repo.post_relationship(edge)
+    await repo.post_relationship(sub_event.get_relationship())
     return APIResponse(message="Ingest completed")
 
 @router.post("/ingest/sample")

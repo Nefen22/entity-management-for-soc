@@ -3,7 +3,7 @@ MAPPING_ENTITIES_TYPE={
     "users": "User",
     "hosts": "Host",
     "domains": "Domains",
-    "file-hashes": "FileHash"
+    "file_hashes": "FileHash"
 }
 
 MAPPING_ENTITIES_KEY={
@@ -11,7 +11,7 @@ MAPPING_ENTITIES_KEY={
     "users": "username",
     "hosts": "hostname",
     "domains": "name",
-    "file-hashes": "hash_value"
+    "file_hashes": "hash_value"
 }
 
 MAPPING_ENTITY= {
@@ -19,5 +19,5 @@ MAPPING_ENTITY= {
     "users": "user",
     "hosts": "host",
     "domains": "domain",
-    "file-hashes": "hash"
+    "file_hashes": "hash"
 }
