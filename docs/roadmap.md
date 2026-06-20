@@ -3,9 +3,9 @@ MVP
 ✓ Relationship management
 ✓ Enrichment
 ✓ Audit logs
+✓ Cytoscape visualization polish
 
 Next
-□ Cytoscape visualization polish
 □ Unit tests
 □ CI/CD
 

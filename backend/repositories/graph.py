@@ -37,11 +37,17 @@ async def get_relationship_n_hop(type: str, value: str , hop: int):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
         if value == "all":
-            query="""MATCH (from: {type})-[r*1..{hop}]-(to)
-                RETURN from, r, to""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop)
+            query="""MATCH p=(entity: {type})-[r*1..{hop}]-(to)
+                    RETURN DISTINCT nodes(p) AS nodes,
+                            relationships(p) AS edges,
+                            [rel in relationships(p) | type(rel)] AS edge_types,
+                            [node in nodes(p) | labels(node)] AS node_labels""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop)
         else:
-            query="""MATCH (from: {type} {{value: $value}})-[r*1..{hop}]-(to)
-                    RETURN from, r, to""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop)
+            query="""MATCH p=(from: {type} {{value: $value}})-[r*1..{hop}]-(to)
+                    RETURN DISTINCT nodes(p) AS nodes,
+                        relationships(p) AS edges,
+                        [rel in relationships(p) | type(rel)] AS edge_types,
+                        [node in nodes(p) | labels(node)] AS node_labels""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop)
         result = await session.run(query, value=value)
         return await result.data()
     
@@ -51,14 +57,22 @@ async def explore_entites(type: str, relationship: str):
     name += relationship if relationship is not None else ""
     async with driver.session() as session:
         if type is None:
-            query = "MATCH (entity)"
+            query = "MATCH p=(entity)"
         else:
-            query = "MATCH (entity: {type})".format(type=MAPPING_ENTITIES_TYPE[type])
-
+            query = "MATCH p=(entity: {type})".format(type=MAPPING_ENTITIES_TYPE[type])
+            
         if relationship is not None:
-            query += "-[r:{relationship}]-(to) RETURN entity, labels(entity) AS ent_label, r, to, labels(to) AS to_label".format(relationship=relationship)
+            query += """-[r:{relationship}]""".format(relationship=relationship)
         else:
-            query += "-[r]-(to) RETURN DISTINCT entity, labels(entity) AS ent_label, r, to, labels(to) AS to_label"
+            query += """-[r]"""
+
+        if type is None:
+            query += """->(to)"""
+        else:
+            query += """-(to)"""
+        query+="""RETURN DISTINCT nodes(p) AS nodes,
+                    [rel in relationships(p) | type(rel)] AS edge_types,
+                    [node in nodes(p) | labels(node)] AS node_labels"""
         result = await session.run(query)
         record = await result.data()
         sub = [{k: v for k, v in ele.items() if k != "r" } for ele in record]

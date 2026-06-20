@@ -679,9 +679,9 @@ function toNodeRecord(v, fallbackType){
 }
 
 function toEdgeRecord(v){
-  const start = v["entity"];
-  const end = v["to"];
-  const type = v["r"];
+  const start = v["source"];
+  const end = v["target"];
+  const type = v["type"];
   return { start: String(start), end: String(end), type };
 }
 
@@ -706,53 +706,96 @@ function collectGraphElements(raw, fallbackType){
   return { nodes: [...nodes.values()], edges };
 }
 
+function shortenLabel(text, max = 15) {
+  if (!text) return "";
+  text = String(text);
+
+  return text.length > max
+    ? text.slice(0, max) + "..."
+    : text;
+}
+
 function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
   const { nodes, edges } = collectGraphElements(raw, fallbackType);
+
   cy.elements().remove();
 
-  if(!nodes.length){
-    toggleCanvasEmpty(true, "Không tìm thấy cấu trúc đồ thị phù hợp với điều kiện lọc.");
+  if (!nodes.length) {
+    toggleCanvasEmpty(
+      true,
+      "Không tìm thấy cấu trúc đồ thị phù hợp với điều kiện lọc."
+    );
     return;
   }
 
   toggleCanvasEmpty(false);
+
   const elements = [];
-  
-  nodes.forEach(n=>{
-    const isRoot = rootValue && String(n.properties.value || '').toLowerCase() === rootValue.toLowerCase();
+
+  nodes.forEach(n => {
+    const fullLabel =
+      n.properties?.value ||
+      n.properties?.name ||
+      n.id;
+
+    const isRoot =
+      rootValue &&
+      String(fullLabel).toLowerCase() ===
+      rootValue.toLowerCase();
+
     elements.push({
-      group: 'nodes',
+      group: "nodes",
       data: {
         id: n.id,
-        label: n.properties.value,
+        label: shortenLabel(fullLabel, 15),
+        fullLabel: fullLabel,
         color: colorFor(n.type),
         type: n.type,
         properties: n.properties
       },
-      classes: isRoot ? 'root' : ''
+      classes: isRoot ? "root" : ""
     });
   });
 
-  const nodeIds = new Set(nodes.map(n=>n.id));
-  edges.forEach((e, idx)=>{
-    if(!nodeIds.has(e.start) || !nodeIds.has(e.end)) return; 
+  const nodeIds = new Set(nodes.map(n => n.id));
+
+  edges.forEach((e, idx) => {
+    if (!nodeIds.has(e.start) || !nodeIds.has(e.end))
+      return;
+
     elements.push({
-      group: 'edges',
-      data: { id: 'e' + idx, source: e.start, target: e.end, label: e.type }
+      group: "edges",
+      data: {
+        id: "e" + idx,
+        source: e.start,
+        target: e.end,
+        label: e.type
+      }
     });
   });
 
   cy.add(elements);
+
   cy.layout({
-    name: 'cose',
+    name: "cose",
     animate: true,
     animationDuration: 400,
     nodeRepulsion: 8000,
     idealEdgeLength: 110
   }).run();
 
-  const activeNode = elements.find(el => el.classes === 'root') || elements[0];
-  if(activeNode) showDetail(activeNode.data);
+  const activeNode =
+    elements.find(
+      el => el.group === "nodes" &&
+      el.classes === "root"
+    ) ||
+    elements.find(
+      el => el.group === "nodes"
+    );
+
+  if (activeNode) {
+    showDetail(activeNode.data);
+  }
 }
 
 /* ---------------------------------------------------------
