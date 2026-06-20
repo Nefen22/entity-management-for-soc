@@ -301,6 +301,44 @@
   .prop-row:last-child{border-bottom:none;}
   .prop-row .k{color:var(--muted);}
   .prop-row .v{color:var(--text);text-align:right;word-break:break-word;max-width:60%;}
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chip .name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.enrich-btn {
+    border: 1px solid #3cc;
+    background: transparent;
+    color: #3cc;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 11px;
+    transition: .2s;
+}
+
+.enrich-btn:hover {
+    background: #3cc;
+    color: black;
+}
+
+.enrich-btn.done {
+    border-color: #6ee56e;
+    color: #6ee56e;
+}
+
+.enrich-btn.loading {
+    opacity: .6;
+    pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -492,6 +530,11 @@ function handleFilterChange() {
 document.getElementById('globalTypeSelect').addEventListener('change', handleFilterChange);
 document.getElementById('globalRelSelect').addEventListener('change', handleFilterChange);
 
+function canEnrich(type) {
+  return type === "IP" ||
+         type === "FileHash" ||
+         type === "File_Hash";
+}
 /* Gọi API load danh sách thực thể dựa trên bộ lọc đang chọn */
 async function loadDynamicEntities() {
   const listArea = document.getElementById('dynamicListArea');
@@ -531,8 +574,10 @@ async function loadDynamicEntities() {
 /* Render danh sách thực thể dạng chip nguyên bản */
 function renderDynamicChips(entities, fallbackType) {
   const listArea = document.getElementById('dynamicListArea');
+
   if (!entities.length) {
-    listArea.innerHTML = '<div class="info-note">Không có thực thể nào khớp với điều kiện lọc.</div>';
+    listArea.innerHTML =
+      '<div class="info-note">Không có thực thể nào khớp với điều kiện lọc.</div>';
     return;
   }
 
@@ -542,27 +587,89 @@ function renderDynamicChips(entities, fallbackType) {
   entities.forEach(ent => {
     const chip = document.createElement('div');
     chip.className = 'chip';
+
     const currentType = ent.type || fallbackType;
-    
+
     chip.innerHTML = `
-      <span class="swatch" style="background:${colorFor(currentType)}"></span>
-      <span class="name" title="${escapeHtml(ent.value)}">${escapeHtml(ent.value)}</span>
+      <span class="swatch"
+            style="background:${colorFor(currentType)}">
+      </span>
+
+      <span class="name"
+            title="${escapeHtml(ent.value)}">
+            ${escapeHtml(ent.value)}
+      </span>
+
+      ${
+        canEnrich(currentType)
+          ? `<button class="enrich-btn">⚡</button>`
+          : ''
+      }
     `;
-    
-    // Khi click vào thực thể trong danh sách dưới:
+
     chip.addEventListener('click', () => {
-      // 1. Tự điền nhanh giá trị của thực thể này sang ô tìm kiếm Hop bên phải
       document.getElementById('hopValueInput').value = ent.value;
-      
-      // 2. Định vị, chọn và highlight node đó trên đồ thị nếu nó đang hiển thị sẵn
-      const foundNode = cy.nodes().filter(n => String(n.data('label')).toLowerCase() === ent.value.toLowerCase());
+
+      const foundNode = cy.nodes().filter(
+        n => String(n.data('label')).toLowerCase() === ent.value.toLowerCase()
+      );
+
       if (foundNode.length) {
         cy.nodes().unselect();
         foundNode.select();
+
         showDetail(foundNode.data());
-        cy.animate({ center: { eles: foundNode } }, { duration: 300 });
+
+        cy.animate(
+          { center: { eles: foundNode } },
+          { duration: 300 }
+        );
       }
     });
+
+    const enrichBtn = chip.querySelector('.enrich-btn');
+
+    if (enrichBtn) {
+      enrichBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+
+        enrichBtn.classList.add('loading');
+        enrichBtn.textContent = '...';
+
+        try {
+          let url = '';
+
+          if (currentType === 'IP') {
+            url = `/api/enrichment/ips/${encodeURIComponent(ent.value)}`;
+          }
+
+          if (
+            currentType === 'FileHash' ||
+            currentType === 'File_Hash'
+          ) {
+            url = `/api/enrichment/file-hash/${encodeURIComponent(ent.value)}`;
+          }
+
+          const res = await fetch(apiUrl(url), {
+            method: 'POST'
+          });
+
+          if (!res.ok)
+            throw new Error();
+
+          const json = await res.json();
+
+          enrichBtn.textContent = '✓';
+          enrichBtn.classList.remove('loading');
+          enrichBtn.classList.add('done');
+          await showDetail(json.data);
+        } catch {
+          enrichBtn.textContent = '✗';
+          enrichBtn.classList.remove('loading');
+        }
+      });
+    }
+
     wrap.appendChild(chip);
   });
 
