@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entity Graph Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<style>
+  :root{
+    --bg: #0a0d12;
+    --panel: #11161f;
+    --panel-2: #161c27;
+    --line: #232b38;
+    --text: #e7ebf2;
+    --muted: #7c8aa0;
+    --teal: #4fd1c5;
+    --amber: #f0a868;
+    --rose: #e8748a;
+    --violet: #9d8cf2;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(79,209,197,0.06), transparent 40%),
+      radial-gradient(circle at 85% 100%, rgba(157,140,242,0.05), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 22px;
+    border-bottom:1px solid var(--line);
+    background:var(--panel);
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  .brand .mark{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    color:var(--teal);
+    letter-spacing:0.5px;
+  }
+  .brand h1{
+    font-size:14px;
+    font-weight:600;
+    margin:0;
+    color:var(--text);
+    letter-spacing:0.3px;
+  }
+  .conn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .conn input{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:6px 8px;
+    border-radius:var(--radius);
+    width:230px;
+  }
+  .conn input:focus{outline:1px solid var(--teal);}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+  .dot.ok{background:var(--teal);box-shadow:0 0 6px var(--teal);}
+  .dot.bad{background:var(--rose);box-shadow:0 0 6px var(--rose);}
+
+  /* ---------- layout ---------- */
+  .layout{
+    flex:1;
+    display:grid;
+    grid-template-columns:300px 1fr 300px;
+    min-height:0;
+  }
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    aside{display:none;}
+  }
+
+  aside{
+    background:var(--panel);
+    border-right:1px solid var(--line);
+    overflow-y:auto;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  aside.right{border-right:none;border-left:1px solid var(--line);}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0;
+  }
+
+  /* filter box */
+  .filter-box{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:14px;
+    display:flex;
+    flex-direction:column;
+  }
+  .filter-box label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:var(--muted);
+    margin-bottom:6px;
+    margin-top:12px;
+  }
+  .filter-box label:first-child{margin-top:0;}
+  .filter-box select, .filter-box input{
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    padding:8px;
+    border-radius:var(--radius);
+  }
+  .filter-box select:focus, .filter-box input:focus{outline:1px solid var(--teal);}
+  
+  .filter-box button{
+    margin-top:14px;
+    width:100%;
+    background:var(--teal);
+    color:#06141a;
+    border:none;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:12px;
+    padding:9px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    letter-spacing:0.3px;
+  }
+  .filter-box button:hover{background:#6fe0d4;}
+  .filter-box button.secondary{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--text);
+  }
+  .filter-box button.secondary:hover{background:var(--line);}
+  .filter-box button:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
+
+  /* ---------- dynamic entity results list (vùng khoanh đỏ) ---------- */
+  .dynamic-results-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .dynamic-list-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding-right: 4px;
+  }
+  .chip-list{display:flex;flex-direction:column;gap:6px;}
+  .chip{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:8px 10px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .chip:hover{border-color:var(--teal);transform:translateX(2px);}
+  .chip .swatch{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .chip .name{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  .info-note{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    line-height:1.5;
+  }
+
+  /* ---------- graph canvas ---------- */
+  .canvas-wrap{
+    position:relative;
+    min-height:0;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0/28px 28px,
+      var(--bg);
+    background-color: #0a0d12;
+  }
+  #cy{width:100%;height:100%;}
+  .canvas-hint{
+    position:absolute;
+    top:14px;
+    left:14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    background:rgba(17,22,31,0.85);
+    padding:6px 10px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    pointer-events:none;
+    z-index: 10;
+  }
+  .canvas-empty{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:6px;
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    text-align:center;
+    pointer-events:none;
+    background: rgba(10,13,18,0.85);
+    z-index: 5;
+  }
+  .canvas-empty .mark-lg{
+    font-size:34px;
+    color:var(--line);
+    font-weight:700;
+  }
+
+  /* ---------- right detail panel ---------- */
+  .detail-empty{
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    line-height:1.6;
+  }
+  .detail-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:14px 0 6px;
+  }
+  .detail-label:first-child{margin-top:0;}
+  .detail-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--text);
+    word-break:break-word;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:6px 9px;
+  }
+  .type-pill{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    padding:3px 8px;
+    border-radius:10px;
+    border:1px solid var(--line);
+  }
+  .prop-row{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    padding:6px 0;
+    border-bottom:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+  }
+  .prop-row:last-child{border-bottom:none;}
+  .prop-row .k{color:var(--muted);}
+  .prop-row .v{color:var(--text);text-align:right;word-break:break-word;max-width:60%;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark">◆</span>
+    <h1>Entity Graph Explorer</h1>
+  </div>
+  <div class="conn">
+    <span class="dot" id="apiDot"></span>
+    <input id="apiBase" type="text" value="" placeholder="API base, vd: http://localhost:8000">
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside>
+    <div>
+      <p class="eyebrow" style="margin-bottom: 10px;">Bộ lọc đồ thị toàn cục</p>
+      <div class="filter-box">
+        <label for="globalTypeSelect">Entity Type (Nhãn Node)</label>
+        <select id="globalTypeSelect">
+          <option value="">— Tất cả thực thể —</option>
+        </select>
+
+        <label for="globalRelSelect">Relationship (Quan hệ Edge)</label>
+        <select id="globalRelSelect">
+          <option value="">— Tất cả quan hệ —</option>
+        </select>
+        
+        <button id="resetFiltersBtn" class="secondary">Xóa bộ lọc (Reset All)</button>
+      </div>
+    </div>
+    
+    <div class="dynamic-results-container">
+      <p class="eyebrow" id="dynamicTitle">Danh sách thực thể tương ứng</p>
+      <div class="dynamic-list-scroll" id="dynamicListArea">
+        <div class="info-note">Thay đổi các ô chọn phía trên để tự động gửi yêu cầu cập nhật và tải danh sách thực thể chi tiết tại đây.</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="canvas-wrap">
+    <div class="canvas-hint" id="canvasHint">Đang kết nối cơ sở dữ liệu đồ thị...</div>
+    <div id="cy"></div>
+    <div class="canvas-empty" id="canvasEmpty" style="display:none;">
+      <div class="mark-lg">◇</div>
+      <div id="emptyText">Không tìm thấy thực thể hoặc đồ thị rỗng với điều kiện lọc hiện tại.</div>
+    </div>
+  </div>
+
+  <aside class="right">
+    <p class="eyebrow">Tìm kiếm mối quan hệ N-Hop</p>
+    <div class="filter-box">
+      <label for="hopValueInput">Value (Giá trị Node mục tiêu)</label>
+      <input id="hopValueInput" type="text" placeholder="vd: admin hoặc 1.2.3.4">
+
+      <label for="hopDepthInput">Hop (Độ sâu liên kết)</label>
+      <input id="hopDepthInput" type="number" min="1" max="5" value="1">
+
+      <button id="hopSearchBtn">Truy vấn Hop</button>
+    </div>
+
+    <p class="eyebrow">Chi tiết thực thể</p>
+    <div id="detailArea">
+      <div class="detail-empty">Chọn một node trên đồ thị để xem thuộc tính.</div>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+/* ---------------------------------------------------------
+   Cấu hình Base URL API và Đồng bộ Trạng thái
+--------------------------------------------------------- */
+const apiBaseInput = document.getElementById('apiBase');
+apiBaseInput.value = localStorage.getItem('eg_api_base') || 'http://localhost:8000';
+apiBaseInput.addEventListener('change', () => {
+  localStorage.setItem('eg_api_base', apiBaseInput.value.trim());
+  initAll();
+});
+
+function apiUrl(path){
+  const base = apiBaseInput.value.trim().replace(/\/$/, '');
+  if(!/^https?:\/\//i.test(base)){
+    throw new Error('API base phải bắt đầu bằng http:// hoặc https://');
+  }
+  return base + path;
+}
+
+function unwrap(raw){
+  if(raw && typeof raw === 'object' && 'data' in raw){
+    return { data: raw.data, message: raw.message || null };
+  }
+  return { data: raw, message: null };
+}
+
+const apiDot = document.getElementById('apiDot');
+function setConnState(ok){
+  apiDot.classList.remove('ok','bad');
+  apiDot.classList.add(ok ? 'ok' : 'bad');
+}
+
+/* ---------------------------------------------------------
+   Bảng Mã Màu Node Tự Động Theo Loại
+--------------------------------------------------------- */
+const PALETTE = ['#4fd1c5','#f0a868','#e8748a','#9d8cf2','#7fd17a','#5aa9e6','#e0c46f','#d98ad9'];
+const colorCache = {};
+function colorFor(name){
+  if(!name) return '#7c8aa0';
+  if(colorCache[name]) return colorCache[name];
+  let hash = 0;
+  for(let i=0;i<name.length;i++) hash = (hash*31 + name.charCodeAt(i)) >>> 0;
+  const c = PALETTE[hash % PALETTE.length];
+  colorCache[name] = c;
+  return c;
+}
+
+/* ---------------------------------------------------------
+   Tải Danh Mục Lọc Vào Dropdown (Types & Relationships)
+--------------------------------------------------------- */
+function normalizeList(raw){
+  if(Array.isArray(raw)){
+    return raw.map(item=>{
+      if(typeof item === 'string') return {name:item};
+      if(item && typeof item === 'object'){
+        const name = item.name || item.label || item.type || item.relType || Object.values(item)[0];
+        return {name:String(name)};
+      }
+      return {name:String(item)};
+    });
+  }
+  if(raw && typeof raw === 'object'){
+    const arr = raw.types || raw.labels || raw.relationships || raw.data || [];
+    return normalizeList(arr);
+  }
+  return [];
+}
+
+const FALLBACK_TYPES = ['users', 'hosts', 'ips', 'file_hashes', 'domains'];
+
+async function loadFilterDropdowns(){
+  try {
+    const resTypes = await fetch(apiUrl('/api/graph/all-types'));
+    let types = [];
+    if(resTypes.ok) {
+      types = normalizeList(unwrap(await resTypes.json()).data);
+    } else {
+      types = FALLBACK_TYPES.map(name => ({name}));
+    }
+    
+    const resRels = await fetch(apiUrl('/api/graph/all-relationships'));
+    let rels = [];
+    if(resRels.ok) {
+      rels = normalizeList(unwrap(await resRels.json()).data);
+    }
+
+    setConnState(true);
+    
+    const typeSelect = document.getElementById('globalTypeSelect');
+    const relSelect = document.getElementById('globalRelSelect');
+    
+    const currentType = typeSelect.value;
+    const currentRel = relSelect.value;
+    
+    typeSelect.innerHTML = '<option value="">— Tất cả thực thể —</option>';
+    types.forEach(t => { typeSelect.innerHTML += `<option value="${t.name}">${t.name}</option>`; });
+    
+    relSelect.innerHTML = '<option value="">— Tất cả quan hệ —</option>';
+    rels.forEach(r => { relSelect.innerHTML += `<option value="${r.name}">${r.name}</option>`; });
+    
+    typeSelect.value = currentType;
+    relSelect.value = currentRel;
+  } catch(err) {
+    setConnState(false);
+    console.error("Lỗi lấy danh mục bộ lọc:", err);
+  }
+}
+
+/* ---------------------------------------------------------
+   Luồng Xử Lý Sự Kiện Khi Chọn Bộ Lọc -> Đổi Đồ Thị + Đổi List Chi Tiết
+--------------------------------------------------------- */
+function handleFilterChange() {
+  runGraphExplore();      // 1. Lọc và cập nhật cấu trúc đồ thị ở giữa
+  loadDynamicEntities();  // 2. Tải và đồng bộ danh sách thực thể xuống vùng khoanh đỏ bên dưới
+}
+
+document.getElementById('globalTypeSelect').addEventListener('change', handleFilterChange);
+document.getElementById('globalRelSelect').addEventListener('change', handleFilterChange);
+
+/* Gọi API load danh sách thực thể dựa trên bộ lọc đang chọn */
+async function loadDynamicEntities() {
+  const listArea = document.getElementById('dynamicListArea');
+  const title = document.getElementById('dynamicTitle');
+  
+  const typeFilter = document.getElementById('globalTypeSelect').value;
+  const relFilter = document.getElementById('globalRelSelect').value;
+
+  listArea.innerHTML = '<div class="info-note">Đang truy vấn dữ liệu thực thể...</div>';
+  
+  let fetchUrl = '';
+  let targetColorLabel = typeFilter || 'Entity';
+  url_fetch = `/api/graph/filter`
+  if (typeFilter) {
+    title.textContent = `Thực thể thuộc [${typeFilter}]`;
+    url_fetch+=`?type=${encodeURIComponent(typeFilter)}`;
+    if (relFilter) url_fetch+=`&`
+  }
+  if (relFilter) {
+    title.textContent = `Thực thể liên kết [${relFilter}]`;
+    if (!typeFilter) url_fetch+=`?`
+    url_fetch+=`relationship=${encodeURIComponent(relFilter)}`;
+  }
+  fetchUrl = apiUrl(url_fetch)
+  try {
+    const res = await fetch(fetchUrl);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    const entities = normalizeEntityList(unwrap(json).data);
+    
+    renderDynamicChips(entities, targetColorLabel);
+  } catch (err) {
+    listArea.innerHTML = `<div class="info-note" style="color:var(--rose);">Không tải được danh sách thực thể chi tiết bổ sung.</div>`;
+  }
+}
+
+/* Render danh sách thực thể dạng chip nguyên bản */
+function renderDynamicChips(entities, fallbackType) {
+  const listArea = document.getElementById('dynamicListArea');
+  if (!entities.length) {
+    listArea.innerHTML = '<div class="info-note">Không có thực thể nào khớp với điều kiện lọc.</div>';
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'chip-list';
+
+  entities.forEach(ent => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    const currentType = ent.type || fallbackType;
+    
+    chip.innerHTML = `
+      <span class="swatch" style="background:${colorFor(currentType)}"></span>
+      <span class="name" title="${escapeHtml(ent.value)}">${escapeHtml(ent.value)}</span>
+    `;
+    
+    // Khi click vào thực thể trong danh sách dưới:
+    chip.addEventListener('click', () => {
+      // 1. Tự điền nhanh giá trị của thực thể này sang ô tìm kiếm Hop bên phải
+      document.getElementById('hopValueInput').value = ent.value;
+      
+      // 2. Định vị, chọn và highlight node đó trên đồ thị nếu nó đang hiển thị sẵn
+      const foundNode = cy.nodes().filter(n => String(n.data('label')).toLowerCase() === ent.value.toLowerCase());
+      if (foundNode.length) {
+        cy.nodes().unselect();
+        foundNode.select();
+        showDetail(foundNode.data());
+        cy.animate({ center: { eles: foundNode } }, { duration: 300 });
+      }
+    });
+    wrap.appendChild(chip);
+  });
+
+  listArea.innerHTML = '';
+  listArea.appendChild(wrap);
+}
+
+function normalizeEntityList(raw){
+  let arr = raw;
+  if(arr && typeof arr === 'object' && !Array.isArray(arr)){
+    arr = arr.entities || arr.items || arr.data || Object.values(arr);
+  }
+  if(!Array.isArray(arr)) arr = arr ? [arr] : [];
+  return arr.map(item=>{
+    if(item && typeof item === 'object' && item.entity) item = item.entity;
+    const properties = (item && item.properties) || item || {};
+    const labels = (item && item.labels) || (item && item.type ? [item.type] : []);
+    const value = properties.value ?? properties.name ?? JSON.stringify(properties);
+    return { value: String(value), type: labels[0] || null, properties };
+  });
+}
+
+/* ---------------------------------------------------------
+   Cấu hình Khởi Tạo Thư Viện Cytoscape Đồ Thị
+--------------------------------------------------------- */
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  style: [
+    {
+      selector: 'node',
+      style: {
+        'background-color': 'data(color)',
+        'label': 'data(label)',
+        'color': '#e7ebf2',
+        'font-family': 'IBM Plex Mono, monospace',
+        'font-size': 10,
+        'text-valign': 'bottom',
+        'text-margin-y': 6,
+        'width': 34,
+        'height': 34,
+        'border-width': 2,
+        'border-color': '#0a0d12',
+        'text-outline-width': 2,
+        'text-outline-color': '#0a0d12'
+      }
+    },
+    {
+      selector: 'node.root',
+      style: {
+        'width': 46,
+        'height': 46,
+        'border-width': 3,
+        'border-color': '#e7ebf2'
+      }
+    },
+    {
+      selector: 'node:selected',
+      style: { 'border-color': '#ffffff', 'border-width': 3 }
+    },
+    {
+      selector: 'edge',
+      style: {
+        'curve-style': 'bezier',
+        'width': 1.6,
+        'line-color': '#3a4456',
+        'target-arrow-color': '#3a4456',
+        'target-arrow-shape': 'triangle',
+        'arrow-scale': 0.8,
+        'label': 'data(label)',
+        'font-family': 'IBM Plex Mono, monospace',
+        'font-size': 9,
+        'color': '#7c8aa0',
+        'text-rotation': 'autorotate',
+        'text-margin-y': -6,
+        'text-outline-width': 2,
+        'text-outline-color': '#0a0d12'
+      }
+    }
+  ],
+  layout: { name: 'grid' }
+});
+
+cy.on('tap', 'node', (evt)=>{
+  showDetail(evt.target.data());
+});
+
+function toggleCanvasEmpty(show, text = "") {
+  document.getElementById('canvasEmpty').style.display = show ? 'flex' : 'none';
+  if(text) document.getElementById('emptyText').textContent = text;
+}
+
+/* ---------------------------------------------------------
+   Phân tích Cấu trúc Dữ liệu Đồ thị từ API Phản Hồi
+--------------------------------------------------------- */
+function isRelLike(v){
+  if(!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  return (v.start !== undefined && v.end !== undefined) ||
+         (v.source !== undefined && v.target !== undefined) ||
+         (v.startNode !== undefined && v.endNode !== undefined) ||
+         (v.type !== undefined && (v.start_node !== undefined || v.source !== undefined));
+}
+
+function isNodeLike(v){
+  if(!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  if(isRelLike(v)) return false;
+  return v.labels !== undefined || v.properties !== undefined || v.id !== undefined || v.element_id !== undefined;
+}
+
+function toNodeRecord(v, fallbackType){
+  const properties = v.properties || v;
+  const labelArr = v.labels || (v.type ? [v.type] : [fallbackType]);
+  const id = v.id ?? v.element_id ?? properties.value ?? JSON.stringify(properties);
+  return { id: String(id), type: labelArr[0] || fallbackType, properties };
+}
+
+function toEdgeRecord(v){
+  const start = v["entity"];
+  const end = v["to"];
+  const type = v["r"];
+  return { start: String(start), end: String(end), type };
+}
+
+function collectGraphElements(raw, fallbackType){
+  const nodes = new Map();
+  const edges = [];
+  function visit(v){
+    if(Array.isArray(v)){ v.forEach(visit); return; }
+    if(!v || typeof v !== 'object') return;
+    if(isRelLike(v)){
+      edges.push(toEdgeRecord(v));
+      return;
+    }
+    if(isNodeLike(v)){
+      const n = toNodeRecord(v, fallbackType);
+      nodes.set(n.id, n);
+      return;
+    }
+    Object.values(v).forEach(visit);
+  }
+  visit(raw);
+  return { nodes: [...nodes.values()], edges };
+}
+
+function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
+  const { nodes, edges } = collectGraphElements(raw, fallbackType);
+  cy.elements().remove();
+
+  if(!nodes.length){
+    toggleCanvasEmpty(true, "Không tìm thấy cấu trúc đồ thị phù hợp với điều kiện lọc.");
+    return;
+  }
+
+  toggleCanvasEmpty(false);
+  const elements = [];
+  
+  nodes.forEach(n=>{
+    const isRoot = rootValue && String(n.properties.value || '').toLowerCase() === rootValue.toLowerCase();
+    elements.push({
+      group: 'nodes',
+      data: {
+        id: n.id,
+        label: n.properties.value,
+        color: colorFor(n.type),
+        type: n.type,
+        properties: n.properties
+      },
+      classes: isRoot ? 'root' : ''
+    });
+  });
+
+  const nodeIds = new Set(nodes.map(n=>n.id));
+  edges.forEach((e, idx)=>{
+    if(!nodeIds.has(e.start) || !nodeIds.has(e.end)) return; 
+    elements.push({
+      group: 'edges',
+      data: { id: 'e' + idx, source: e.start, target: e.end, label: e.type }
+    });
+  });
+
+  cy.add(elements);
+  cy.layout({
+    name: 'cose',
+    animate: true,
+    animationDuration: 400,
+    nodeRepulsion: 8000,
+    idealEdgeLength: 110
+  }).run();
+
+  const activeNode = elements.find(el => el.classes === 'root') || elements[0];
+  if(activeNode) showDetail(activeNode.data);
+}
+
+/* ---------------------------------------------------------
+   Các Hàm Gọi API Nghiệp Vụ Chính (Explore / Hop Search)
+--------------------------------------------------------- */
+async function runGraphExplore() {
+  const hint = document.getElementById('canvasHint');
+  hint.textContent = "Đang đồng bộ thu hẹp đồ thị...";
+  
+  const typeFilter = document.getElementById('globalTypeSelect').value;
+  const relFilter = document.getElementById('globalRelSelect').value;
+  
+  let queryParts = [];
+  if (typeFilter) queryParts.push(`type=${encodeURIComponent(typeFilter)}`);
+  if (relFilter) queryParts.push(`relationship=${encodeURIComponent(relFilter)}`);
+  const queryString = queryParts.length ? '?' + queryParts.join('&') : '';
+  
+  try {
+    const res = await fetch(apiUrl(`/api/graph/explore${queryString}`));
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    setConnState(true);
+    drawGraph(unwrap(json).data, typeFilter || 'Entity');
+  } catch(err) {
+    setConnState(false);
+    toggleCanvasEmpty(true, "Lỗi kết nối cơ sở dữ liệu đồ thị: " + err.message);
+  } finally {
+    hint.textContent = "Kéo · Cuộn để zoom · Click node để xem chi tiết";
+  }
+}
+
+async function runHopSearch() {
+  const type = document.getElementById('globalTypeSelect').value.trim();
+  const value = document.getElementById('hopValueInput').value.trim();
+  const hop = document.getElementById('hopDepthInput').value.trim() || '1';
+  const btn = document.getElementById('hopSearchBtn');
+
+  if(!value) {
+    alert("Vui lòng nhập hoặc click chọn một giá trị thực thể từ danh sách cột trái.");
+    return;
+  }
+  if(!type) {
+    alert("Vui lòng cấu hình trường 'Entity Type' ở bộ lọc cột trái trước để định danh chính xác thực thể.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Đang truy vấn…';
+  try {
+    const res = await fetch(apiUrl(`/api/graph/${encodeURIComponent(type)}/${encodeURIComponent(value)}/${encodeURIComponent(hop)}`));
+    if(res.status === 404){
+      toggleCanvasEmpty(true, `Không tìm thấy liên kết Hop nào quanh thực thể: ${value}`);
+      return;
+    }
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    setConnState(true);
+    drawGraph(unwrap(json).data, type, value);
+  } catch(err) {
+    setConnState(false);
+    alert('Lỗi truy vấn Hop: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Truy vấn Hop';
+  }
+}
+
+/* ---------------------------------------------------------
+   Hiển Thị Bảng Chi Tiết Thuộc Tính Thực Thể Bên Phải
+--------------------------------------------------------- */
+function showDetail(data){
+  const area = document.getElementById('detailArea');
+  if(!data){
+    area.innerHTML = '<div class="detail-empty">Chọn một node trên đồ thị để xem thuộc tính.</div>';
+    return;
+  }
+  const props = data.properties || {};
+  const rows = Object.entries(props).map(([k,v])=>`
+    <div class="prop-row"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span></div>
+  `).join('');
+
+  area.innerHTML = `
+    <div class="detail-label">Type</div>
+    <span class="type-pill" style="border-color:${colorFor(data.type)};color:${colorFor(data.type)}">${escapeHtml(data.type)}</span>
+
+    <div class="detail-label">ID</div>
+    <div class="detail-value">${escapeHtml(data.id)}</div>
+
+    <div class="detail-label">Properties</div>
+    <div>${rows || '<div class="detail-empty">Không tìm thấy thuộc tính.</div>'}</div>
+  `;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('hopSearchBtn').addEventListener('click', runHopSearch);
+document.getElementById('hopValueInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') runHopSearch(); });
+
+document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+  document.getElementById('globalTypeSelect').value = "";
+  document.getElementById('globalRelSelect').value = "";
+  document.getElementById('hopValueInput').value = "";
+  document.getElementById('hopDepthInput').value = "1";
+  handleFilterChange();
+});
+
+/* Khởi động hệ thống */
+function initAll() {
+  loadFilterDropdowns(); 
+  handleFilterChange();     
+}
+initAll();
+window.addEventListener('resize', ()=>cy.resize());
+</script>
+</body>
+</html>

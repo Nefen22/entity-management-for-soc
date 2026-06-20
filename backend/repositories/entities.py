@@ -4,22 +4,18 @@ from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MA
 async def get_entity(type: str, value: str):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
-        query ="""MATCH ({entity_name}: {type} {{{key}: $value}}) RETURN {entity_name}""".format(entity_name=type, type=MAPPING_ENTITIES_TYPE[type], key=MAPPING_ENTITIES_KEY[type])
+        query ="""MATCH (entity: {type} {{value: $value}}) RETURN entity, labels(entity) AS label""".format(type=MAPPING_ENTITIES_TYPE[type])
         result = await session.run(query, value=value)
-        return await result.single()
-
-async def get_entities(type: str):
-    type = type if type != "file-hashes" else "file_hashes"
-    async with driver.session() as session:
-        result = await session.run("""MATCH ({entity_name}: {type} )
-                                   RETURN {entity_name}
-                                   """.format(entity_name=type, type=MAPPING_ENTITIES_TYPE[type]))
-        return await result.data()
-    
+        record = await result.single()
+        if not record:
+            return None
+        return record
 
 async def post_entity(type: str, value: str):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
-        query ="""MERGE ({entity_name}: {type} {{{key}: $value}})""".format(entity_name=type, type=MAPPING_ENTITIES_TYPE[type], key=MAPPING_ENTITIES_KEY[type])
+        query ="""MERGE (entity: {type} {{value: $value}})""".format(type=MAPPING_ENTITIES_TYPE[type])
         await session.run(query, value=value)
+
+
 

@@ -11,6 +11,7 @@ import repositories.graph as repo
 from .entities import post_entity, check_existed_logs
 from logs.audit_log import write_audit_log
 from database.constraints import REVERSED_TYPE
+from functools import reduce
 
 async def ingest(events: dict):
     if events.get("source_type") == "siem":
@@ -41,4 +42,27 @@ async def ingest_sample():
 
 async def get_relationship_n_hop(type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(type=type, value=value, hop=hop)
+    return [relation["r"] for relation in result]
+
+async def get_entities_follow(type: str, relationship: str):
+    name = ""
+    name += type if type is not None else ""
+    name += relationship if relationship is not None else ""
+    if name in repo.graph_cache:
+        return repo.graph_cache[name]
+    else:
+        result = await repo.get_entities_follow(type=type, relationship=relationship)
+    seen = set()
+    return [{"entity":ele["entity"], "label":ele["ent_label"]} for ele in result if not (ele["entity"]["value"] in seen or seen.add(ele["entity"]["value"]))]
+
+async def explore_entites(type: str, relationship: str):
+    result = await repo.explore_entites(type=type, relationship=relationship)
     return result
+
+async def get_types():
+    result = await repo.get_types()
+    return [ele["label"] for ele in result]
+
+async def get_relationships():
+    result = await repo.get_relationships()
+    return [ele["relationshipType"] for ele in result]

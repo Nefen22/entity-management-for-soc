@@ -9,11 +9,11 @@ async def enrichment_ip(value:str):
     """
     async with driver.session() as session:
         result = await session.run(query, value = value, props = sub_dict)
-    return await result.data()
+        return await result.data()
 
 async def enrichment_file_hash(hash_value:str):
     enrich_element = await enrichment_file_hash_func(hash_value)
-    query = """MATCH (f: FileHash {hash_value: $hash_value})
+    query = """MATCH (f: FileHash {value: $hash_value})
             SET f += $props"""
     async with driver.session() as session:
         result =  await session.run(query, hash_value = hash_value, props = enrich_element)

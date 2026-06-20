@@ -3,7 +3,12 @@ MAPPING_ENTITIES_TYPE={
     "users": "User",
     "hosts": "Host",
     "domains": "Domain",
-    "file_hashes": "FileHash"
+    "file_hashes": "FileHash",
+    "IP": "IP",
+    "User": "User",
+    "Host": "Host",
+    "Domain": "Domain",
+    "FileHash": "FileHash"
 }
 
 REVERSED_TYPE= {v:k for k,v in MAPPING_ENTITIES_TYPE.items()}
