@@ -42,7 +42,8 @@ async def ingest_sample():
 
 async def get_relationship_n_hop(type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(type=type, value=value, hop=hop)
-    return result
+    #return result
+    return await format_drawing(result)
 
 async def get_entities_follow(type: str, relationship: str):
     name = ""
@@ -85,10 +86,11 @@ async def format_drawing(lst: list):
             source_name = record["node_labels"][index][0] + ":" + source["value"]
             target = record["nodes"][index + 1]
             target_name = record["node_labels"][index + 1][0] + ":" + target["value"]
-            edge_types = record["edge_types"]
+            edge_types = record["edge_types"][index]
             e_name = source["value"]+edge_types[index]+target["value"]
             if e_name in check_edges:
                 continue
+            check_edges.append(e_name)
             edges.append({
                 "source": source_name,
                 "target": target_name,
@@ -96,7 +98,7 @@ async def format_drawing(lst: list):
             })
     return {
         "nodes": nodes,
-        "edges":edges
+        "edges": edges
     }
 
 # async def format_drawing(lst: list):
@@ -128,7 +130,6 @@ async def format_drawing(lst: list):
 async def explore_entites(type: str, relationship: str):
     result = await repo.explore_entites(type=type, relationship=relationship)
     return await format_drawing(result)
-    return result
 
 async def get_types():
     result = await repo.get_types()

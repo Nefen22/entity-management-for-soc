@@ -570,18 +570,40 @@ function renderDynamicChips(entities, fallbackType) {
   listArea.appendChild(wrap);
 }
 
-function normalizeEntityList(raw){
+function normalizeEntityList(raw) {
   let arr = raw;
-  if(arr && typeof arr === 'object' && !Array.isArray(arr)){
+
+  if (arr && typeof arr === 'object' && !Array.isArray(arr)) {
     arr = arr.entities || arr.items || arr.data || Object.values(arr);
   }
-  if(!Array.isArray(arr)) arr = arr ? [arr] : [];
-  return arr.map(item=>{
-    if(item && typeof item === 'object' && item.entity) item = item.entity;
-    const properties = (item && item.properties) || item || {};
-    const labels = (item && item.labels) || (item && item.type ? [item.type] : []);
-    const value = properties.value ?? properties.name ?? JSON.stringify(properties);
-    return { value: String(value), type: labels[0] || null, properties };
+
+  if (!Array.isArray(arr))
+    arr = arr ? [arr] : [];
+
+  return arr.map(item => {
+    let properties = {};
+    let labels = [];
+
+    if (item && typeof item === 'object' && item.entity) {
+      properties = item.entity;
+      labels = item.label || item.labels || [];
+    } else {
+      properties = item?.properties || item || {};
+      labels =
+        item?.labels ||
+        (item?.type ? [item.type] : []);
+    }
+
+    const value =
+      properties.value ??
+      properties.name ??
+      JSON.stringify(properties);
+
+    return {
+      value: String(value),
+      type: labels[0] || null,
+      properties
+    };
   });
 }
 

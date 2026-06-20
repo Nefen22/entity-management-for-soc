@@ -9,7 +9,7 @@ async def post_entity(type:str, value):
 
 async def get_entity(type:str, value):
     result = await repo.get_entity(type, value)
-    return result.data()
+    return result
 
 async def check_existed_logs(type:str, value, merge = False):
     existed = await get_entity(type, value)
