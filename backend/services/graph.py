@@ -108,10 +108,10 @@ async def get_entities_follow(type: str, relationship: str):
     seen = set()
     return [{"entity":ele["nodes"][0], "label":ele["node_labels"][0]} for ele in result if not (ele["nodes"][0]["value"] in seen or seen.add(ele["nodes"][0]["value"]))]
 
-
 async def explore_entites(type: str, relationship: str):
     result = await repo.explore_entites(type=type, relationship=relationship)
-    return await format_drawing(result)
+    record = await format_drawing(result)
+    return record
 
 async def get_types():
     result = await repo.get_types()

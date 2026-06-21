@@ -2,13 +2,18 @@ from .base_parser import BaseParser, clean
 from .edge_parser import Vertex
 from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_REALITIONSHIPS
 
+CLOUD_INCLUDE = {
+    "hosts":["source_host"],
+    "ips":["destination_ip"],
+    "domains":["destination_domain"]
+}
+
 class CloudPaser(BaseParser):
     @classmethod
     def from_event(cls, event: dict):
         nodes = []
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["hosts"], value=event.get("source_host")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["ips"], value=event.get("destination_ip")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["domains"], value=event.get("destination_domain")))
+        for k, v_lst in CLOUD_INCLUDE.items():
+            nodes+= list(map(lambda v: Vertex(type=MAPPING_ENTITIES_TYPE[k], value=event.get(v) if event.get(v) else None), v_lst))
         nodes=[node for node in nodes if node.value != None]
         edges = [{"source": s_node,
                    "target": t_node,

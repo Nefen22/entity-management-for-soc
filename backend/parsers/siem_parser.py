@@ -2,13 +2,18 @@ from .base_parser import BaseParser
 from .edge_parser import Vertex
 from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_REALITIONSHIPS
 
+SIEM_INCLUDE = {
+    "users" : ["user"],
+    "hosts" : ["destination_host"],
+    "ips"   : ["source_ip"]
+}   
+
 class SiemPaser(BaseParser):
     @classmethod
     def from_event(cls, event: dict):
         nodes = []
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["users"], value=event.get("user")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["hosts"], value=event.get("destination_host")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["ips"], value=event.get("source_ip")))
+        for k, v_lst in SIEM_INCLUDE.items():
+            nodes+= list(map(lambda v: Vertex(type=MAPPING_ENTITIES_TYPE[k], value=event.get(v) if event.get(v) else None), v_lst))
         nodes=[node for node in nodes if node.value != None]
         edges = [{"source": s_node,
                    "target": t_node,

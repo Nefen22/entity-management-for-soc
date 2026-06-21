@@ -2,15 +2,20 @@ from .base_parser import BaseParser, clean
 from .edge_parser import Vertex
 from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_REALITIONSHIPS
 
+EDR_INCLUDE = {
+    "users":["user"],
+    "hosts":["destination_host"],
+    "ips":["destination_ip"],
+    "domains":["destination_domain"],
+    "file_hashes": ["file_hash"]
+}
+
 class EdrPaser(BaseParser):
     @classmethod
     def from_event(cls, event: dict):
         nodes = []
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["users"], value=event.get("user")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["hosts"], value=event.get("destination_host") or event.get("source_host")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["ips"], value=event.get("destination_ip")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["domains"], value=event.get("destination_domain")))
-        nodes.append(Vertex(type = MAPPING_ENTITIES_TYPE["file_hashes"], value=event.get("file_hash")))
+        for k, v_lst in EDR_INCLUDE.items():
+            nodes+= list(map(lambda v: Vertex(type=MAPPING_ENTITIES_TYPE[k], value=event.get(v) if event.get(v) else None), v_lst))
         nodes=[node for node in nodes if node.value != None]
         edges = [{"source": s_node,
                    "target": t_node,
