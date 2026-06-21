@@ -1,10 +1,4 @@
 from fastapi import APIRouter, HTTPException
-from parsers.edge_parser import EdgePaser
-from parsers.base_parser import BaseParser
-from parsers.siem_parser import SiemPaser
-from parsers.edr_parser import EdrPaser
-from parsers.cloud_parser import CloudPaser
-from parsers.alert_parser import AlertParser
 import json
 from models.responses import APIResponse
 import services.graph as services
