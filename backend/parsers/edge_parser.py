@@ -2,8 +2,7 @@ from pydantic import BaseModel
 
 class Vertex(BaseModel):
     type: str
-    key: str
-    value: str
+    value: str | None = None
 
 class EdgePaser(BaseModel):
     src: Vertex

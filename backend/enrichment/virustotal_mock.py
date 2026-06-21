@@ -20,7 +20,7 @@ async def enrichment_file_hash_func(hash_value:str):
     else:
         enrich_element = lookup_hash(hash_value = hash_value)
         if enrich_element is None:
-            return None
+            return []
         hash_cache[hash_value] = enrich_element
     return enrich_element
 

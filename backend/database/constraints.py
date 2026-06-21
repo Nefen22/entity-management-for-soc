@@ -28,3 +28,10 @@ MAPPING_ENTITY= {
     "domains": "domain",
     "file_hashes": "hash"
 }
+
+MAPPING_REALITIONSHIPS={
+    ("User", "Host"): "LOGGED_IN",
+    ("Host", "IP"): "CONNECTED_TO",
+    ("Host", "Domain"): "CONNECTED_TO",
+    ("FileHash", "Host"): "EXCUTED_ON"
+}

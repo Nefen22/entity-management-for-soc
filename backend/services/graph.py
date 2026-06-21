@@ -23,7 +23,7 @@ async def ingest(events: dict):
     elif events.get("source_type") == "alert":
         sub_event = AlertParser.from_event(events)
     rel = sub_event.get_relationship()
-    for type, value in sub_event.get_nodes().items():
+    for type, value in sub_event.get_nodes():
         if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:
             continue 
         for node in value:
@@ -35,7 +35,7 @@ async def ingest(events: dict):
         await repo.post_relationship(ele_rel)
 
 async def ingest_sample():
-    with open('./datasets/sample_data1.json', 'r', encoding='utf-8') as file:
+    with open('./datasets/sample_data.json', 'r', encoding='utf-8') as file:
         data = json.load(file)
     for event in data:
         await ingest(event)
