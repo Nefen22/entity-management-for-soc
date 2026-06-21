@@ -17,8 +17,8 @@ async def ingest(events: dict):
     return APIResponse(message="Ingest completed")
 
 @router.post("/ingest/sample")
-async def ingest_sample():
-    await services.ingest_sample()
+async def ingest_sample(file:str):
+    await services.ingest_sample(file)
     return APIResponse(message="Sample data ingested!")
 
 @router.get("/all-types")

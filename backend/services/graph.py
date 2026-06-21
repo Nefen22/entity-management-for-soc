@@ -89,8 +89,8 @@ async def ingest(events: dict):
         await check_existed_logs(REVERSED_TYPE[ele_rel.dest.type], ele_rel.dest.value, True)
         await repo.post_relationship(ele_rel)
 
-async def ingest_sample():
-    with open('./datasets/sample_data1.json', 'r', encoding='utf-8') as file:
+async def ingest_sample(file: str):
+    with open(f'./datasets/{file}', 'r', encoding='utf-8') as file:
         data = json.load(file)
     for event in data:
         await ingest(event)
