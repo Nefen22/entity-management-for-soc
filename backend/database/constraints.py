@@ -18,7 +18,12 @@ MAPPING_ENTITIES_KEY={
     "users": "username",
     "hosts": "hostname",
     "domains": "name",
-    "file_hashes": "hash_value"
+    "file_hashes": "hash_value",
+    "IP": "value",
+    "User": "username",
+    "Host": "hostname",
+    "Domain": "name",
+    "FileHash": "hash_value"
 }
 
 MAPPING_ENTITY= {
@@ -34,4 +39,24 @@ MAPPING_REALITIONSHIPS={
     ("Host", "IP"): "CONNECTED_TO",
     ("Host", "Domain"): "CONNECTED_TO",
     ("FileHash", "Host"): "EXCUTED_ON"
+}
+
+SIEM_INCLUDE = {
+    "users" : ["user"],
+    "hosts" : ["destination_host"],
+    "ips"   : ["source_ip"]
+}   
+
+CLOUD_INCLUDE = {
+    "hosts":["source_host"],
+    "ips":["destination_ip"],
+    "domains":["destination_domain"]
+}
+
+EDR_INCLUDE = {
+    "users":["user"],
+    "hosts":["destination_host"],
+    "ips":["destination_ip"],
+    "domains":["destination_domain"],
+    "file_hashes": ["file_hash"]
 }

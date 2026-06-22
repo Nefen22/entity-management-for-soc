@@ -26,7 +26,7 @@ class AlertParser(BaseParser):
                 ipaddress.ip_address(token)
                 list_ip.append(token)
             except ValueError:
-                pass
+                None
         list_domain.extend(DOMAIN.findall(message))
         for pattern_hash in HASH:
             list_hash.extend(pattern_hash.findall(message))

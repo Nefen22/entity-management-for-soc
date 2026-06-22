@@ -12,8 +12,8 @@ async def post_relationship(edge: EdgePaser):
         dest = edge.dest
         connect_type = edge.connect_type
         evidence = edge.evidence
-        query="""MERGE (from: {from_label} {{value: $from_value}})
-                MERGE (to: {to_label} {{value: $to_value}})
+        query="""MERGE (from: {from_label} {{{f_key}: $from_value}})
+                MERGE (to: {to_label} {{{t_key}: $to_value}})
                 MERGE (from)-[r:{connect_type}]->(to)
                 ON CREATE SET r.first_seen = datetime(),
                                 r.last_seen = datetime(),
@@ -28,8 +28,8 @@ async def post_relationship(edge: EdgePaser):
                                     THEN r.evidences
                                     ELSE r.evidences + $evidence
                                 END
-                """.format(from_label=src.type, 
-                        to_label=dest.type,
+                """.format(from_label=src.type, f_key=MAPPING_ENTITIES_KEY[src.type], 
+                        to_label=dest.type, t_key=MAPPING_ENTITIES_KEY[dest.type],
                         connect_type=connect_type)
         await session.run(query, from_value=src.value, to_value=dest.value, evidence=evidence)
 
@@ -45,13 +45,13 @@ async def get_relationship_n_hop(type: str, value: str , hop: int):
                             [rel in relationships(p) | type(rel)] AS edge_types,
                             [node in nodes(p) | labels(node)] AS node_labels""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop)
         else:
-            query="""MATCH p=(from: {type} {{value: $value}})-[*1..{hop}]-(to)
+            query="""MATCH p=(from: {type} {{{key}: $value}})-[*1..{hop}]-(to)
                     UNWIND nodes(p) AS n
                     UNWIND relationships(p) AS r
                     RETURN nodes(p) AS nodes,
                         relationships(p) AS edges,
                         [rel in relationships(p) | type(rel)] AS edge_types,
-                        [node in nodes(p) | labels(node)] AS node_labels""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop)
+                        [node in nodes(p) | labels(node)] AS node_labels""".format(key=MAPPING_ENTITIES_KEY[type], type=MAPPING_ENTITIES_TYPE[type], hop=hop)
         result = await session.run(query, value=value)
         return await result.data()
     
@@ -76,7 +76,6 @@ async def explore_entites(type: str, relationship: str):
                     [node in nodes(p) | labels(node)] AS node_labels"""
         result = await session.run(query)
         record = await result.data()
-        graph_cache[(type, relationship)] = record
         sub = [{k: v for k, v in ele.items() if k != "r" } for ele in record]
         return record
     

@@ -531,10 +531,18 @@ document.getElementById('globalTypeSelect').addEventListener('change', handleFil
 document.getElementById('globalRelSelect').addEventListener('change', handleFilterChange);
 
 function canEnrich(type) {
-  return type === "IP" ||
-         type === "FileHash" ||
-         type === "File_Hash";
+  return type === 'IP' || type === 'FileHash';
 }
+
+function shortLabel(text, max = 18) {
+  text = String(text);
+
+  if (text.length <= max)
+    return text;
+
+  return text.slice(0, 8) + '...' + text.slice(-4);
+}
+
 /* Gọi API load danh sách thực thể dựa trên bộ lọc đang chọn */
 async function loadDynamicEntities() {
   const listArea = document.getElementById('dynamicListArea');
@@ -597,7 +605,7 @@ function renderDynamicChips(entities, fallbackType) {
 
       <span class="name"
             title="${escapeHtml(ent.value)}">
-            ${escapeHtml(ent.value)}
+            ${escapeHtml(shortLabel(ent.value))}
       </span>
 
       ${
@@ -608,29 +616,30 @@ function renderDynamicChips(entities, fallbackType) {
     `;
 
     chip.addEventListener('click', () => {
-      document.getElementById('hopValueInput').value = ent.value;
-
+      document.getElementById('hopValueInput').value = ent.id;
       const foundNode = cy.nodes().filter(
-        n => String(n.data('label')).toLowerCase() === ent.value.toLowerCase()
+        n => n.data('id') === ent.type+":"+ent.id
       );
-
+      console.log(foundNode)
       if (foundNode.length) {
         cy.nodes().unselect();
         foundNode.select();
-
         showDetail(foundNode.data());
-
-        cy.animate(
-          { center: { eles: foundNode } },
-          { duration: 300 }
-        );
+        cy.animate({ center: { eles: foundNode } }, { duration: 300 });
+      } else {
+        // Node không có trên graph → showDetail trực tiếp từ entity
+        showDetail({
+          id:         ent.id,
+          type:       ent.type,
+          properties: ent.properties || {}
+        });
       }
     });
 
     const enrichBtn = chip.querySelector('.enrich-btn');
 
     if (enrichBtn) {
-      enrichBtn.addEventListener('click', async (e) => {
+      enrichBtn.addEventListener('click', async e => {
         e.stopPropagation();
 
         enrichBtn.classList.add('loading');
@@ -640,14 +649,13 @@ function renderDynamicChips(entities, fallbackType) {
           let url = '';
 
           if (currentType === 'IP') {
-            url = `/api/enrichment/ips/${encodeURIComponent(ent.value)}`;
+            url =
+              `/api/enrichment/ips/${encodeURIComponent(ent.id)}`;
           }
 
-          if (
-            currentType === 'FileHash' ||
-            currentType === 'File_Hash'
-          ) {
-            url = `/api/enrichment/file-hash/${encodeURIComponent(ent.value)}`;
+          if (currentType === 'FileHash') {
+            url =
+              `/api/enrichment/file-hash/${encodeURIComponent(ent.id)}`;
           }
 
           const res = await fetch(apiUrl(url), {
@@ -662,8 +670,19 @@ function renderDynamicChips(entities, fallbackType) {
           enrichBtn.textContent = '✓';
           enrichBtn.classList.remove('loading');
           enrichBtn.classList.add('done');
-          await showDetail(json.data);
-        } catch {
+
+          await loadGraph();
+
+          const node = cy.nodes().filter(
+            n => n.data('id') === ent.id
+          );
+
+          if (node.length) {
+            node.select();
+            showDetail(node.data());
+          }
+        }
+        catch {
           enrichBtn.textContent = '✗';
           enrichBtn.classList.remove('loading');
         }
@@ -684,36 +703,29 @@ function normalizeEntityList(raw) {
     arr = arr.entities || arr.items || arr.data || Object.values(arr);
   }
 
-  if (!Array.isArray(arr))
+  if (!Array.isArray(arr)) {
     arr = arr ? [arr] : [];
+  }
 
   return arr.map(item => {
-    let properties = {};
-    let labels = [];
-
-    if (item && typeof item === 'object' && item.entity) {
-      properties = item.entity;
-      labels = item.label || item.labels || [];
-    } else {
-      properties = item?.properties || item || {};
-      labels =
-        item?.labels ||
-        (item?.type ? [item.type] : []);
-    }
+    const props = item.properties || {};
 
     const value =
-      properties.value ??
-      properties.name ??
-      JSON.stringify(properties);
+      props.value ??
+      props.username ??
+      props.hostname ??
+      props.hash_value ??
+      props.name ??
+      item.id;
 
     return {
+      id: item.id,
       value: String(value),
-      type: labels[0] || null,
-      properties
+      type: item.type,
+      properties: props
     };
   });
 }
-
 /* ---------------------------------------------------------
    Cấu hình Khởi Tạo Thư Viện Cytoscape Đồ Thị
 --------------------------------------------------------- */
