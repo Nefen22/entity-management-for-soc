@@ -9,11 +9,11 @@ from pathlib import Path
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    Path("/app/backend/logs/audit_log.json").write_text("[]")
+    Path("/app/backend/logs/audit_log.json").write_text("")
 
     yield
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
