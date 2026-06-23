@@ -8,7 +8,7 @@ from models.responses import APIResponse
 import repositories.graph as repo
 from .entities import post_entity, check_existed_logs
 from logs.audit_log import write_audit_log
-from backend.database.constraintsbackup import REVERSED_TYPE, MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_KEY
+from backend.database.constraints import REVERSED_TYPE, MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_KEY
 from .function import format_drawing
 
 #Services

@@ -1,5 +1,5 @@
 from database.neo4j import driver
-from backend.database.constraintsbackup import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MAPPING_ENTITY
+from backend.database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MAPPING_ENTITY
 
 async def get_entity(type: str, value: str):
     type = type if type != "file-hashes" else "file_hashes"

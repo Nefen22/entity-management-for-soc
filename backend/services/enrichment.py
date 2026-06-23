@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 import repositories.enrichment as repo
 from models.responses import APIResponse
 from logs.audit_log import write_audit_log
-from backend.database.constraintsbackup import MAPPING_ENTITIES_KEY
+from backend.database.constraints import MAPPING_ENTITIES_KEY
 
 async def enrichment_ip(value:str):
     data = await repo.enrichment_ip(value)

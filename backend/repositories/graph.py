@@ -1,6 +1,6 @@
 from database.neo4j import driver
 from parsers.edge_parser import EdgePaser
-from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MAPPING_ENTITY
+from backend.database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MAPPING_ENTITY
 
 from cachetools import TTLCache
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.database.constraintsbackup import REVERSED_TYPE, MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_KEY
+from backend.database.constraints import REVERSED_TYPE, MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_KEY
 #Funtion 
 
 async def format_drawing(lst: list):
