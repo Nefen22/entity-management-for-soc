@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from .edge_parser import EdgePaser, Vertex
-from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_REALITIONSHIPS
+from backend.database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_REALITIONSHIPS
 
 
 def clean(lst):
@@ -21,7 +21,7 @@ class BaseParser(BaseModel):
         nodes=[node for node in nodes if node.value != None]
         edges = [{"source": s_node,
                    "target": t_node,
-                   "type": MAPPING_REALITIONSHIPS[(s_node.type, t_node.type)] if (s_node.type, t_node.type) in MAPPING_REALITIONSHIPS.keys() else ""}
+                   "type": MAPPING_REALITIONSHIPS[s_node.type][t_node.type] if t_node.type in MAPPING_REALITIONSHIPS[s_node.type].keys() else ""}
                    for s_node in nodes for t_node in nodes]
         edges=[edge for edge in edges if edge["type"] != ""]
         return nodes, edges

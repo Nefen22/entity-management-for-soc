@@ -37,7 +37,6 @@ async def ingest_sample(file: str):
 
 async def get_relationship_n_hop(type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(type=type, value=value, hop=hop)
-    #return result
     return await format_drawing(result)
 
 async def get_entities_follow(type: str, relationship: str):

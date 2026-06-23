@@ -1,6 +1,6 @@
 from .base_parser import BaseParser, clean
 from .edge_parser import Vertex
-from database.constraints import EDR_INCLUDE, SIEM_INCLUDE, CLOUD_INCLUDE
+from backend.database.constraints import EDR_INCLUDE, SIEM_INCLUDE, CLOUD_INCLUDE
 
 json_format={
     "edr": EDR_INCLUDE,     #format for EDR

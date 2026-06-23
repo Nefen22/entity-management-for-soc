@@ -1,3 +1,5 @@
+import re
+
 MAPPING_ENTITIES_TYPE={
     # existing
     "ips": "IP",
@@ -51,6 +53,22 @@ MAPPING_ENTITIES_KEY={
     "CVE": "cve_id",
 }
 
+MAPPING_ENTITIES_KEY_CLEAN={
+    # existing
+    "IP": "value",
+    "User": "username",
+    "Host": "hostname",
+    "Domain": "name",
+    "FileHash": "hash_value",
+    # new
+    "URL": "url",
+    "Process": "process_name",
+    "CloudResource": "resource_id",
+    "Email": "address",
+    "CVE": "cve_id",
+}
+
+
 MAPPING_ENTITY = {
     # existing
     "ips": "ip",
@@ -68,38 +86,38 @@ MAPPING_ENTITY = {
 
 MAPPING_REALITIONSHIPS = {
     # existing
-    ("User",    "Host"):    "LOGGED_IN",
-    ("Host",    "IP"):      "CONNECTED_TO",
-    ("Host",    "Domain"):  "CONNECTED_TO",
-    ("FileHash","Host"):    "EXECUTED_ON",      # fixed typo EXCUTED → EXECUTED
+    "User":    {"Host":    "LOGGED_IN",
+                "CloudResource": "ACCESSED",
+                "Email":   "SENT"},
+    "Host":    {"IP":      "CONNECTED_TO",
+                "Domain":  "CONNECTED_TO",
+                "URL":     "REQUESTED"},
+    "FileHash":{"Host":    "EXECUTED_ON"},      # fixed typo EXCUTED → EXECUTED
     # URL
-    ("Host",    "URL"):     "REQUESTED",
-    ("Domain",  "URL"):     "HOSTS",
-    ("IP",      "URL"):     "RESOLVES_TO",
-    ("URL",     "Domain"):  "BELONGS_TO",
+    "Domain":  {"URL":     "HOSTS"},
+    "IP":      {"URL":     "RESOLVES_TO"},
+    "URL":     {"Domain":  "BELONGS_TO"},
     # Process
-    ("Process", "Host"):    "RUNS_ON",
-    ("Process", "User"):    "EXECUTED_BY",
-    ("Process", "FileHash"):"LOADED",
-    ("Process", "IP"):      "CONNECTED_TO",
-    ("Process", "URL"):     "REQUESTED",
-    ("Process", "Domain"):  "RESOLVED",
+    "Process": {"Host":    "RUNS_ON",
+                "User":    "EXECUTED_BY",
+                "FileHash":"LOADED",
+                "IP":      "CONNECTED_TO",
+                "URL":     "REQUESTED",
+                "Domain":  "RESOLVED"},
     # CloudResource
-    ("CloudResource", "IP"):   "ASSIGNED_TO",
-    ("CloudResource", "User"): "OWNED_BY",
-    ("CloudResource", "Host"): "RUNS_ON",
-    ("User", "CloudResource"): "ACCESSED",
+    "CloudResource": {"IP":   "ASSIGNED_TO",
+                    "User": "OWNED_BY",
+                    "Host": "RUNS_ON"},
     # Email
-    ("Email",   "User"):    "BELONGS_TO",
-    ("Email",   "Domain"):  "HOSTED_BY",
-    ("User",    "Email"):   "SENT",
-    ("Email",   "URL"):     "CONTAINS",
-    ("Email",   "FileHash"):"ATTACHED",
+    "Email":   {"User":    "BELONGS_TO",
+                "Domain":  "HOSTED_BY",
+                "URL":     "CONTAINS",
+                "FileHash":"ATTACHED"},    
     # CVE
-    ("CVE",     "Host"):        "AFFECTS",
-    ("CVE",     "Process"):     "AFFECTS",
-    ("CVE",     "CloudResource"):"AFFECTS",
-    ("CVE",     "FileHash"):    "EXPLOITS",
+    "CVE":     {"Host":        "AFFECTS",
+                "Process":     "AFFECTS",
+                "CloudResource":"AFFECTS",
+                "FileHash":    "EXPLOITS"}
 }
 
 SIEM_INCLUDE = {
@@ -135,4 +153,50 @@ EDR_INCLUDE = {
     "urls":        ["url", "request_url"],
     "processes":   ["process_name", "parent_process"],
     "cves":        ["cve_id"],
+}
+
+
+# ── IP ───────────────────────────────────────────────────────────────────────
+IPV4 = re.compile(
+    r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
+    r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b"
+)
+
+# ── URL ──────────────────────────────────────────────────────────────────────
+URL = re.compile(
+    r"https?://"
+    r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}"
+    r"(?::\d{1,5})?"
+    r"(?:/[^\s\"'<>]*)?"
+)
+
+# ── File Hash ────────────────────────────────────────────────────────────────
+MD5    = re.compile(r"\b[a-fA-F0-9]{32}\b")
+SHA1   = re.compile(r"\b[a-fA-F0-9]{40}\b")
+SHA256 = re.compile(r"\b[a-fA-F0-9]{64}\b")
+HASH   = [MD5, SHA1, SHA256]
+
+# ── Email ────────────────────────────────────────────────────────────────────
+EMAIL = re.compile(
+    r"\b[a-zA-Z0-9._%+\-]+@"
+    r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b"
+)
+
+# ── CVE ──────────────────────────────────────────────────────────────────────
+CVE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
+
+# ── Cloud Resource (chỉ các định dạng chuẩn) ─────────────────────────────────
+AWS_ARN      = re.compile(r"\barn:[a-z0-9\-]+:[a-z0-9\-]+:[a-z0-9\-]*:\d{12}:[^\s\"']+")
+AWS_S3       = re.compile(r"\bs3://[a-z0-9.\-]+(?:/[^\s\"']*)?\b")
+AWS_INSTANCE = re.compile(r"\bi-[0-9a-f]{8,17}\b")
+CLOUD_RESOURCE = [AWS_ARN, AWS_S3, AWS_INSTANCE]
+
+# ── Gom tất cả theo entity type ──────────────────────────────────────────────
+ALL_PATTERNS: dict[str, list[re.Pattern]] = {
+    "ips":            [IPV4],
+    "urls":           [URL],
+    "file_hashes":      HASH,
+    "emails":         [EMAIL],
+    "cves":           [CVE],
+    "cloud_resources": CLOUD_RESOURCE,
 }

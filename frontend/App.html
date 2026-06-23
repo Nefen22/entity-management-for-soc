@@ -339,6 +339,77 @@
     opacity: .6;
     pointer-events: none;
 }
+.edge-meta {
+  margin-top: 4px;
+  margin-left: 14px;
+}
+
+.edge-meta summary {
+  cursor: pointer;
+  list-style: none;
+
+  color: var(--muted);
+
+  font-size: 10px;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  opacity: 0.75;
+
+  user-select: none;
+}
+
+.edge-meta summary::-webkit-details-marker {
+  display: none;
+}
+
+.edge-meta summary::before {
+  content: "▸ ";
+}
+
+.edge-meta[open] summary::before {
+  content: "▾ ";
+}
+
+.edge-meta-content {
+  margin-top: 6px;
+
+  border-left: 1px solid var(--line);
+
+  padding-left: 10px;
+}
+
+.edge-meta-row {
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding: 2px 0;
+
+  font-size: 11px;
+}
+
+.edge-meta-key {
+  color: var(--muted);
+
+  font-family: Inter, sans-serif;
+
+  text-transform: lowercase;
+}
+
+.edge-meta-value {
+  color: var(--text);
+
+  text-align: right;
+
+  font-family: 'JetBrains Mono', monospace;
+
+  word-break: break-all;
+}
+
 </style>
 </head>
 <body>
@@ -620,7 +691,7 @@ function renderDynamicChips(entities, fallbackType) {
       const foundNode = cy.nodes().filter(
         n => n.data('id') === ent.type+":"+ent.id
       );
-      console.log(foundNode)
+
       if (foundNode.length) {
         cy.nodes().unselect();
         foundNode.select();
@@ -670,7 +741,6 @@ function renderDynamicChips(entities, fallbackType) {
           enrichBtn.textContent = '✓';
           enrichBtn.classList.remove('loading');
           enrichBtn.classList.add('done');
-
 
           const node = cy.nodes().filter(
             n => n.data('id') === ent.type+":"+ent.id
@@ -821,10 +891,12 @@ function toNodeRecord(v, fallbackType){
 }
 
 function toEdgeRecord(v){
-  const start = v["source"];
-  const end = v["target"];
-  const type = v["type"];
-  return { start: String(start), end: String(end), type };
+  return {
+    start: String(v.source),
+    end: String(v.target),
+    type: v.type,
+    rel_properties: v.rel_properties || {}
+  };
 }
 
 function collectGraphElements(raw, fallbackType){
@@ -893,7 +965,8 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
         fullLabel: fullLabel,
         color: colorFor(n.type),
         type: n.type,
-        properties: n.properties
+        properties: n.properties,
+        rel_properties: n.rel_properties || {}
       },
       classes: isRoot ? "root" : ""
     });
@@ -902,16 +975,15 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
   const nodeIds = new Set(nodes.map(n => n.id));
 
   edges.forEach((e, idx) => {
-    if (!nodeIds.has(e.start) || !nodeIds.has(e.end))
-      return;
-
     elements.push({
       group: "edges",
       data: {
         id: "e" + idx,
         source: e.start,
         target: e.end,
-        label: e.type
+        label: e.type,
+        type: e.type,
+        rel_properties: e.rel_properties || {}
       }
     });
   });
@@ -1029,73 +1101,183 @@ function showDetail(data) {
   const type  = data.type || '—';
   const id    = data.id   || '—';
 
-  // Tách nhóm properties
-  const GEO_KEYS  = new Set(['continent','country','country_name','timezone','latitude','longitude','network']);
-  const NET_KEYS  = new Set(['asn','organization','value']);
-  const BASE_KEYS = new Set(['hostname','username','hash_value','ip_address','name']);
+  // ── Định nghĩa nhóm keys theo entity ──────────────────────────────────────
+  const GROUPS = {
+    // entity cơ bản
+    IP:            { base: ['value', 'evidence'],                                   enrich: { Network: ['asn','organization','network'], Geo: ['continent','country','country_name','timezone','latitude','longitude'] } },
+    User:          { base: ['username','evidence'],                                 enrich: {} },
+    Host:          { base: ['hostname','evidence'],                                 enrich: {} },
+    Domain:        { base: ['name','evidence'],                                     enrich: { DNS: ['resolved_ip','mx_record','registrar','created_date','expires_date'] } },
+    FileHash:      { base: ['hash_value','evidence'],                               enrich: { Malware: ['malware_name','malware_family','threat_label','detection_rate','file_name','file_size','file_type'] } },
+    // entity mới
+    URL:           { base: ['url','evidence'],                                      enrich: { Meta: ['status_code','content_type','redirect_url','screenshot_url'], Threat: ['category','is_malicious','last_seen'] } },
+    Process:       { base: ['process_name','parent_process','evidence'],            enrich: { Meta: ['pid','command_line','start_time','integrity_level'] } },
+    CloudResource: { base: ['resource_id','instance_id','bucket_name','evidence'],  enrich: { Cloud: ['provider','region','account_id','resource_type','tags'] } },
+    Email:         { base: ['address','evidence'],                                  enrich: { Meta: ['display_name','mail_server','is_disposable','breach_count'] } },
+    CVE:           { base: ['cve_id','evidence'],                                   enrich: { Severity: ['cvss_score','cvss_vector','severity','epss_score'], Meta: ['description','published_date','affected_software','references'] } },
+  };
+
+  const group   = GROUPS[type] || { base: [], enrich: {} };
+  const baseSet = new Set(group.base);
+
+  // Tất cả key đã được khai báo trong enrich
+  const enrichSet = new Set(
+    Object.values(group.enrich).flat()
+  );
 
   const baseProps  = {};
-  const geoProps   = {};
-  const netProps   = {};
+  const enrichBuckets = {};   // { sectionLabel: { key: val } }
   const otherProps = {};
 
-  Object.entries(props).forEach(([k, v]) => {
-    if (BASE_KEYS.has(k))  baseProps[k]  = v;
-    else if (GEO_KEYS.has(k))  geoProps[k]  = v;
-    else if (NET_KEYS.has(k))  netProps[k]  = v;
-    else                       otherProps[k] = v;
+  // Khởi tạo bucket
+  Object.keys(group.enrich).forEach(label => {
+    enrichBuckets[label] = {};
   });
 
+  Object.entries(props).forEach(([k, v]) => {
+    if (baseSet.has(k)) {
+      baseProps[k] = v;
+      return;
+    }
+    // Tìm bucket phù hợp
+    let placed = false;
+    for (const [label, keys] of Object.entries(group.enrich)) {
+      if (keys.includes(k)) {
+        enrichBuckets[label][k] = v;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) otherProps[k] = v;
+  });
+
+  // ── Render helpers ─────────────────────────────────────────────────────────
   function renderRows(obj) {
-    return Object.entries(obj).map(([k, v]) => `
-      <div class="prop-row">
-        <span class="k">${escapeHtml(k)}</span>
-        <span class="v">${escapeHtml(String(v))}</span>
-      </div>`).join('');
+    return Object.entries(obj).map(([k, v]) => {
+      const display = formatValue(k, v);
+      return `
+        <div class="prop-row">
+          <span class="k">${escapeHtml(k)}</span>
+          <span class="v">${display}</span>
+        </div>`;
+    }).join('');
   }
 
-  function renderSection(label, obj) {
+  function renderSection(label, obj, accent) {
     const rows = renderRows(obj);
     if (!rows) return '';
-    return `
-      <div class="detail-label">${label}</div>
-      <div class="prop-block">${rows}</div>
-    `;
+    const labelHtml = accent
+      ? `<div class="detail-label" style="color:var(--teal)">${label}</div>`
+      : `<div class="detail-label">${label}</div>`;
+    return `${labelHtml}<div class="prop-block">${rows}</div>`;
   }
 
-  // Quan hệ từ graph
+  // Format giá trị đặc biệt
+  function formatValue(k, v) {
+    const s = String(v);
+    // URL → clickable
+    if (k === 'url' || k === 'redirect_url' || k === 'screenshot_url' || /^https?:\/\//.test(s)) {
+      return `<a href="${escapeHtml(s)}" target="_blank"
+                 style="color:var(--teal);word-break:break-all">${escapeHtml(s)}</a>`;
+    }
+    // CVSS score → badge màu
+    if (k === 'cvss_score' || k === 'epss_score') {
+      const n = parseFloat(v);
+      const color = n >= 9 ? 'var(--rose)' : n >= 7 ? 'var(--amber)' : n >= 4 ? '#e0c46f' : 'var(--teal)';
+      return `<span style="color:${color};font-weight:600">${escapeHtml(s)}</span>`;
+    }
+    // is_malicious / boolean
+    if (typeof v === 'boolean' || s === 'true' || s === 'false') {
+      const bad = (v === true || s === 'true');
+      return `<span style="color:${bad ? 'var(--rose)' : 'var(--teal)'}">${s}</span>`;
+    }
+    // severity badge
+    if (k === 'severity') {
+      const color = { critical:'var(--rose)', high:'var(--amber)', medium:'#e0c46f', low:'var(--teal)' }[s.toLowerCase()] || 'var(--muted)';
+      return `<span style="color:${color};font-weight:600;text-transform:uppercase">${escapeHtml(s)}</span>`;
+    }
+    return escapeHtml(s);
+  }
+
+  // ── Quan hệ từ graph ───────────────────────────────────────────────────────
   let relHtml = '';
   if (typeof cy !== 'undefined') {
     const node = cy.getElementById(id);
     if (node.length) {
-      const rels = node.connectedEdges().map(edge => {
+      const edges = node.connectedEdges();
+      const rels = edges.map(edge => {
         const isSource  = edge.data('source') === id;
         const otherId   = isSource ? edge.data('target') : edge.data('source');
         const otherNode = cy.getElementById(otherId);
         const otherType = otherNode.data('type') || '—';
         const arrow     = isSource ? '→' : '←';
         const relType   = edge.data('label') || edge.data('type') || '—';
+        
+        // Lấy tất cả thuộc tính bổ sung của Edge (ví dụ: first_seen, count, evidences...)
+        const edgeProps = edge.data('rel_properties') || {};
+        let edgePropsHtml = '';
+        
+        if (Object.keys(edgeProps).length > 0) {
+          edgePropsHtml = `
+            <details class="edge-meta">
+              <summary>
+                metadata (${Object.keys(edgeProps).length})
+              </summary>
+
+              <div class="edge-meta-content">
+                ${Object.entries(edgeProps).map(([ek, ev]) => `
+                  <div class="edge-meta-row">
+                    <span class="edge-meta-key">
+                      ${escapeHtml(ek)}
+                    </span>
+
+                    <span class="edge-meta-value">
+                      ${
+                        Array.isArray(ev)
+                          ? escapeHtml(ev.join(", "))
+                          : escapeHtml(String(ev))
+                      }
+                    </span>
+                  </div>
+                `).join("")}
+              </div>
+            </details>
+          `;
+        }
+
         return `
-          <div class="prop-row">
-            <span class="k" style="color:${colorFor(otherType)}">${escapeHtml(otherType)}</span>
-            <span class="v">
-              <span style="color:var(--muted);margin-right:4px">${arrow} ${escapeHtml(relType)}</span>
-              ${escapeHtml(otherId)}
-            </span>
+          <div class="rel-item" style="border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 6px;">
+            <div class="prop-row" style="border-bottom: none; padding-bottom: 0;">
+              <span class="k" style="color:${colorFor(otherType)}">${escapeHtml(otherType)}</span>
+              <span class="v">
+                <span style="color:var(--muted);margin-right:4px">${arrow} ${escapeHtml(relType)}</span>
+                ${escapeHtml(otherId)}
+              </span>
+            </div>
+            ${edgePropsHtml}
           </div>`;
       }).join('');
 
       if (rels) {
         relHtml = `
-          <div class="detail-label">Quan hệ (${node.connectedEdges().length})</div>
+          <div class="detail-label">Quan hệ (${edges.length})</div>
           <div class="prop-block">${rels}</div>
         `;
       }
     }
   }
 
-  const hasEnrichment = Object.keys(geoProps).length || Object.keys(netProps).length || Object.keys(otherProps).length;
+  // ── Render enrich sections ─────────────────────────────────────────────────
+  const hasEnrich = Object.values(enrichBuckets).some(b => Object.keys(b).length > 0);
 
+  const enrichHtml = hasEnrich
+    ? `<div class="detail-label" style="color:var(--teal);margin-top:16px">◆ Enrichment</div>`
+      + Object.entries(enrichBuckets)
+          .map(([label, obj]) => renderSection(label, obj, true))
+          .join('')
+    : '';
+
+  // ── Assemble ───────────────────────────────────────────────────────────────
   area.innerHTML = `
     <div class="detail-label">Type</div>
     <span class="type-pill"
@@ -1106,13 +1288,9 @@ function showDetail(data) {
     <div class="detail-label">ID</div>
     <div class="detail-value">${escapeHtml(id)}</div>
 
-    ${renderSection('Thông tin cơ bản', baseProps)}
-
-    ${hasEnrichment ? `<div class="detail-label" style="color:var(--teal);margin-top:16px">◆ Enrichment</div>` : ''}
-    ${renderSection('Network', netProps)}
-    ${renderSection('Geolocation', geoProps)}
-    ${renderSection('Khác', otherProps)}
-
+    ${renderSection('Thông tin cơ bản', baseProps, false)}
+    ${enrichHtml}
+    ${renderSection('Khác', otherProps, false)}
     ${relHtml}
   `;
 }

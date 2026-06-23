@@ -1,15 +1,9 @@
 import re 
 from .base_parser import BaseParser
 from .edge_parser import Vertex
-from database.constraints import MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_TYPE
+from backend.database.constraints import MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_TYPE, ALL_PATTERNS
 import ipaddress
 
-DOMAIN=re.compile(r"\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b")
-
-MD5=re.compile(r"\b[a-fA-F0-9]{32}\b")
-SHA1=re.compile(r"\b[a-fA-F0-9]{40}\b")
-SHA256=re.compile(r"\b[a-fA-F0-9]{64}\b")
-HASH=[MD5, SHA1, SHA256]
 
 def list_vertex(type:  str, lst:list):
     return [Vertex(type = MAPPING_ENTITIES_TYPE[type], value=ele) for ele in lst]
@@ -18,21 +12,10 @@ class AlertParser(BaseParser):
     @classmethod
     def from_event(cls, event: dict):
         message = event.get("message")
-        list_ip=[]
-        list_domain=[]
-        list_hash=[]
-        for token in message.split():
-            try:
-                ipaddress.ip_address(token)
-                list_ip.append(token)
-            except ValueError:
-                None
-        list_domain.extend(DOMAIN.findall(message))
-        for pattern_hash in HASH:
-            list_hash.extend(pattern_hash.findall(message))
-
-        nodes = []
-        nodes += list_vertex("ips", list_ip) +  list_vertex("domains", list_domain) + list_vertex("file_hashes", list_hash)
+        lst = []
+        for k,v in ALL_PATTERNS:
+            list(map(lambda x: lst.extend(x), v))
+        nodes = [list_vertex(k, lst) for k, lst in ALL_PATTERNS]
         edges = [{"source": s_node,
                    "target": t_node,
                    "type": MAPPING_REALITIONSHIPS[(s_node.type, t_node.type)] if (s_node.type, t_node.type) in MAPPING_REALITIONSHIPS.keys() else ""}

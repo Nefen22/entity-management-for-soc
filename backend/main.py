@@ -5,11 +5,14 @@ from api.enrichment import router as enrichment_router
 from api.graph import router as graph_router
 from contextlib import asynccontextmanager
 from pathlib import Path
+from database.neo4j import driver, indexing_for_entities, drop_all_indexes
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
     Path("/app/backend/logs/audit_log.json").write_text("")
+    await drop_all_indexes()
+    await indexing_for_entities()
 
     yield
 
@@ -30,7 +33,7 @@ app.include_router(enrichment_router, prefix = "/api/enrichment", tags = ["Enric
 app.include_router(graph_router, prefix = "/api/graph", tags = ["Graph"])
 
 @app.get("/")
-def root():
+async def root():
     return {
         "status": "Online",
         "message": "Welcome to Entity management for SOC"
