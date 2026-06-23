@@ -79,14 +79,17 @@ async def get_entities_follow(type: str, relationship: str):
     result = await explore_entites(type, relationship)
     return result
 
-async def get_types():
+async def get_types(relationship:str):
     async with driver.session() as session:
-        query = """CALL db.labels()"""
+        rel = f"-[r{relationship}]-(to)" if relationship else None
+        query = """MATCH (n) {relationship}
+                RETURN DISTINCT labels(n) AS label""".format(relationship=rel if rel else "")
         result = await session.run(query)
         return await result.data()
 
-async def get_relationships():
+async def get_relationships(type:str):
     async with driver.session() as session:
-        query = """CALL db.relationshipTypes()"""
+        query = """MATCH (n{type})-[r]-(t)
+                RETURN DISTINCT type(r) AS relationshipType""".format(type=":"+type if type else "")
         result = await session.run(query)
         return await result.data()

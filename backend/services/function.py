@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.database.constraints import REVERSED_TYPE, MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_KEY
+from backend.database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY
 from neo4j.time import DateTime
 from datetime import datetime
 #Funtion 
@@ -40,7 +40,7 @@ async def format_drawing(lst: list):
             target_label = record["node_labels"][index + 1][0]
             target_key = MAPPING_ENTITIES_KEY[target_label]
             target_name = target_label + ":" + target[target_key]
-            if target_label not in MAPPING_REALITIONSHIPS[source_label].keys():
+            if target_label not in MAPPING_RELATIONSHIPS[source_label].keys():
                 source_name, target_name = target_name, source_name
             if (source_name, target_name) in check_edges:
                 continue

@@ -1,7 +1,7 @@
 import re 
 from .base_parser import BaseParser
 from .edge_parser import Vertex
-from backend.database.constraints import MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_TYPE, ALL_PATTERNS
+from backend.database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_TYPE, ALL_PATTERNS
 import ipaddress
 
 
@@ -18,7 +18,7 @@ class AlertParser(BaseParser):
         nodes = [list_vertex(k, lst) for k, lst in ALL_PATTERNS]
         edges = [{"source": s_node,
                    "target": t_node,
-                   "type": MAPPING_REALITIONSHIPS[(s_node.type, t_node.type)] if (s_node.type, t_node.type) in MAPPING_REALITIONSHIPS.keys() else ""}
+                   "type": MAPPING_RELATIONSHIPS[s_node.type][t_node.type] if t_node.type in MAPPING_RELATIONSHIPS.keys() else ""}
                    for s_node in nodes for t_node in nodes]
         edges=[edge for edge in edges if edge["type"] != ""]
         return cls(

@@ -16,13 +16,13 @@ async def ingest_sample(file:str):
     return APIResponse(message="Sample data ingested!")
 
 @router.get("/all-types")
-async def get_types():
-    result = await services.get_types()
+async def get_types(relationship:str | None = None):
+    result = await services.get_types(relationship)
     return APIResponse(message=f"Get all types: Completed", data=result)
 
 @router.get("/all-relationships")
-async def get_relationships():
-    result = await services.get_relationships()
+async def get_relationships(type:str | None = None):
+    result = await services.get_relationships(type)
     return APIResponse(message=f"Get all relationships: Completed", data=result)
 
 @router.get("/filter")

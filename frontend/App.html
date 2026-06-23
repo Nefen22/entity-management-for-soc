@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
 <style>
   :root{
     --bg: #0a0d12;
@@ -83,6 +85,32 @@
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
   .dot.ok{background:var(--teal);box-shadow:0 0 6px var(--teal);}
   .dot.bad{background:var(--rose);box-shadow:0 0 6px var(--rose);}
+
+  /* ---------- layout switcher ---------- */
+  .layout-switcher{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:3px;
+  }
+  .layout-btn{
+    background:transparent;
+    border:none;
+    color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:4px 9px;
+    border-radius:2px;
+    cursor:pointer;
+    letter-spacing:0.3px;
+    transition:background .15s,color .15s;
+    white-space:nowrap;
+  }
+  .layout-btn:hover{color:var(--text);background:var(--line);}
+  .layout-btn.active{background:var(--teal);color:#06141a;font-weight:600;}
 
   /* ---------- layout ---------- */
   .layout{
@@ -169,7 +197,7 @@
   .filter-box button.secondary:hover{background:var(--line);}
   .filter-box button:disabled{background:var(--line);color:var(--muted);cursor:not-allowed;}
 
-  /* ---------- dynamic entity results list (vùng khoanh đỏ) ---------- */
+  /* ---------- dynamic entity results list ---------- */
   .dynamic-results-container {
     flex: 1;
     display: flex;
@@ -301,20 +329,7 @@
   .prop-row:last-child{border-bottom:none;}
   .prop-row .k{color:var(--muted);}
   .prop-row .v{color:var(--text);text-align:right;word-break:break-word;max-width:60%;}
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.chip .name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.enrich-btn {
+  .enrich-btn {
     border: 1px solid #3cc;
     background: transparent;
     color: #3cc;
@@ -323,93 +338,65 @@
     padding: 2px 6px;
     font-size: 11px;
     transition: .2s;
-}
-
-.enrich-btn:hover {
+  }
+  .enrich-btn:hover {
     background: #3cc;
     color: black;
-}
-
-.enrich-btn.done {
+  }
+  .enrich-btn.done {
     border-color: #6ee56e;
     color: #6ee56e;
-}
-
-.enrich-btn.loading {
+  }
+  .enrich-btn.loading {
     opacity: .6;
     pointer-events: none;
-}
-.edge-meta {
-  margin-top: 4px;
-  margin-left: 14px;
-}
-
-.edge-meta summary {
-  cursor: pointer;
-  list-style: none;
-
-  color: var(--muted);
-
-  font-size: 10px;
-
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-
-  opacity: 0.75;
-
-  user-select: none;
-}
-
-.edge-meta summary::-webkit-details-marker {
-  display: none;
-}
-
-.edge-meta summary::before {
-  content: "▸ ";
-}
-
-.edge-meta[open] summary::before {
-  content: "▾ ";
-}
-
-.edge-meta-content {
-  margin-top: 6px;
-
-  border-left: 1px solid var(--line);
-
-  padding-left: 10px;
-}
-
-.edge-meta-row {
-  display: flex;
-
-  justify-content: space-between;
-
-  gap: 10px;
-
-  padding: 2px 0;
-
-  font-size: 11px;
-}
-
-.edge-meta-key {
-  color: var(--muted);
-
-  font-family: Inter, sans-serif;
-
-  text-transform: lowercase;
-}
-
-.edge-meta-value {
-  color: var(--text);
-
-  text-align: right;
-
-  font-family: 'JetBrains Mono', monospace;
-
-  word-break: break-all;
-}
-
+  }
+  .edge-meta {
+    margin-top: 4px;
+    margin-left: 14px;
+  }
+  .edge-meta summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+    user-select: none;
+  }
+  .edge-meta summary::-webkit-details-marker {
+    display: none;
+  }
+  .edge-meta summary::before {
+    content: "▸ ";
+  }
+  .edge-meta[open] summary::before {
+    content: "▾ ";
+  }
+  .edge-meta-content {
+    margin-top: 6px;
+    border-left: 1px solid var(--line);
+    padding-left: 10px;
+  }
+  .edge-meta-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 2px 0;
+    font-size: 11px;
+  }
+  .edge-meta-key {
+    color: var(--muted);
+    font-family: Inter, sans-serif;
+    text-transform: lowercase;
+  }
+  .edge-meta-value {
+    color: var(--text);
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-all;
+  }
 </style>
 </head>
 <body>
@@ -419,6 +406,13 @@
     <span class="mark">◆</span>
     <h1>Entity Graph Explorer</h1>
   </div>
+  <div class="layout-switcher" id="layoutSwitcher">
+    <button class="layout-btn active" data-layout="cose"        title="Force-directed">Force</button>
+    <button class="layout-btn"        data-layout="breadthfirst" title="Hierarchical dạng vòng">Tree (BF)</button>
+    <button class="layout-btn"        data-layout="dagre"        title="Phân cấp hình cây thực tế">Dagre Tree</button>
+    <button class="layout-btn"        data-layout="concentric"   title="Concentric — node nhiều cạnh vào giữa">Concentric</button>
+  </div>
+
   <div class="conn">
     <span class="dot" id="apiDot"></span>
     <input id="apiBase" type="text" value="" placeholder="API base, vd: http://localhost:8000">
@@ -550,56 +544,76 @@ function normalizeList(raw){
   return [];
 }
 
-const FALLBACK_TYPES = ['users', 'hosts', 'ips', 'file_hashes', 'domains'];
+const typeSelect = document.getElementById('globalTypeSelect');
+const relSelect  = document.getElementById('globalRelSelect');
 
-async function loadFilterDropdowns(){
+async function loadFilterDropdowns() {
   try {
-    const resTypes = await fetch(apiUrl('/api/graph/all-types'));
-    let types = [];
-    if(resTypes.ok) {
-      types = normalizeList(unwrap(await resTypes.json()).data);
-    } else {
-      types = FALLBACK_TYPES.map(name => ({name}));
-    }
-    
-    const resRels = await fetch(apiUrl('/api/graph/all-relationships'));
-    let rels = [];
-    if(resRels.ok) {
-      rels = normalizeList(unwrap(await resRels.json()).data);
-    }
+    const currentType = typeSelect.value;
+    const currentRel  = relSelect.value;
+
+    let typeUrl = '/api/graph/all-types';
+    let relUrl  = '/api/graph/all-relationships';
+
+    if (currentRel)  typeUrl += `?relationship=${encodeURIComponent(currentRel)}`;
+    if (currentType) relUrl  += `?type=${encodeURIComponent(currentType)}`;
+
+    const [resTypes, resRels] = await Promise.all([
+      fetch(apiUrl(typeUrl)),
+      fetch(apiUrl(relUrl))
+    ]);
+
+    const types = resTypes.ok ? normalizeList(unwrap(await resTypes.json()).data) : [];
+    const rels  = resRels.ok  ? normalizeList(unwrap(await resRels.json()).data)  : [];
+
+    rebuildSelect(typeSelect, types, '— Tất cả thực thể —', currentType);
+    rebuildSelect(relSelect,  rels,  '— Tất cả quan hệ —',  currentRel);
 
     setConnState(true);
-    
-    const typeSelect = document.getElementById('globalTypeSelect');
-    const relSelect = document.getElementById('globalRelSelect');
-    
-    const currentType = typeSelect.value;
-    const currentRel = relSelect.value;
-    
-    typeSelect.innerHTML = '<option value="">— Tất cả thực thể —</option>';
-    types.forEach(t => { typeSelect.innerHTML += `<option value="${t.name}">${t.name}</option>`; });
-    
-    relSelect.innerHTML = '<option value="">— Tất cả quan hệ —</option>';
-    rels.forEach(r => { relSelect.innerHTML += `<option value="${r.name}">${r.name}</option>`; });
-    
-    typeSelect.value = currentType;
-    relSelect.value = currentRel;
-  } catch(err) {
+  } catch (err) {
     setConnState(false);
-    console.error("Lỗi lấy danh mục bộ lọc:", err);
+    console.error(err);
   }
 }
 
-/* ---------------------------------------------------------
-   Luồng Xử Lý Sự Kiện Khi Chọn Bộ Lọc -> Đổi Đồ Thị + Đổi List Chi Tiết
---------------------------------------------------------- */
-function handleFilterChange() {
-  runGraphExplore();      // 1. Lọc và cập nhật cấu trúc đồ thị ở giữa
-  loadDynamicEntities();  // 2. Tải và đồng bộ danh sách thực thể xuống vùng khoanh đỏ bên dưới
+function rebuildSelect(selectEl, items, placeholder, previousValue) {
+  const fragment = document.createDocumentFragment();
+
+  const defaultOpt = document.createElement('option');
+  defaultOpt.value = '';
+  defaultOpt.textContent = placeholder;
+  fragment.appendChild(defaultOpt);
+
+  items.forEach(({ name }) => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    fragment.appendChild(opt);
+  });
+
+  selectEl.replaceChildren(fragment);
+
+  if (previousValue && items.some(i => i.name === previousValue)) {
+    selectEl.value = previousValue;
+  }
 }
 
-document.getElementById('globalTypeSelect').addEventListener('change', handleFilterChange);
-document.getElementById('globalRelSelect').addEventListener('change', handleFilterChange);
+async function handleFilterChange() {
+  await Promise.all([
+    runGraphExplore(),     
+    loadDynamicEntities()  
+  ]);
+}
+
+typeSelect.addEventListener('change', async () => {
+  await loadFilterDropdowns();
+  handleFilterChange();   
+});
+
+relSelect.addEventListener('change', async () => {
+  await loadFilterDropdowns();
+  handleFilterChange();
+});
 
 function canEnrich(type) {
   return type === 'IP' || type === 'FileHash';
@@ -607,10 +621,7 @@ function canEnrich(type) {
 
 function shortLabel(text, max = 18) {
   text = String(text);
-
-  if (text.length <= max)
-    return text;
-
+  if (text.length <= max) return text;
   return text.slice(0, 8) + '...' + text.slice(-4);
 }
 
@@ -626,18 +637,18 @@ async function loadDynamicEntities() {
   
   let fetchUrl = '';
   let targetColorLabel = typeFilter || 'Entity';
-  url_fetch = `/api/graph/filter`
+  let url_fetch = `/api/graph/filter`;
   if (typeFilter) {
     title.textContent = `Thực thể thuộc [${typeFilter}]`;
-    url_fetch+=`?type=${encodeURIComponent(typeFilter)}`;
-    if (relFilter) url_fetch+=`&`
+    url_fetch += `?type=${encodeURIComponent(typeFilter)}`;
+    if (relFilter) url_fetch += `&`;
   }
   if (relFilter) {
     title.textContent = `Thực thể liên kết [${relFilter}]`;
-    if (!typeFilter) url_fetch+=`?`
-    url_fetch+=`relationship=${encodeURIComponent(relFilter)}`;
+    if (!typeFilter) url_fetch += `?`;
+    url_fetch += `relationship=${encodeURIComponent(relFilter)}`;
   }
-  fetchUrl = apiUrl(url_fetch)
+  fetchUrl = apiUrl(url_fetch);
   try {
     const res = await fetch(fetchUrl);
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -650,13 +661,12 @@ async function loadDynamicEntities() {
   }
 }
 
-/* Render danh sách thực thể dạng chip nguyên bản */
+/* Render danh sách thực thể dạng chip */
 function renderDynamicChips(entities, fallbackType) {
   const listArea = document.getElementById('dynamicListArea');
 
   if (!entities.length) {
-    listArea.innerHTML =
-      '<div class="info-note">Không có thực thể nào khớp với điều kiện lọc.</div>';
+    listArea.innerHTML = '<div class="info-note">Không có thực thể nào khớp với điều kiện lọc.</div>';
     return;
   }
 
@@ -670,20 +680,9 @@ function renderDynamicChips(entities, fallbackType) {
     const currentType = ent.type || fallbackType;
 
     chip.innerHTML = `
-      <span class="swatch"
-            style="background:${colorFor(currentType)}">
-      </span>
-
-      <span class="name"
-            title="${escapeHtml(ent.value)}">
-            ${escapeHtml(shortLabel(ent.value))}
-      </span>
-
-      ${
-        canEnrich(currentType)
-          ? `<button class="enrich-btn">⚡</button>`
-          : ''
-      }
+      <span class="swatch" style="background:${colorFor(currentType)}"></span>
+      <span class="name" title="${escapeHtml(ent.value)}">${escapeHtml(shortLabel(ent.value))}</span>
+      ${canEnrich(currentType) ? `<button class="enrich-btn">⚡</button>` : ''}
     `;
 
     chip.addEventListener('click', () => {
@@ -698,7 +697,6 @@ function renderDynamicChips(entities, fallbackType) {
         showDetail(foundNode.data());
         cy.animate({ center: { eles: foundNode } }, { duration: 300 });
       } else {
-        // Node không có trên graph → showDetail trực tiếp từ entity
         showDetail({
           id:         ent.id,
           type:       ent.type,
@@ -708,7 +706,6 @@ function renderDynamicChips(entities, fallbackType) {
     });
 
     const enrichBtn = chip.querySelector('.enrich-btn');
-
     if (enrichBtn) {
       enrichBtn.addEventListener('click', async e => {
         e.stopPropagation();
@@ -718,23 +715,15 @@ function renderDynamicChips(entities, fallbackType) {
 
         try {
           let url = '';
-
           if (currentType === 'IP') {
-            url =
-              `/api/enrichment/ips/${encodeURIComponent(ent.id)}`;
+            url = `/api/enrichment/ips/${encodeURIComponent(ent.id)}`;
           }
-
           if (currentType === 'FileHash') {
-            url =
-              `/api/enrichment/file-hash/${encodeURIComponent(ent.id)}`;
+            url = `/api/enrichment/file-hash/${encodeURIComponent(ent.id)}`;
           }
 
-          const res = await fetch(apiUrl(url), {
-            method: 'POST'
-          });
-
-          if (!res.ok)
-            throw new Error();
+          const res = await fetch(apiUrl(url), { method: 'POST' });
+          if (!res.ok) throw new Error();
 
           const json = await res.json();
 
@@ -752,8 +741,7 @@ function renderDynamicChips(entities, fallbackType) {
             showDetail(json.data);
             cy.animate({ center: { eles: node } }, { duration: 300 });
           }
-        }
-        catch {
+        } catch {
           enrichBtn.textContent = '✗';
           enrichBtn.classList.remove('loading');
         }
@@ -769,26 +757,15 @@ function renderDynamicChips(entities, fallbackType) {
 
 function normalizeEntityList(raw) {
   let arr = raw;
-
   if (arr && typeof arr === 'object' && !Array.isArray(arr)) {
     arr = arr.entities || arr.items || arr.data || Object.values(arr);
   }
-
   if (!Array.isArray(arr)) {
     arr = arr ? [arr] : [];
   }
-
   return arr.map(item => {
     const props = item.properties || {};
-
-    const value =
-      props.value ??
-      props.username ??
-      props.hostname ??
-      props.hash_value ??
-      props.name ??
-      item.id;
-
+    const value = props.value ?? props.username ?? props.hostname ?? props.hash_value ?? props.name ?? item.id;
     return {
       id: item.id,
       value: String(value),
@@ -797,6 +774,7 @@ function normalizeEntityList(raw) {
     };
   });
 }
+
 /* ---------------------------------------------------------
    Cấu hình Khởi Tạo Thư Viện Cytoscape Đồ Thị
 --------------------------------------------------------- */
@@ -861,6 +839,66 @@ cy.on('tap', 'node', (evt)=>{
   showDetail(evt.target.data());
 });
 
+/* ---------------------------------------------------------
+   Cấu Hình Layout & Switcher (Bổ sung Cấu hình Dagre mới)
+--------------------------------------------------------- */
+const LAYOUTS = {
+  cose: {
+    name: 'cose',
+    animate: true,
+    animationDuration: 400,
+    nodeRepulsion: 8000,
+    idealEdgeLength: 110
+  },
+  breadthfirst: {
+    name: 'breadthfirst',
+    directed: true,
+    animate: true,
+    animationDuration: 400,
+    spacingFactor: 1.5,
+    padding: 40,
+    avoidOverlap: true
+  },
+  dagre: {
+    name: 'dagre',
+    nodeSep: 50,       // Khoảng cách ngang giữa các node cùng cấp
+    edgeSep: 25,       // Khoảng cách giữa các đường nối cạnh
+    rankSep: 80,       // Khoảng cách dọc giữa các tầng phân cấp
+    rankDir: 'TB',     // Vẽ từ trên xuống dưới (Top to Bottom)
+    animate: true,
+    animationDuration: 400
+  },
+  concentric: {
+    name: 'concentric',
+    animate: true,
+    animationDuration: 400,
+    concentric: node => node.degree(),   
+    levelWidth: () => 2,
+    padding: 40,
+    avoidOverlap: true
+  }
+};
+
+let currentLayout = 'cose';
+
+document.getElementById('layoutSwitcher').addEventListener('click', e => {
+  const btn = e.target.closest('.layout-btn');
+  if (!btn) return;
+
+  const name = btn.dataset.layout;
+  if (name === currentLayout) return;
+
+  currentLayout = name;
+
+  document.querySelectorAll('.layout-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.layout === name)
+  );
+
+  if (cy.nodes().length) {
+    cy.layout({ ...LAYOUTS[name], fit: true }).run();
+  }
+});
+
 function toggleCanvasEmpty(show, text = "") {
   document.getElementById('canvasEmpty').style.display = show ? 'flex' : 'none';
   if(text) document.getElementById('emptyText').textContent = text;
@@ -923,10 +961,7 @@ function collectGraphElements(raw, fallbackType){
 function shortenLabel(text, max = 15) {
   if (!text) return "";
   text = String(text);
-
-  return text.length > max
-    ? text.slice(0, max) + "..."
-    : text;
+  return text.length > max ? text.slice(0, max) + "..." : text;
 }
 
 function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
@@ -935,10 +970,7 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
   cy.elements().remove();
 
   if (!nodes.length) {
-    toggleCanvasEmpty(
-      true,
-      "Không tìm thấy cấu trúc đồ thị phù hợp với điều kiện lọc."
-    );
+    toggleCanvasEmpty(true, "Không tìm thấy cấu trúc đồ thị phù hợp với điều kiện lọc.");
     return;
   }
 
@@ -947,15 +979,8 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
   const elements = [];
 
   nodes.forEach(n => {
-    const fullLabel =
-      n.properties?.value ||
-      n.properties?.name ||
-      n.id;
-
-    const isRoot =
-      rootValue &&
-      String(fullLabel).toLowerCase() ===
-      rootValue.toLowerCase();
+    const fullLabel = n.properties?.value || n.properties?.name || n.id;
+    const isRoot = rootValue && String(fullLabel).toLowerCase() === rootValue.toLowerCase();
 
     elements.push({
       group: "nodes",
@@ -972,8 +997,6 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
     });
   });
 
-  const nodeIds = new Set(nodes.map(n => n.id));
-
   edges.forEach((e, idx) => {
     elements.push({
       group: "edges",
@@ -989,24 +1012,9 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
   });
 
   cy.add(elements);
+  cy.layout(LAYOUTS[currentLayout]).run();
 
-  cy.layout({
-    name: "cose",
-    animate: true,
-    animationDuration: 400,
-    nodeRepulsion: 8000,
-    idealEdgeLength: 110
-  }).run();
-
-  const activeNode =
-    elements.find(
-      el => el.group === "nodes" &&
-      el.classes === "root"
-    ) ||
-    elements.find(
-      el => el.group === "nodes"
-    );
-
+  const activeNode = elements.find(el => el.group === "nodes" && el.classes === "root") || elements.find(el => el.group === "nodes");
   if (activeNode) {
     showDetail(activeNode.data);
   }
@@ -1068,9 +1076,7 @@ async function runHopSearch() {
     const json = await res.json();
     setConnState(true);
     drawGraph(unwrap(json).data, type, value);
-    const node = cy.nodes().filter(
-      n => n.data('id') === type+":"+value
-    );
+    const node = cy.nodes().filter(n => n.data('id') === type+":"+value);
 
     if (node.length) {
       cy.nodes().unselect();
@@ -1101,15 +1107,12 @@ function showDetail(data) {
   const type  = data.type || '—';
   const id    = data.id   || '—';
 
-  // ── Định nghĩa nhóm keys theo entity ──────────────────────────────────────
   const GROUPS = {
-    // entity cơ bản
     IP:            { base: ['value', 'evidence'],                                   enrich: { Network: ['asn','organization','network'], Geo: ['continent','country','country_name','timezone','latitude','longitude'] } },
     User:          { base: ['username','evidence'],                                 enrich: {} },
     Host:          { base: ['hostname','evidence'],                                 enrich: {} },
     Domain:        { base: ['name','evidence'],                                     enrich: { DNS: ['resolved_ip','mx_record','registrar','created_date','expires_date'] } },
     FileHash:      { base: ['hash_value','evidence'],                               enrich: { Malware: ['malware_name','malware_family','threat_label','detection_rate','file_name','file_size','file_type'] } },
-    // entity mới
     URL:           { base: ['url','evidence'],                                      enrich: { Meta: ['status_code','content_type','redirect_url','screenshot_url'], Threat: ['category','is_malicious','last_seen'] } },
     Process:       { base: ['process_name','parent_process','evidence'],            enrich: { Meta: ['pid','command_line','start_time','integrity_level'] } },
     CloudResource: { base: ['resource_id','instance_id','bucket_name','evidence'],  enrich: { Cloud: ['provider','region','account_id','resource_type','tags'] } },
@@ -1120,16 +1123,10 @@ function showDetail(data) {
   const group   = GROUPS[type] || { base: [], enrich: {} };
   const baseSet = new Set(group.base);
 
-  // Tất cả key đã được khai báo trong enrich
-  const enrichSet = new Set(
-    Object.values(group.enrich).flat()
-  );
-
   const baseProps  = {};
-  const enrichBuckets = {};   // { sectionLabel: { key: val } }
+  const enrichBuckets = {};   
   const otherProps = {};
 
-  // Khởi tạo bucket
   Object.keys(group.enrich).forEach(label => {
     enrichBuckets[label] = {};
   });
@@ -1139,7 +1136,6 @@ function showDetail(data) {
       baseProps[k] = v;
       return;
     }
-    // Tìm bucket phù hợp
     let placed = false;
     for (const [label, keys] of Object.entries(group.enrich)) {
       if (keys.includes(k)) {
@@ -1151,7 +1147,6 @@ function showDetail(data) {
     if (!placed) otherProps[k] = v;
   });
 
-  // ── Render helpers ─────────────────────────────────────────────────────────
   function renderRows(obj) {
     return Object.entries(obj).map(([k, v]) => {
       const display = formatValue(k, v);
@@ -1172,26 +1167,20 @@ function showDetail(data) {
     return `${labelHtml}<div class="prop-block">${rows}</div>`;
   }
 
-  // Format giá trị đặc biệt
   function formatValue(k, v) {
     const s = String(v);
-    // URL → clickable
     if (k === 'url' || k === 'redirect_url' || k === 'screenshot_url' || /^https?:\/\//.test(s)) {
-      return `<a href="${escapeHtml(s)}" target="_blank"
-                 style="color:var(--teal);word-break:break-all">${escapeHtml(s)}</a>`;
+      return `<a href="${escapeHtml(s)}" target="_blank" style="color:var(--teal);word-break:break-all">${escapeHtml(s)}</a>`;
     }
-    // CVSS score → badge màu
     if (k === 'cvss_score' || k === 'epss_score') {
       const n = parseFloat(v);
       const color = n >= 9 ? 'var(--rose)' : n >= 7 ? 'var(--amber)' : n >= 4 ? '#e0c46f' : 'var(--teal)';
       return `<span style="color:${color};font-weight:600">${escapeHtml(s)}</span>`;
     }
-    // is_malicious / boolean
     if (typeof v === 'boolean' || s === 'true' || s === 'false') {
       const bad = (v === true || s === 'true');
       return `<span style="color:${bad ? 'var(--rose)' : 'var(--teal)'}">${s}</span>`;
     }
-    // severity badge
     if (k === 'severity') {
       const color = { critical:'var(--rose)', high:'var(--amber)', medium:'#e0c46f', low:'var(--teal)' }[s.toLowerCase()] || 'var(--muted)';
       return `<span style="color:${color};font-weight:600;text-transform:uppercase">${escapeHtml(s)}</span>`;
@@ -1199,7 +1188,6 @@ function showDetail(data) {
     return escapeHtml(s);
   }
 
-  // ── Quan hệ từ graph ───────────────────────────────────────────────────────
   let relHtml = '';
   if (typeof cy !== 'undefined') {
     const node = cy.getElementById(id);
@@ -1213,31 +1201,18 @@ function showDetail(data) {
         const arrow     = isSource ? '→' : '←';
         const relType   = edge.data('label') || edge.data('type') || '—';
         
-        // Lấy tất cả thuộc tính bổ sung của Edge (ví dụ: first_seen, count, evidences...)
         const edgeProps = edge.data('rel_properties') || {};
         let edgePropsHtml = '';
         
         if (Object.keys(edgeProps).length > 0) {
           edgePropsHtml = `
             <details class="edge-meta">
-              <summary>
-                metadata (${Object.keys(edgeProps).length})
-              </summary>
-
+              <summary>metadata (${Object.keys(edgeProps).length})</summary>
               <div class="edge-meta-content">
                 ${Object.entries(edgeProps).map(([ek, ev]) => `
                   <div class="edge-meta-row">
-                    <span class="edge-meta-key">
-                      ${escapeHtml(ek)}
-                    </span>
-
-                    <span class="edge-meta-value">
-                      ${
-                        Array.isArray(ev)
-                          ? escapeHtml(ev.join(", "))
-                          : escapeHtml(String(ev))
-                      }
-                    </span>
+                    <span class="edge-meta-key">${escapeHtml(ek)}</span>
+                    <span class="edge-meta-value">${Array.isArray(ev) ? escapeHtml(ev.join(", ")) : escapeHtml(String(ev))}</span>
                   </div>
                 `).join("")}
               </div>
@@ -1267,27 +1242,16 @@ function showDetail(data) {
     }
   }
 
-  // ── Render enrich sections ─────────────────────────────────────────────────
   const hasEnrich = Object.values(enrichBuckets).some(b => Object.keys(b).length > 0);
-
   const enrichHtml = hasEnrich
-    ? `<div class="detail-label" style="color:var(--teal);margin-top:16px">◆ Enrichment</div>`
-      + Object.entries(enrichBuckets)
-          .map(([label, obj]) => renderSection(label, obj, true))
-          .join('')
+    ? `<div class="detail-label" style="color:var(--teal);margin-top:16px">◆ Enrichment</div>` + Object.entries(enrichBuckets).map(([label, obj]) => renderSection(label, obj, true)).join('')
     : '';
 
-  // ── Assemble ───────────────────────────────────────────────────────────────
   area.innerHTML = `
     <div class="detail-label">Type</div>
-    <span class="type-pill"
-          style="border-color:${colorFor(type)};color:${colorFor(type)}">
-      ${escapeHtml(type)}
-    </span>
-
+    <span class="type-pill" style="border-color:${colorFor(type)};color:${colorFor(type)}">${escapeHtml(type)}</span>
     <div class="detail-label">ID</div>
     <div class="detail-value">${escapeHtml(id)}</div>
-
     ${renderSection('Thông tin cơ bản', baseProps, false)}
     ${enrichHtml}
     ${renderSection('Khác', otherProps, false)}
@@ -1310,7 +1274,6 @@ document.getElementById('resetFiltersBtn').addEventListener('click', () => {
   handleFilterChange();
 });
 
-/* Khởi động hệ thống */
 function initAll() {
   loadFilterDropdowns(); 
   handleFilterChange();     

@@ -8,7 +8,7 @@ from models.responses import APIResponse
 import repositories.graph as repo
 from .entities import post_entity, check_existed_logs
 from logs.audit_log import write_audit_log
-from backend.database.constraints import REVERSED_TYPE, MAPPING_REALITIONSHIPS, MAPPING_ENTITIES_KEY
+from backend.database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY
 from .function import format_drawing
 
 #Services
@@ -62,10 +62,10 @@ async def explore_entites(type: str, relationship: str):
     record = await format_drawing(result)
     return record
 
-async def get_types():
-    result = await repo.get_types()
-    return [ele["label"] for ele in result]
+async def get_types(relationship:str):
+    result = await repo.get_types(relationship)
+    return [ele["label"][0] if isinstance(ele["label"], list) else ele["label"] for ele in result]
 
-async def get_relationships():
-    result = await repo.get_relationships()
-    return [ele["relationshipType"] for ele in result]
+async def get_relationships(type:str):
+    result = await repo.get_relationships(type)
+    return [ele["relationshipType"][0] if isinstance(ele["relationshipType"], list) else ele["relationshipType"]  for ele in result]
