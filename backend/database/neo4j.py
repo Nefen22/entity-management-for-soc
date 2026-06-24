@@ -9,7 +9,7 @@ PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASSWORD))
 
-async def indexing_for_entities():
+async def indexing_for_entities(driver):
     index = 0
     async with driver.session() as session:
         task = []
@@ -21,7 +21,7 @@ async def indexing_for_entities():
         for t in task:
             await t
 
-async def drop_all_indexes():
+async def drop_all_indexes(driver):
     async with driver.session() as session:
         result = await session.run("""
             SHOW INDEXES

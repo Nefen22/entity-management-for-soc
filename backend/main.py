@@ -11,8 +11,8 @@ from database.neo4j import driver, indexing_for_entities, drop_all_indexes
 async def lifespan(app: FastAPI):
 
     Path("/app/backend/logs/audit_log.json").write_text("")
-    await drop_all_indexes()
-    await indexing_for_entities()
+    await drop_all_indexes(driver)
+    await indexing_for_entities(driver)
 
     yield
 

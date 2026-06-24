@@ -13,12 +13,16 @@ class AlertParser(BaseParser):
     def from_event(cls, event: dict):
         message = event.get("message")
         lst = []
-        for k,v in ALL_PATTERNS:
-            list(map(lambda x: lst.extend(x), v))
-        nodes = [list_vertex(k, lst) for k, lst in ALL_PATTERNS]
+        nodes= []
+        for k,v in ALL_PATTERNS.items():
+            sub_lst = []
+            list(map(lambda x: sub_lst.extend(x.findall(message)), v))
+            print(sub_lst)
+            nodes += list_vertex(k, sub_lst)
+            lst+=sub_lst
         edges = [{"source": s_node,
                    "target": t_node,
-                   "type": MAPPING_RELATIONSHIPS[s_node.type][t_node.type] if t_node.type in MAPPING_RELATIONSHIPS.keys() else ""}
+                   "type": MAPPING_RELATIONSHIPS[s_node.type][t_node.type] if s_node.type in MAPPING_RELATIONSHIPS.keys() and t_node.type in MAPPING_RELATIONSHIPS[s_node.type] else ""}
                    for s_node in nodes for t_node in nodes]
         edges=[edge for edge in edges if edge["type"] != ""]
         return cls(
