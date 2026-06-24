@@ -2,6 +2,8 @@ from fastapi import APIRouter, HTTPException
 from backend.database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY
 from neo4j.time import DateTime
 from datetime import datetime
+import time
+
 #Funtion 
 
 async def format_drawing(lst: list):
@@ -13,45 +15,55 @@ async def format_drawing(lst: list):
     
     nodes = []
     edges = []
-    check_nodes = []
-    check_edges = []
+    check_nodes = {}
+    check_edges = {}
     for ele in lst:
         record = format_neo4j_data(ele)
-        for index in range(len(record["nodes"])):
-            node = record["nodes"][index]
-            n_type = record["node_labels"][index][0]
-            key = MAPPING_ENTITIES_KEY[n_type]
-            node_name =  n_type + ":" + node[key]
-            if node_name in check_nodes:
-                continue
-            check_nodes.append(node_name)
-            nodes.append({
-                "id":node_name,
-                "type":n_type,
-                "properties": node
-            })
-        
         for index in range(len(record["edge_types"])):
             source = record["nodes"][index] 
             source_label = record["node_labels"][index][0]
             source_key = MAPPING_ENTITIES_KEY[source_label]
             source_name = source_label + ":" + source[source_key]
+            
             target = record["nodes"][index + 1]
             target_label = record["node_labels"][index + 1][0]
             target_key = MAPPING_ENTITIES_KEY[target_label]
             target_name = target_label + ":" + target[target_key]
-            if target_label not in MAPPING_RELATIONSHIPS[source_label].keys():
-                source_name, target_name = target_name, source_name
-            if (source_name, target_name) in check_edges:
-                continue
 
-            check_edges.append((source_name, target_name))
-            edges.append({
-                "source": source_name,
-                "target": target_name,
-                "type": record["edge_types"][index],
-                "rel_properties": record["edges_properties"][index]
-            })
+            try:
+                check_nodes[source_name]
+            except:
+                check_nodes[source_name] = True
+                nodes.append({
+                    "id":source_name,
+                    "type":source_label,
+                    "properties": source
+                })
+            try:
+                check_nodes[target_name]
+            except:
+                check_nodes[target_name] = True
+                nodes.append({
+                    "id":target_name,
+                    "type":target_label,
+                    "properties": target
+                })
+
+            try:
+                MAPPING_RELATIONSHIPS[(source_label, target_label)]
+            except:
+                source_name, target_name = target_name,  source_name
+            try:
+                check_edges[(source_name, target_name)]
+                continue
+            except:
+                check_edges[(source_name, target_name)]=True
+                edges.append({
+                    "source": source_name,
+                    "target": target_name,
+                    "type": record["edge_types"][index],
+                    "rel_properties": record["edges_properties"][index]
+                })
     return {
         "nodes": nodes,
         "edges": edges

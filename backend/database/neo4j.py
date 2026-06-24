@@ -2,6 +2,8 @@ from neo4j import AsyncGraphDatabase
 import os
 from functools import reduce
 from .constraints import MAPPING_ENTITIES_KEY_CLEAN
+from fastapi import FastAPI, HTTPException
+from pathlib import Path
 
 URI = os.getenv("NEO4J_URI")
 USER = os.getenv("NEO4J_USER")
@@ -9,7 +11,7 @@ PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASSWORD))
 
-async def indexing_for_entities(driver):
+async def indexing_for_entities():
     index = 0
     async with driver.session() as session:
         task = []
@@ -21,7 +23,7 @@ async def indexing_for_entities(driver):
         for t in task:
             await t
 
-async def drop_all_indexes(driver):
+async def drop_all_indexes():
     async with driver.session() as session:
         result = await session.run("""
             SHOW INDEXES

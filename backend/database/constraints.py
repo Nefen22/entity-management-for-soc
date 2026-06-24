@@ -85,63 +85,41 @@ MAPPING_ENTITY = {
 }
 
 MAPPING_RELATIONSHIPS = {
-
-    # Identity
-    "User": {
-        "Host":          "LOGGED_IN",
-        "CloudResource": "ACCESSED",
-        "Email":         "OWNS",
-    },
-
-    # Network
-    "Host": {
-        "IP":     "CONNECTED_TO",
-        "Domain": "CONNECTED_TO",
-        "URL":    "REQUESTED",
-    },
-
-    "Domain": {
-        "IP":  "RESOLVES_TO",
-        "URL": "HOSTS",
-    },
-
-    # Execution
-    "FileHash": {
-        "Host": "EXECUTED_ON",
-    },
-
-    "Process": {
-        "Host":     "RUNS_ON",
-        "User":     "EXECUTED_BY",
-        "FileHash": "LOADED",
-        "IP":       "CONNECTED_TO",
-        "URL":      "REQUESTED",
-        "Domain":   "RESOLVED",
-    },
-
-    # Cloud
-    "CloudResource": {
-        "Host": "RUNS_ON",
-        "IP":   "ASSIGNED_TO",
-    },
-
+    # existing
+    ("User",    "Host"):    "LOGGED_IN",
+    ("Host",    "IP"):      "CONNECTED_TO",
+    ("Host",    "Domain"):  "CONNECTED_TO",
+    ("FileHash","Host"):    "EXECUTED_ON",      # fixed typo EXCUTED → EXECUTED
+    # URL
+    ("Host",    "URL"):     "REQUESTED",
+    ("Domain",  "URL"):     "HOSTS",
+    ("IP",      "URL"):     "RESOLVES_TO",
+    ("URL",     "Domain"):  "BELONGS_TO",
+    # Process
+    ("Process", "Host"):    "RUNS_ON",
+    ("Process", "User"):    "EXECUTED_BY",
+    ("Process", "FileHash"):"LOADED",
+    ("Process", "IP"):      "CONNECTED_TO",
+    ("Process", "URL"):     "REQUESTED",
+    ("Process", "Domain"):  "RESOLVED",
+    # CloudResource
+    ("CloudResource", "IP"):   "ASSIGNED_TO",
+    ("CloudResource", "User"): "OWNED_BY",
+    ("CloudResource", "Host"): "RUNS_ON",
+    ("User", "CloudResource"): "ACCESSED",
     # Email
-    "Email": {
-        "Domain":   "HOSTED_BY",
-        "URL":      "CONTAINS",
-        "FileHash": "ATTACHED",
-    },
-
-    # Vulnerability
-    "CVE": {
-        "Host":          "AFFECTS",
-        "Process":       "AFFECTS",
-        "CloudResource": "AFFECTS",
-        "FileHash":      "EXPLOITS",
-    },
-    "IP": {},
-    "URL": {},
+    ("Email",   "User"):    "BELONGS_TO",
+    ("Email",   "Domain"):  "HOSTED_BY",
+    ("User",    "Email"):   "SENT",
+    ("Email",   "URL"):     "CONTAINS",
+    ("Email",   "FileHash"):"ATTACHED",
+    # CVE
+    ("CVE",     "Host"):        "AFFECTS",
+    ("CVE",     "Process"):     "AFFECTS",
+    ("CVE",     "CloudResource"):"AFFECTS",
+    ("CVE",     "FileHash"):    "EXPLOITS",
 }
+
 
 SIEM_INCLUDE = {
     # existing

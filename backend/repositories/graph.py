@@ -41,9 +41,9 @@ async def get_relationship_n_hop(type: str, value: str , hop: int):
         else:
             query="""MATCH p=(from: {type} {{{key}: $value}})-[*1..{hop}]-(to)""".format(key=MAPPING_ENTITIES_KEY[type], type=MAPPING_ENTITIES_TYPE[type], hop=hop)
         query+="""UNWIND nodes(p) AS n
-                    UNWIND relationships(p) AS r
-                    RETURN nodes(p) AS nodes,
-                            relationships(p) AS edges,
+                    UNWIND relationships(p) AS rel
+                    RETURN DISTINCT nodes(p) AS nodes,
+                            rel AS edges,
                             [rel in relationships(p) | type(rel)] AS edge_types,
                             [rel in relationships(p) | properties(rel)] AS edges_properties,
                             [node in nodes(p) | labels(node)] AS node_labels"""
@@ -66,7 +66,9 @@ async def explore_entites(type: str, relationship: str):
             query += """->(to)"""
         else:
             query += """-(to)"""
-        query+="""RETURN DISTINCT nodes(p) AS nodes,
+        query+="""UNWIND nodes(p) AS n
+                    UNWIND relationships(p) AS rel
+                    RETURN DISTINCT nodes(p) AS nodes,
                     [rel in relationships(p) | type(rel)] AS edge_types,
                     [rel in relationships(p) | properties(rel)] AS edges_properties,
                     [node in nodes(p) | labels(node)] AS node_labels"""

@@ -21,7 +21,7 @@ class BaseParser(BaseModel):
         nodes=[node for node in nodes if node.value != None]
         edges = [{"source": s_node,
                    "target": t_node,
-                   "type": MAPPING_RELATIONSHIPS[s_node.type][t_node.type] if s_node.type in MAPPING_RELATIONSHIPS.keys() and t_node.type in MAPPING_RELATIONSHIPS[s_node.type].keys() else ""}
+                   "type": MAPPING_RELATIONSHIPS[(s_node.type, t_node.type)] if (s_node.type, t_node.type) in MAPPING_RELATIONSHIPS.keys() else ""}
                    for s_node in nodes for t_node in nodes]
         edges=[edge for edge in edges if edge["type"] != ""]
         return nodes, edges

@@ -5,16 +5,30 @@ from api.enrichment import router as enrichment_router
 from api.graph import router as graph_router
 from contextlib import asynccontextmanager
 from pathlib import Path
-from database.neo4j import driver, indexing_for_entities, drop_all_indexes
+from database.neo4j import indexing_for_entities, driver
+import asyncio
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
     Path("/app/backend/logs/audit_log.json").write_text("")
-    await drop_all_indexes(driver)
-    await indexing_for_entities(driver)
+    await wait_for_neo4j()
+    await indexing_for_entities()
 
     yield
+
+async def wait_for_neo4j(retries: int = 10, delay: float = 3.0):
+    from neo4j.exceptions import ServiceUnavailable
+    for attempt in range(retries):
+        try:
+            async with driver.session() as session:
+                await session.run("RETURN 1")
+            print("Neo4j connected")
+            return
+        except ServiceUnavailable:
+            print(f"Neo4j not ready, retry {attempt + 1}/{retries}...")
+            await asyncio.sleep(delay)
+    raise RuntimeError("Neo4j unavailable after retries")
 
 app = FastAPI(lifespan=lifespan)
 
