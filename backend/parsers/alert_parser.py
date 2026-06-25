@@ -17,7 +17,6 @@ class AlertParser(BaseParser):
         for k,v in ALL_PATTERNS.items():
             sub_lst = []
             list(map(lambda x: sub_lst.extend(x.findall(message)), v))
-            print(sub_lst)
             nodes += list_vertex(k, sub_lst)
             lst+=sub_lst
         edges = [{"source": s_node,
