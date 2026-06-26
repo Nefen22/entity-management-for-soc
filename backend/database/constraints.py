@@ -160,6 +160,12 @@ EDR_INCLUDE = {
     "cves":        ["cve_id"],
 }
 
+TENANT_DATABASE = {
+    "acme": "Tenant_Acme",
+    "google": "Tenant_Google",
+    "internal": "Tenant_Internal"
+}
+
 
 # ── IP ───────────────────────────────────────────────────────────────────────
 IPV4 = re.compile(

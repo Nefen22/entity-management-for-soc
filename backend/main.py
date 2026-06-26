@@ -1,8 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from api.entities import router as entites_router
-from api.enrichment import router as enrichment_router
-from api.graph import router as graph_router
+from api.tenants import router as tenants_router
 from contextlib import asynccontextmanager
 from pathlib import Path
 from database.neo4j import indexing_for_entities, driver
@@ -40,11 +38,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-app.include_router(entites_router, prefix = "/api/entities", tags = ["Entities"])
-
-app.include_router(enrichment_router, prefix = "/api/enrichment", tags = ["Enrichment"])
-
-app.include_router(graph_router, prefix = "/api/graph", tags = ["Graph"])
+app.include_router(tenants_router)
 
 @app.get("/")
 async def root():

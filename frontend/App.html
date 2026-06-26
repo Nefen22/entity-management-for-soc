@@ -415,7 +415,7 @@
 
   <div class="conn">
     <span class="dot" id="apiDot"></span>
-    <input id="apiBase" type="text" value="" placeholder="API base, vd: http://localhost:8000">
+    <select id="tenantSelect"></select>
   </div>
 </header>
 
@@ -480,19 +480,10 @@
 /* ---------------------------------------------------------
    Cấu hình Base URL API và Đồng bộ Trạng thái
 --------------------------------------------------------- */
-const apiBaseInput = document.getElementById('apiBase');
-apiBaseInput.value = localStorage.getItem('eg_api_base') || 'http://localhost:8000';
-apiBaseInput.addEventListener('change', () => {
-  localStorage.setItem('eg_api_base', apiBaseInput.value.trim());
-  initAll();
-});
+const API_BASE = "http://localhost:8000";
 
-function apiUrl(path){
-  const base = apiBaseInput.value.trim().replace(/\/$/, '');
-  if(!/^https?:\/\//i.test(base)){
-    throw new Error('API base phải bắt đầu bằng http:// hoặc https://');
-  }
-  return base + path;
+function apiUrl(path) {
+  return `${API_BASE}/api/tenants/${currentTenant}${path}`;
 }
 
 function unwrap(raw){
@@ -507,6 +498,56 @@ function setConnState(ok){
   apiDot.classList.remove('ok','bad');
   apiDot.classList.add(ok ? 'ok' : 'bad');
 }
+
+const tenantSelect = document.getElementById("tenantSelect");
+
+let currentTenant =
+  localStorage.getItem("eg_tenant") || "";
+
+async function loadTenants() {
+  try {
+    const res = await fetch("http://localhost:8000/api/tenants");
+
+    const tenants = await res.json();
+
+    tenantSelect.innerHTML = "";
+
+    tenants.forEach(t => {
+      tenantSelect.innerHTML += `
+        <option value="${t}">${t}</option>
+      `;
+    });
+
+    if (
+      currentTenant &&
+      tenants.includes(currentTenant)
+    ) {
+      tenantSelect.value = currentTenant;
+    } else {
+      currentTenant = tenants[0];
+      tenantSelect.value = currentTenant;
+    }
+
+    localStorage.setItem(
+      "eg_tenant",
+      currentTenant
+    );
+
+  } catch (err) {
+    console.error("Load tenant failed", err);
+  }
+}
+
+tenantSelect.addEventListener("change", () => {
+  currentTenant = tenantSelect.value;
+
+  localStorage.setItem(
+    "eg_tenant",
+    currentTenant
+  );
+
+  initAll();
+});
 
 /* ---------------------------------------------------------
    Bảng Mã Màu Node Tự Động Theo Loại
@@ -558,8 +599,8 @@ async function loadFilterDropdowns() {
     const currentType = typeSelect.value;
     const currentRel  = relSelect.value;
 
-    let typeUrl = '/api/graph/all-types';
-    let relUrl  = '/api/graph/all-relationships';
+    let typeUrl = '/graphs/all-types';
+    let relUrl  = '/graphs/all-relationships';
 
     if (currentRel)  typeUrl += `?relationship=${encodeURIComponent(currentRel)}`;
     if (currentType) relUrl  += `?type=${encodeURIComponent(currentType)}`;
@@ -643,7 +684,7 @@ async function loadDynamicEntities() {
   
   let fetchUrl = '';
   let targetColorLabel = typeFilter || 'Entity';
-  let url_fetch = `/api/graph/filter`;
+  let url_fetch = `/graphs/filter`;
   if (typeFilter) {
     title.textContent = `Thực thể thuộc [${typeFilter}]`;
     url_fetch += `?type=${encodeURIComponent(typeFilter)}`;
@@ -722,10 +763,10 @@ function renderDynamicChips(entities, fallbackType) {
         try {
           let url = '';
           if (currentType === 'IP') {
-            url = `/api/enrichment/ips/${encodeURIComponent(ent.id)}`;
+            url = `/enrichment/ips/${encodeURIComponent(ent.id)}`;
           }
           if (currentType === 'FileHash') {
-            url = `/api/enrichment/file-hash/${encodeURIComponent(ent.id)}`;
+            url = `/enrichment/file-hash/${encodeURIComponent(ent.id)}`;
           }
 
           const res = await fetch(apiUrl(url), { method: 'POST' });
@@ -1057,7 +1098,7 @@ async function runGraphExplore() {
   const queryString = queryParts.length ? '?' + queryParts.join('&') : '';
   
   try {
-    const res = await fetch(apiUrl(`/api/graph/explore${queryString}`));
+    const res = await fetch(apiUrl(`/graphs/explore${queryString}`));
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     setConnState(true);
@@ -1088,7 +1129,7 @@ async function runHopSearch() {
   btn.disabled = true;
   btn.textContent = 'Đang truy vấn…';
   try {
-    const res = await fetch(apiUrl(`/api/graph/${encodeURIComponent(type)}/${encodeURIComponent(value)}/${encodeURIComponent(hop)}`));
+    const res = await fetch(apiUrl(`/graphs/${encodeURIComponent(type)}/${encodeURIComponent(value)}/${encodeURIComponent(hop)}`));
     if(res.status === 404){
       toggleCanvasEmpty(true, `Không tìm thấy liên kết Hop nào quanh thực thể: ${value}`);
       return;
@@ -1299,6 +1340,13 @@ function initAll() {
   loadFilterDropdowns(); 
   handleFilterChange();     
 }
+
+async function initApp() {
+  await loadTenants();
+  initAll();
+}
+
+initApp();
 initAll();
 window.addEventListener('resize', ()=>cy.resize());
 </script>

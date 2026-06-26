@@ -1,8 +1,8 @@
 from neo4j import AsyncGraphDatabase
 import os
 from functools import reduce
-from .constraints import MAPPING_ENTITIES_KEY_CLEAN
-from fastapi import FastAPI, HTTPException
+from .constraints import MAPPING_ENTITIES_KEY_CLEAN, TENANT_DATABASE
+from fastapi import FastAPI, HTTPException, status
 from pathlib import Path
 
 URI = os.getenv("NEO4J_URI")
@@ -37,3 +37,10 @@ async def drop_all_indexes():
             await session.run(
                 f"DROP INDEX `{record['name']}`"
             )
+
+def check_tenant(tenant: str):
+    try:
+        TENANT_DATABASE[tenant]
+    except:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Tenant not found!")

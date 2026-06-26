@@ -1,19 +1,16 @@
 from database.neo4j import driver
 from parsers.edge_parser import EdgePaser
-from backend.database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, MAPPING_ENTITY
+from backend.database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, TENANT_DATABASE
 
-from cachetools import TTLCache
 
-graph_cache = TTLCache(maxsize=1000, ttl=3600)
-
-async def post_relationship(edge: EdgePaser):
+async def post_relationship(tenant: str, edge: EdgePaser):
     async with driver.session() as session:
         src = edge.src
         dest = edge.dest
         connect_type = edge.connect_type
         evidence = edge.evidence
-        query="""MERGE (from: {from_label} {{{f_key}: $from_value}})
-                MERGE (to: {to_label} {{{t_key}: $to_value}})
+        query="""MERGE (from: {tenant}:{from_label} {{{f_key}: $from_value}})
+                MERGE (to: {tenant}:{to_label} {{{t_key}: $to_value}})
                 MERGE (from)-[r:{connect_type}]->(to)
                 ON CREATE SET r.first_seen = datetime(),
                                 r.last_seen = datetime(),
@@ -30,16 +27,16 @@ async def post_relationship(edge: EdgePaser):
                                 END
                 """.format(from_label=src.type, f_key=MAPPING_ENTITIES_KEY[src.type], 
                         to_label=dest.type, t_key=MAPPING_ENTITIES_KEY[dest.type],
-                        connect_type=connect_type)
-        await session.run(query, from_value=src.value, to_value=dest.value, evidence=evidence)
+                        connect_type=connect_type, tenant = TENANT_DATABASE[tenant])
+        await session.run(query,from_value=src.value, to_value=dest.value, evidence=evidence)
 
-async def get_relationship_n_hop(type: str, value: str , hop: int):
+async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
         if value == "all":
-            query="""MATCH p=(entity: {type})-[*1..{hop}]-(to)""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop)
+            query="""MATCH p=(entity: {tenant}:{type})-[*1..{hop}]-(to)""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop, tenant=TENANT_DATABASE[tenant])
         else:
-            query="""MATCH p=(from: {type} {{{key}: $value}})-[*1..{hop}]-(to)""".format(key=MAPPING_ENTITIES_KEY[type], type=MAPPING_ENTITIES_TYPE[type], hop=hop)
+            query="""MATCH p=(from: {tenant}:{type} {{{key}: $value}})-[*1..{hop}]-(to:{tenant})""".format(key=MAPPING_ENTITIES_KEY[type], type=MAPPING_ENTITIES_TYPE[type], hop=hop, tenant=TENANT_DATABASE[tenant])
         query+="""UNWIND nodes(p) AS n
                     UNWIND relationships(p) AS rel
                     RETURN DISTINCT nodes(p) AS nodes,
@@ -50,12 +47,12 @@ async def get_relationship_n_hop(type: str, value: str , hop: int):
         result = await session.run(query, value=value)
         return await result.data()
     
-async def explore_entites(type: str, relationship: str):
+async def explore_entites(tenant: str, type: str, relationship: str):
     async with driver.session() as session:
         if type is None:
-            query = "MATCH p=(entity)"
+            query = "MATCH p=(entity: {tenant})".format(tenant=TENANT_DATABASE[tenant])
         else:
-            query = "MATCH p=(entity: {type})".format(type=MAPPING_ENTITIES_TYPE[type])
+            query = "MATCH p=(entity: {tenant}:{type})".format(tenant=TENANT_DATABASE[tenant],type=MAPPING_ENTITIES_TYPE[type])
         
         if relationship is not None:
             query += """-[r:{relationship}]""".format(relationship=relationship)
@@ -63,9 +60,9 @@ async def explore_entites(type: str, relationship: str):
             query += """-[r]"""
 
         if type is None:
-            query += """->(to)"""
+            query += """->(to:{tenant})""".format(tenant=TENANT_DATABASE[tenant])
         else:
-            query += """-(to)"""
+            query += """-(to:{tenant})""".format(tenant=TENANT_DATABASE[tenant])
         query+="""UNWIND nodes(p) AS n
                     UNWIND relationships(p) AS rel
                     RETURN DISTINCT nodes(p) AS nodes,
@@ -77,21 +74,21 @@ async def explore_entites(type: str, relationship: str):
         sub = [{k: v for k, v in ele.items() if k != "r" } for ele in record]
         return record
     
-async def get_entities_follow(type: str, relationship: str):
-    result = await explore_entites(type, relationship)
+async def get_entities_follow(tenant: str, type: str, relationship: str):
+    result = await explore_entites(tenant, type, relationship)
     return result
 
-async def get_types(relationship:str):
+async def get_types(tenant: str, relationship:str):
     async with driver.session() as session:
         rel = f"-[r{relationship}]-(to)" if relationship else None
-        query = """MATCH (n) {relationship}
-                RETURN DISTINCT labels(n) AS label""".format(relationship=rel if rel else "")
+        query = """MATCH (n:{tenant}) {relationship}
+                RETURN DISTINCT labels(n) AS label""".format(tenant=TENANT_DATABASE[tenant] ,relationship=rel if rel else "")
         result = await session.run(query)
         return await result.data()
 
-async def get_relationships(type:str):
+async def get_relationships(tenant: str, type:str):
     async with driver.session() as session:
-        query = """MATCH (n{type})-[r]-(t)
-                RETURN DISTINCT type(r) AS relationshipType""".format(type=":"+type if type else "")
+        query = """MATCH (n:{tenant}{type})-[r]-(t:{tenant})
+                RETURN DISTINCT type(r) AS relationshipType""".format(tenant=TENANT_DATABASE[tenant], type=":"+type if type else "")
         result = await session.run(query)
         return await result.data()

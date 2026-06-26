@@ -5,11 +5,11 @@ from models.responses import APIResponse
 router = APIRouter()
 
 @router.post("/ips/{value}")
-async def enrichment_ip(value:str):
-    data = await services.enrichment_ip(value)
+async def enrichment_ip(tenant: str, value:str):
+    data = await services.enrichment_ip(tenant=tenant,value=value)
     return APIResponse(message=f"Enrichment {value} completed!", data=data)
 
 @router.post("/file-hash/{value}")
-async def enrichment_file_hash(value:str):
-    data = await services.enrichment_file_hash(value)
+async def enrichment_file_hash(tenant: str,value:str):
+    data = await services.enrichment_file_hash(tenant=tenant,value=value)
     return APIResponse(message=f"Enrichment {value} completed!", data=data)

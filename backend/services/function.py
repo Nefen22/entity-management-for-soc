@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY
+from backend.database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY, TENANT_DATABASE
 from neo4j.time import DateTime
 from datetime import datetime
 import time
@@ -21,12 +21,14 @@ async def format_drawing(lst: list):
         record = format_neo4j_data(ele)
         for index in range(len(record["edge_types"])):
             source = record["nodes"][index] 
-            source_label = record["node_labels"][index][0]
+            s_labels=[label for label in record["node_labels"][index] if label not in TENANT_DATABASE.values()]
+            source_label = s_labels[0]
             source_key = MAPPING_ENTITIES_KEY[source_label]
             source_name = source_label + ":" + source[source_key]
             
             target = record["nodes"][index + 1]
-            target_label = record["node_labels"][index + 1][0]
+            t_labels=[label for label in record["node_labels"][index+1] if label not in TENANT_DATABASE.values()]
+            target_label = t_labels[0]
             target_key = MAPPING_ENTITIES_KEY[target_label]
             target_name = target_label + ":" + target[target_key]
 
