@@ -71,17 +71,30 @@
     font-size:11px;
     color:var(--muted);
   }
-  .conn input{
-    background:var(--panel-2);
+  /* -- Đã thay đổi: select tenant đẹp hơn -- */
+  .conn select#tenantSelect {
+    appearance: none; /* Ẩn mũi tên mặc định */
+    background: var(--panel-2) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%237c8aa0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>') no-repeat right 10px center;
     border:1px solid var(--line);
     color:var(--text);
     font-family:'IBM Plex Mono',monospace;
     font-size:11px;
-    padding:6px 8px;
+    padding: 6px 30px 6px 8px; /* Tăng padding right cho mũi tên */
     border-radius:var(--radius);
-    width:230px;
+    width:auto; /* Để chiều rộng tự động dựa trên nội dung */
+    min-width: 120px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
   }
-  .conn input:focus{outline:1px solid var(--teal);}
+  .conn select#tenantSelect:hover {
+      border-color: var(--muted);
+  }
+  .conn select#tenantSelect:focus{
+      outline:none;
+      border-color:var(--teal);
+      box-shadow: 0 0 0 1px var(--teal);
+  }
+  
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
   .dot.ok{background:var(--teal);box-shadow:0 0 6px var(--teal);}
   .dot.bad{background:var(--rose);box-shadow:0 0 6px var(--rose);}
@@ -128,11 +141,14 @@
     background:var(--panel);
     border-right:1px solid var(--line);
     overflow-y:auto;
-    padding:16px;
+    padding:166px; /* Sửa lỗi padding, hình như bạn muốn là 16px */
     display:flex;
     flex-direction:column;
     gap:16px;
   }
+  /* -- Khôi phục padding gốc -- */
+  aside { padding: 16px; }
+
   aside.right{border-right:none;border-left:1px solid var(--line);}
 
   .eyebrow{
@@ -763,10 +779,10 @@ function renderDynamicChips(entities, fallbackType) {
         try {
           let url = '';
           if (currentType === 'IP') {
-            url = `/enrichment/ips/${encodeURIComponent(ent.id)}`;
+            url = `/enrichments/ips/${encodeURIComponent(ent.id)}`;
           }
           if (currentType === 'FileHash') {
-            url = `/enrichment/file-hash/${encodeURIComponent(ent.id)}`;
+            url = `/enrichments/file-hash/${encodeURIComponent(ent.id)}`;
           }
 
           const res = await fetch(apiUrl(url), { method: 'POST' });

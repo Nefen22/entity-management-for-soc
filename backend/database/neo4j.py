@@ -38,9 +38,3 @@ async def drop_all_indexes():
                 f"DROP INDEX `{record['name']}`"
             )
 
-def check_tenant(tenant: str):
-    try:
-        TENANT_DATABASE[tenant]
-    except:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Tenant not found!")

@@ -6,7 +6,9 @@ from backend.database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE
 from .function import format_drawing
 
 async def enrichment_ip(tenant: str, value:str):
-    data = await repo.enrichment_ip(value)
+    data = await repo.enrichment_ip(tenant, value)
+    if not data:
+        return None
     record = data.data()
     write_audit_log(
             action="UPDATE",
@@ -14,7 +16,7 @@ async def enrichment_ip(tenant: str, value:str):
             entity_id=value,
             change = record
         )
-    labels=[label for label in record["label"] if label not in TENANT_DATABASE.values]
+    labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
     return {
         "id": labels[0]+":"+record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
         "type": labels[0],
@@ -22,7 +24,9 @@ async def enrichment_ip(tenant: str, value:str):
     }
 
 async def enrichment_file_hash(tenant: str, value:str):
-    data = await repo.enrichment_file_hash(value)
+    data = await repo.enrichment_file_hash(tenant, value)
+    if not data:
+        return None
     record = data.data()
     write_audit_log(
             action="UPDATE",
@@ -30,7 +34,7 @@ async def enrichment_file_hash(tenant: str, value:str):
             entity_id=value,
             change = record
         )
-    labels=[label for label in record["label"] if label not in TENANT_DATABASE.values]
+    labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
     return {
         "id": labels[0]+":"+record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
         "type": labels[0],
