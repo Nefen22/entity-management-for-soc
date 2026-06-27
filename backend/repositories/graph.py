@@ -35,7 +35,7 @@ async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
         query="""MATCH p=(start: {tenant} {type} {key_value})
                     CALL apoc.path.expandConfig(start, {{
                         minLevel: 1,
-                        maxLevel: 5,           // Số hop tối đa
+                        maxLevel: {hop},           // Số hop tối đa
                         uniqueness: "RELATIONSHIP_GLOBAL" // Thuật toán tối ưu lọc trùng cạnh ngay khi duyệt
                     }}) YIELD path
                     UNWIND relationships(path) AS rel

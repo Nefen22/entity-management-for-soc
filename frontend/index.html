@@ -556,13 +556,9 @@ async function loadTenants() {
 
 tenantSelect.addEventListener("change", () => {
   currentTenant = tenantSelect.value;
-
-  localStorage.setItem(
-    "eg_tenant",
-    currentTenant
-  );
-
-  initAll();
+  localStorage.setItem("eg_tenant", currentTenant);
+  _graphInitialized = false;  // ← reset flag
+  initAll();                  // ← initAll → runGraphExplore → _graphInitialized=false → drawGraph
 });
 
 /* ---------------------------------------------------------
@@ -1042,10 +1038,15 @@ function shortenLabel(text, max = 15) {
   return text.length > max ? text.slice(0, max) + "..." : text;
 }
 
+let _edgeCounter = 0;
+let _graphInitialized = false; // đã render full graph lần đầu chưa
+
+/* Render lần đầu — xóa sạch và vẽ lại toàn bộ, chạy layout */
 function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
   const { nodes, edges } = collectGraphElements(raw, fallbackType);
 
   cy.elements().remove();
+  _graphInitialized = false;
 
   if (!nodes.length) {
     toggleCanvasEmpty(true, "Không tìm thấy cấu trúc đồ thị phù hợp với điều kiện lọc.");
@@ -1055,17 +1056,15 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
   toggleCanvasEmpty(false);
 
   const elements = [];
-
   nodes.forEach(n => {
     const fullLabel = n.properties?.value || n.properties?.name || n.id;
     const isRoot = rootValue && String(fullLabel).toLowerCase() === rootValue.toLowerCase();
-
     elements.push({
       group: "nodes",
       data: {
         id: n.id,
         label: shortenLabel(fullLabel, 15),
-        fullLabel: fullLabel,
+        fullLabel,
         color: colorFor(n.type),
         type: n.type,
         properties: n.properties,
@@ -1075,11 +1074,11 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
     });
   });
 
-  edges.forEach((e, idx) => {
+  edges.forEach(e => {
     elements.push({
       group: "edges",
       data: {
-        id: "e" + idx,
+        id: "e" + (_edgeCounter++),
         source: e.start,
         target: e.end,
         label: e.type,
@@ -1091,11 +1090,114 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
 
   cy.add(elements);
   cy.layout(LAYOUTS[currentLayout]).run();
+  _graphInitialized = true;
 
-  const activeNode = elements.find(el => el.group === "nodes" && el.classes === "root") || elements.find(el => el.group === "nodes");
-  if (activeNode) {
-    showDetail(activeNode.data);
+  const root = elements.find(el => el.group === "nodes" && el.classes === "root")
+             || elements.find(el => el.group === "nodes");
+  if (root) showDetail(root.data);
+}
+
+/* Merge node/edge mới từ n-hop vào graph đang có, không xóa node cũ */
+function mergeIntoGraph(raw, fallbackType = "Entity", rootValue = "") {
+  const { nodes, edges } = collectGraphElements(raw, fallbackType);
+  if (!nodes.length) return false;
+
+  const toAdd = [];
+  nodes.forEach(n => {
+    if (!cy.getElementById(n.id).length) {
+      const fullLabel = n.properties?.value || n.properties?.name || n.id;
+      const isRoot = rootValue && String(fullLabel).toLowerCase() === rootValue.toLowerCase();
+      toAdd.push({
+        group: "nodes",
+        data: {
+          id: n.id,
+          label: shortenLabel(fullLabel, 15),
+          fullLabel,
+          color: colorFor(n.type),
+          type: n.type,
+          properties: n.properties,
+          rel_properties: n.rel_properties || {}
+        },
+        classes: isRoot ? "root" : ""
+      });
+    }
+  });
+
+  edges.forEach(e => {
+    const exists = cy.edges().some(el =>
+      el.data('source') === e.start &&
+      el.data('target') === e.end &&
+      el.data('type') === e.type
+    );
+    if (!exists) {
+      toAdd.push({
+        group: "edges",
+        data: {
+          id: "e" + (_edgeCounter++),
+          source: e.start,
+          target: e.end,
+          label: e.type,
+          type: e.type,
+          rel_properties: e.rel_properties || {}
+        }
+      });
+    }
+  });
+
+  if (toAdd.length) cy.add(toAdd);
+  return toAdd.length > 0;
+}
+
+/*
+ * applyGraphMask — API trả về subset data, hide những gì không nằm trong đó.
+ * Không remove, không re-render, không chạy layout.
+ * Node/edge đã bị hide trước đó có thể được show lại nếu API trả về.
+ */
+function applyGraphMask(raw, fallbackType = "Entity") {
+  const { nodes, edges } = collectGraphElements(raw, fallbackType);
+
+  if (!nodes.length) {
+    toggleCanvasEmpty(true, "Không tìm thấy thực thể nào khớp với điều kiện lọc.");
+    // Vẫn giữ graph nhưng ẩn hết để tránh xóa layout
+    cy.elements().hide();
+    return;
   }
+
+  // Build set ID từ response
+  const visibleNodeIds = new Set(nodes.map(n => n.id));
+  const visibleEdgeKeys = new Set(
+    edges.map(e => `${e.start}__${e.end}__${e.type}`)
+  );
+
+  cy.batch(() => {
+    // Node: show nếu trong response, hide nếu không
+    cy.nodes().forEach(n => {
+      if (visibleNodeIds.has(n.id())) {
+        n.show();
+      } else {
+        n.hide();
+      }
+    });
+
+    // Edge: show nếu trong response VÀ cả 2 đầu đều visible
+    cy.edges().forEach(e => {
+      const key = `${e.data('source')}__${e.data('target')}__${e.data('type')}`;
+      if (visibleEdgeKeys.has(key) && e.source().visible() && e.target().visible()) {
+        e.show();
+      } else {
+        e.hide();
+      }
+    });
+  });
+
+  toggleCanvasEmpty(cy.nodes(':visible').length === 0);
+}
+
+/* Show lại toàn bộ graph (reset mask) */
+function showFullGraph() {
+  cy.elements().show();
+  cy.elements().style({ opacity: 1 });
+  toggleCanvasEmpty(cy.nodes().length === 0);
 }
 
 /* ---------------------------------------------------------
@@ -1103,22 +1205,34 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
 --------------------------------------------------------- */
 async function runGraphExplore() {
   const hint = document.getElementById('canvasHint');
-  hint.textContent = "Đang đồng bộ thu hẹp đồ thị...";
-  
+  hint.textContent = "Đang tải đồ thị...";
+
   const typeFilter = document.getElementById('globalTypeSelect').value;
-  const relFilter = document.getElementById('globalRelSelect').value;
-  
+  const relFilter  = document.getElementById('globalRelSelect').value;
+  const hasFilter  = typeFilter || relFilter;
+
   let queryParts = [];
   if (typeFilter) queryParts.push(`type=${encodeURIComponent(typeFilter)}`);
-  if (relFilter) queryParts.push(`relationship=${encodeURIComponent(relFilter)}`);
+  if (relFilter)  queryParts.push(`relationship=${encodeURIComponent(relFilter)}`);
   const queryString = queryParts.length ? '?' + queryParts.join('&') : '';
-  
+
   try {
     const res = await fetch(apiUrl(`/graphs/explore${queryString}`));
-    if(!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
+    const data = unwrap(json).data;
     setConnState(true);
-    drawGraph(unwrap(json).data, typeFilter || 'Entity');
+
+    if (!_graphInitialized) {
+      // Lần đầu: render full, chạy layout
+      drawGraph(data, typeFilter || 'Entity');
+    } else if (!hasFilter) {
+      // Xóa filter (reset) → show lại toàn bộ graph, không re-render
+      showFullGraph();
+    } else {
+      // Có filter: API trả về subset → chỉ mask hide/show, không re-render
+      applyGraphMask(data, typeFilter || 'Entity');
+    }
   } catch(err) {
     setConnState(false);
     toggleCanvasEmpty(true, "Lỗi kết nối cơ sở dữ liệu đồ thị: " + err.message);
@@ -1152,8 +1266,21 @@ async function runHopSearch() {
     }
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
+    const data = unwrap(json).data;
     setConnState(true);
-    drawGraph(unwrap(json).data, type, value);
+
+    if (!_graphInitialized) {
+      // Chưa có graph → render lần đầu
+      drawGraph(data, type, value);
+    } else {
+      // Đã có graph → merge node mới (nếu có), rồi mask để chỉ hiện subgraph hop
+      mergeIntoGraph(data, type, value);
+      applyGraphMask(data, type);
+
+      // Dim nhẹ những node không thuộc subgraph (vẫn visible nhưng mờ hơn)
+      // → đã được applyGraphMask ẩn hết rồi, không cần dim thêm
+    }
+
     const node = cy.nodes().filter(n => n.data('id') === type+":"+value);
 
     if (node.length) {
@@ -1349,7 +1476,13 @@ document.getElementById('resetFiltersBtn').addEventListener('click', () => {
   document.getElementById('globalRelSelect').value = "";
   document.getElementById('hopValueInput').value = "";
   document.getElementById('hopDepthInput').value = "1";
-  handleFilterChange();
+  if (_graphInitialized) {
+    // Graph đã có → chỉ bỏ mask, không fetch lại
+    showFullGraph();
+    loadDynamicEntities();
+  } else {
+    handleFilterChange();
+  }
 });
 
 function initAll() {
