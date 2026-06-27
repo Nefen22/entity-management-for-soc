@@ -1,6 +1,32 @@
 # Entity Management for SOC
 
-A lightweight security investigation platform that extracts entities from security events, enriches them with threat intelligence data, and stores relationships in a Neo4j graph database for investigation and visualization.
+A lightweight SOC investigation platform that extracts entities from security events, enriches threat intelligence data, and stores relationships inside Neo4j for graph-based investigation and visualization.
+
+---
+
+## Getting Started
+
+```bash
+git clone https://github.com/Nefen22/entity-management-for-soc
+cd entity-management-for-soc
+docker-compose up -d
+```
+
+| Service | URL |
+| ------- | --- |
+| API Docs (Swagger) | http://localhost:8000/docs |
+| Frontend | http://localhost |
+| Neo4j Browser | http://localhost:7474 |
+
+### Quick Demo
+
+```bash
+# Ingest sample data
+POST /api/tenants/{tenant}/graphs/ingest/sample
+
+# Query entity graph (4-hop)
+GET /api/tenants/{tenant}/graphs/ip/8.8.8.8/graph/4
+```
 
 ---
 
@@ -8,188 +34,208 @@ A lightweight security investigation platform that extracts entities from securi
 
 ### Entity Extraction
 
-Extracts entities from structured security logs:
+Supported entities:
 
-| Entity Type | Description |
-|---|---|
-| User | Account names, usernames |
-| Host | Hostnames, machine names |
-| IP Address | IPv4/IPv6 addresses |
-| Domain | Domain names |
-| File Hash | MD5, SHA1, SHA256 |
-| URL | Web URLs |
-| Process | Process names and paths |
-| Cloud Resource | Cloud asset identifiers |
-| Email | Email addresses |
-| CVE | CVE identifiers |
+| Entity        | Example                                     |
+| ------------- | ------------------------------------------- |
+| User          | admin                                       |
+| Host          | FILE-SERVER-01                              |
+| IP            | 192.168.1.100                               |
+| Domain        | malicious.ru                                |
+| URL           | http://malicious.ru/payload.exe             |
+| FileHash      | MD5 / SHA1 / SHA256                         |
+| Process       | powershell.exe                              |
+| Email         | admin@corp.local                            |
+| CloudResource | EC2 instance, VM                            |
+| CVE           | CVE-2024-1234                               |
 
-### Custom Log Parsers
+---
 
-Support multiple log sources:
+### Flexible JSON Parser
 
-- **SIEM Logs** — structured security event logs
-- **EDR Logs** — endpoint detection and response events
-- **Cloud Audit Logs** — cloud provider activity logs
+The platform supports custom JSON-based event ingestion.
+
+Supported sources:
+
+* SIEM events
+* EDR events
+* Cloud audit logs
+* Custom JSON formats
+
+Parser logic is configurable and easy to extend.
+
+---
 
 ### Entity Enrichment
 
-**IP Address:**
-- GeoLite2 Country/City lookup
-- ASN information
+#### IP Enrichment
 
-**File Hash:**
-- Mock VirusTotal API (offline dataset)
+* GeoIP lookup
+* ASN information
 
-All enrichment results are cached in-memory with TTL to avoid redundant lookups.
+#### File Hash Enrichment
 
-### Graph Relationship Modeling
+* Mock VirusTotal dataset
+* Malware detection information
 
-Entities and relationships are stored in Neo4j. Example investigation path:
+Enrichment results are cached with TTL.
+
+---
+
+### Relationship Modeling
+
+Core relationships:
+
+* User → LOGGED_IN → Host
+* Host → CONNECTED_TO → IP
+* FileHash → EXECUTED_ON → Host
+
+Additional relationships:
+
+* Process → Host
+* Email → User
+* CVE → Host
+* CloudResource → IP
+* URL → Domain
+
+Relationship metadata:
+
+* first_seen
+* last_seen
+* count
+* evidences
+
+---
+
+### Investigation Features
+
+* Entity lookup
+* Relationship exploration
+* Multi-hop traversal
+* N-hop investigation
+* Relationship filtering
+* Entity type filtering
+
+---
+
+### Graph Visualization
+
+Powered by Cytoscape.js.
+
+Supported layouts:
+
+* Force-directed
+* Breadth First Tree
+* Dagre Tree
+* Concentric
+
+Features:
+
+* Dynamic filtering
+* Expand subgraphs
+* Node details panel
+* Relationship metadata display
+* Interactive navigation
+
+---
+
+### Multi-Tenant Support
+
+Each tenant is isolated using graph labels.
+
+Example:
+
+* acme
+* google
+* internal
+
+API examples:
 
 ```
-john.doe
-    │
- LOGGED_IN
-    │
-DESKTOP-001
-    │
-CONNECTED_TO
-    │
-192.168.1.100
+/api/tenants/{tenant}/entities
+/api/tenants/{tenant}/graphs
+/api/tenants/{tenant}/enrichments
 ```
 
-Supported relationships:
+---
 
-- `User -[LOGGED_IN]-> Host`
-- `Host -[CONNECTED_TO]-> IP`
-- `File -[EXECUTED_ON]-> Host`
+### Performance
 
-Each relationship stores: `first_seen`, `last_seen`, `count`.
-
-### Investigation
-
-- Multi-hop graph traversal (1–2 hop)
-- Entity relationship lookup
-- Graph visualization via Cytoscape.js
+* Neo4j indexes
+* Relationship aggregation
+* Cached enrichment
+* Optimized N-hop queries
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Backend | FastAPI, Python |
-| Database | Neo4j |
-| Frontend | HTML, JavaScript, Cytoscape.js |
-| Infrastructure | Docker, Docker Compose |
-| Testing | Pytest |
+| Layer     | Technology       |
+| --------- | ---------------- |
+| Backend   | FastAPI          |
+| Database  | Neo4j            |
+| Frontend  | HTML, JavaScript |
+| Graph UI  | Cytoscape.js     |
+| Container | Docker           |
 
 ---
 
-## Project Structure
+## Architecture
 
 ```
-.
-├── backend
-│   ├── api
-│   │   ├── entities.py
-│   │   ├── enrichment.py
-│   │   └── graph.py
-│   ├── parsers
-│   │   ├── base_parser.py
-│   │   ├── siem_parser.py
-│   │   ├── edr_parser.py
-│   │   └── cloud_parser.py
-│   ├── enrichment
-│   │   ├── geoip.py
-│   │   └── virustotal_mock.py
-│   ├── graph
-│   │   ├── entity_service.py
-│   │   └── relationship_service.py
-│   ├── database
-│   │   ├── neo4j.py
-│   │   └── schemas.py
-│   ├── tests
-│   │   ├── test_parser.py
-│   │   ├── test_enrichment.py
-│   │   └── test_graph.py
-│   └── main.py
-├── frontend
-├── datasets
-├── docker-compose.yml
-├── Dockerfile
-├── requirements.txt
-└── README.md
+Event
+  ↓
+Parser (SIEM / EDR / Cloud / Custom JSON)
+  ↓
+Service Layer
+  ↓
+Neo4j (label-based multi-tenant)
+  ↓
+Visualization (Cytoscape.js)
 ```
+
+* Service layer architecture
+* API layer separation
+* Parser abstraction
+* Multi-tenant routing
+* Graph-based investigation model
 
 ---
 
-## Getting Started
+## Implemented Features
 
-### Prerequisites
-
-- Docker & Docker Compose
-- MaxMind GeoLite2 database (free account required at [maxmind.com](https://www.maxmind.com))
-
-### Run
-
-```bash
-git clone <repo-url>
-cd entity-management
-
-docker compose up -d
-```
-
-| Service | URL |
-|---|---|
-| API (Swagger) | http://localhost:8000/docs |
-| Neo4j Browser | http://localhost:7474 |
-| Frontend | http://localhost:3000 |
-
-### Ingest Sample Data
-
-```bash
-curl -X POST http://localhost:8000/ingest \
-  -H "Content-Type: application/json" \
-  -d @datasets/sample_siem.json
-```
-
----
-
-## Sample Datasets
-
-Included under `datasets/`:
-
-| File | Description |
-|---|---|
-| `sample_siem.json` | Authentication and network events |
-| `sample_edr.json` | File execution and process events |
-| `sample_cloud.json` | Cloud audit log events |
-
----
-
-## API Overview
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/ingest` | Ingest event log, extract entities and relationships |
-| GET | `/entities/{type}` | List all entities of a type |
-| GET | `/entities/{type}/{id}` | Get entity detail with enrichment |
-| GET | `/entities/{type}/{id}/graph` | Get relationship graph for an entity |
-| POST | `/entities/{type}/{id}/enrichment` | Enrich an entity |
-| POST | `/relationships` | Create relationship between entities |
-
-Full documentation available at `/docs` (Swagger UI).
+* [x] Entity extraction (10 entity types)
+* [x] Graph relationship modeling
+* [x] Multi-hop investigation
+* [x] GeoIP enrichment
+* [x] Mock VirusTotal enrichment
+* [x] Relationship metadata (first_seen, last_seen, count, evidence)
+* [x] Graph visualization
+* [x] Multiple layouts
+* [x] Dynamic filtering
+* [x] Audit log
+* [x] Multi-tenant support (label-based)
+* [x] Neo4j indexing
+* [x] REST API with Swagger docs
+* [x] Docker Compose deployment
 
 ---
 
 ## Roadmap
 
-- [x] Entity Extraction
-- [x] Neo4j Graph Modeling
-- [x] GeoLite2 Enrichment
-- [x] VirusTotal Mock Integration
-- [x] Cytoscape.js Visualization
-- [x] Audit Log
-- [ ] Unit & Integration Tests
-- [ ] CI/CD Pipeline
+* [ ] Unit and integration tests
+* [ ] CI/CD pipeline
+* [ ] Path finding between arbitrary entities
+* [ ] Entity deduplication and merge
+* [ ] Export graph to PNG/JSON
+* [ ] Time-based graph filtering
+* [ ] Kafka batch ingestion
+* [ ] LLM-based entity extraction from free-text alerts
+
+---
+
+## Project Status
+
+**MVP Complete** — backend, frontend, and core investigation features are implemented and running.
+
+Remaining: test coverage, CI/CD, and optional advanced features listed in the roadmap above.
