@@ -496,7 +496,7 @@
 /* ---------------------------------------------------------
    Cấu hình Base URL API và Đồng bộ Trạng thái
 --------------------------------------------------------- */
-const API_BASE = "http://localhost:8000";
+const API_BASE = "";
 
 function apiUrl(path) {
   return `${API_BASE}/api/tenants/${currentTenant}${path}`;
@@ -522,7 +522,7 @@ let currentTenant =
 
 async function loadTenants() {
   try {
-    const res = await fetch("http://localhost:8000/api/tenants");
+    const res = await fetch("/api/tenants");
 
     const tenants = await res.json();
 
