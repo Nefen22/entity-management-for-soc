@@ -32,45 +32,35 @@ async def post_relationship(tenant: str, edge: EdgePaser):
 async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
-        if value == "all":
-            query="""MATCH p=(entity: {tenant}:{type})-[*1..{hop}]-(to)""".format(type=MAPPING_ENTITIES_TYPE[type], hop=hop, tenant=TENANT_DATABASE[tenant])
-        else:
-            query="""MATCH p=(from: {tenant}:{type} {{{key}: $value}})-[*1..{hop}]-(to:{tenant})""".format(key=MAPPING_ENTITIES_KEY[type], type=MAPPING_ENTITIES_TYPE[type], hop=hop, tenant=TENANT_DATABASE[tenant])
-        query+="""UNWIND nodes(p) AS n
-                    UNWIND relationships(p) AS rel
-                    RETURN DISTINCT nodes(p) AS nodes,
-                            rel AS edges,
-                            [rel in relationships(p) | type(rel)] AS edge_types,
-                            [rel in relationships(p) | properties(rel)] AS edges_properties,
-                            [node in nodes(p) | labels(node)] AS node_labels"""
+        query="""MATCH p=(start: {tenant} {type} {key_value})
+                    CALL apoc.path.expandConfig(start, {{
+                        minLevel: 1,
+                        maxLevel: 5,           // Số hop tối đa
+                        uniqueness: "RELATIONSHIP_GLOBAL" // Thuật toán tối ưu lọc trùng cạnh ngay khi duyệt
+                    }}) YIELD path
+                    UNWIND relationships(path) AS rel
+                    WITH DISTINCT rel
+                    RETURN startNode(rel) AS source, labels(startNode(rel)) AS source_label,
+                            endNode(rel) AS target, labels(endNode(rel)) AS target_label,
+                            type(rel) AS edge_type,
+                            properties(rel) AS prop""".format(key_value=f"{{{MAPPING_ENTITIES_KEY[type]} : $value}}" if type else "",
+                                                              type=":" + MAPPING_ENTITIES_TYPE[type] if type else "",
+                                                              hop=hop,
+                                                              tenant=TENANT_DATABASE[tenant])
         result = await session.run(query, value=value)
         return await result.data()
     
 async def explore_entites(tenant: str, type: str, relationship: str):
     async with driver.session() as session:
-        if type is None:
-            query = "MATCH p=(entity: {tenant})".format(tenant=TENANT_DATABASE[tenant])
-        else:
-            query = "MATCH p=(entity: {tenant}:{type})".format(tenant=TENANT_DATABASE[tenant],type=MAPPING_ENTITIES_TYPE[type])
-        
-        if relationship is not None:
-            query += """-[r:{relationship}]""".format(relationship=relationship)
-        else:
-            query += """-[r]"""
-
-        if type is None:
-            query += """->(to:{tenant})""".format(tenant=TENANT_DATABASE[tenant])
-        else:
-            query += """-(to:{tenant})""".format(tenant=TENANT_DATABASE[tenant])
-        query+="""UNWIND nodes(p) AS n
-                    UNWIND relationships(p) AS rel
-                    RETURN DISTINCT nodes(p) AS nodes,
-                    [rel in relationships(p) | type(rel)] AS edge_types,
-                    [rel in relationships(p) | properties(rel)] AS edges_properties,
-                    [node in nodes(p) | labels(node)] AS node_labels"""
+        query="""MATCH p=(entity: {tenant} {type})-[r{relationship}]-(to:{tenant})
+                    RETURN startNode(r) AS source, labels(startNode(r)) AS source_label,
+                            endNode(r) AS target, labels(endNode(r)) AS target_label,
+                            type(r) AS edge_type,
+                            properties(r) AS prop""".format(tenant=TENANT_DATABASE[tenant],
+                                                              type=":"+MAPPING_ENTITIES_TYPE[type] if type else "",
+                                                              relationship=":"+relationship if relationship else "")
         result = await session.run(query)
         record = await result.data()
-        sub = [{k: v for k, v in ele.items() if k != "r" } for ele in record]
         return record
     
 async def get_entities_follow(tenant: str, type: str, relationship: str):

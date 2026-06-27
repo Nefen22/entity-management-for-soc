@@ -9,7 +9,7 @@ import repositories.graph as repo
 from .entities import post_entity, check_existed_logs
 from logs.audit_log import write_audit_log
 from backend.database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
-from .function import format_drawing, format_neo4j_data
+from .function import format_drawing, check_n_add_nodes
 
 
 #Services
@@ -37,24 +37,24 @@ async def ingest_sample(tenant: str, file: str):
 
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(tenant=tenant,type=type, value=value, hop=hop)
-    #return [format_neo4j_data(record) for record in result]
+    #return result
     return await format_drawing(result)
 
 async def get_entities_follow(tenant: str, type: str, relationship: str):
-    result = await repo.get_entities_follow(tenant=tenant, type=type, relationship=relationship)
-    seen = set()
-    record = []
-    
-    for ele in result:
-        labels=[label for label in ele["node_labels"][0] if label not in TENANT_DATABASE.values()]
-        key = MAPPING_ENTITIES_KEY[labels[0]]
-        if not (ele["nodes"][0][key] in seen or seen.add(ele["nodes"][0][key])):
-            record.append({
-                "id": ele["nodes"][0][key],
-                "type": labels[0],
-                "properties": ele["nodes"][0]
-            })
-    return record
+    record = await repo.get_entities_follow(tenant=tenant, type=type, relationship=relationship)
+    nodes_check = {}
+    result = []
+    for rels in record:
+        source = rels["source"]
+        source_label = [rel for rel in rels["source_label"] if rel not in TENANT_DATABASE.values()][0]
+        source_name = source[MAPPING_ENTITIES_KEY[source_label]]
+        target = rels["target"]
+        target_label = [rel for rel in rels["target_label"] if rel not in TENANT_DATABASE.values()][0]
+        target_name = target[MAPPING_ENTITIES_KEY[target_label]]
+        pair_nodes=[check_n_add_nodes(nodes_check,{"id": source_name, "type": source_label, "properties": source}),
+                    check_n_add_nodes(nodes_check, {"id": target_name, "type": target_label, "properties": target})]
+        result+=[node for node in pair_nodes if node is not None and (type is None or node["type"] == type)]
+    return result
             
 
 async def explore_entites(tenant: str, type: str, relationship: str):
