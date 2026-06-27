@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+import datetime
+
 
 class Vertex(BaseModel):
     type: str
@@ -9,3 +11,4 @@ class EdgePaser(BaseModel):
     dest: Vertex
     connect_type: str
     evidence: str
+    time: str

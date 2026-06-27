@@ -24,10 +24,9 @@ async def ingest(tenant: str, events: dict):
             continue 
         for node in value:
             await post_entity(tenant=tenant, type=type, value=node)
-
     for ele_rel in rel:
-        await check_existed_logs(tenant, REVERSED_TYPE[ele_rel.src.type], ele_rel.src.value, True)
-        await check_existed_logs(tenant, REVERSED_TYPE[ele_rel.dest.type], ele_rel.dest.value, True)
+        await check_existed_logs(tenant, ele_rel.src.type, ele_rel.src.value, True)
+        await check_existed_logs(tenant, ele_rel.dest.type, ele_rel.dest.value, True)
         await repo.post_relationship(tenant, ele_rel)
 
 async def ingest_sample(tenant: str, file: str):

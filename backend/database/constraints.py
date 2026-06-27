@@ -24,6 +24,10 @@ MAPPING_ENTITIES_TYPE={
     "CloudResource": "CloudResource",
     "Email": "Email",
     "CVE": "CVE",
+    
+    "sender_emails":    "Email",
+    "recipient_emails": "Email",
+    "parent_processes": "Process",
 }
 
 REVERSED_TYPE = {v: k for k, v in MAPPING_ENTITIES_TYPE.items()}
@@ -51,6 +55,7 @@ MAPPING_ENTITIES_KEY={
     "CloudResource": "resource_id",
     "Email": "address",
     "CVE": "cve_id",
+    
 }
 
 MAPPING_ENTITIES_KEY_CLEAN={
@@ -86,78 +91,124 @@ MAPPING_ENTITY = {
 
 MAPPING_RELATIONSHIPS = {
     # ===== Core =====
-    ("User", "Host"): "LOGGED_IN",
-    ("Host", "IP"): "CONNECTED_TO",
+    ("User", "Host"):     "LOGGED_IN",
+    ("Host", "IP"):       "CONNECTED_TO",
+    ("IP", "Host"):       "CONNECTED_TO",
     ("FileHash", "Host"): "EXECUTED_ON",
 
     # ===== Network =====
-    ("Host", "Domain"): "RESOLVED",
-    ("Domain", "IP"): "RESOLVES_TO",
-    ("Host", "URL"): "REQUESTED",
+    ("Host", "Domain"):   "RESOLVED",
+    ("Domain", "IP"):     "RESOLVES_TO",
+    ("Host", "URL"):      "REQUESTED",
+    ("Host", "IP"):       "CONNECTED_TO", # Bổ sung Host -> IP trực tiếp
 
     # ===== Process =====
-    ("Process", "Host"): "RUNS_ON",
-    ("Process", "User"): "EXECUTED_BY",
+    ("Process", "Host"):     "RUNS_ON",
+    ("Process", "User"):     "EXECUTED_BY",
     ("Process", "FileHash"): "LOADED",
-    ("Process", "IP"): "CONNECTED_TO",
-    ("Process", "URL"): "REQUESTED",
+    ("Process", "IP"):       "CONNECTED_TO",
+    ("Process", "URL"):      "REQUESTED",
+    ("Process", "Process"):  "SPAWNED",       
+    ("Process", "Domain"):   "CONNECTED_TO",  # Bổ sung Process -> Domain (Cho evt-016)
 
     # ===== URL / Domain =====
     ("URL", "Domain"): "BELONGS_TO",
 
     # ===== Email =====
-    ("User", "Email"): "OWNS",
-    ("Email", "Domain"): "HOSTED_BY",
-    ("Email", "URL"): "CONTAINS",
+    ("User", "Email"):    "OWNS",
+    ("Email", "Domain"):  "HOSTED_BY",
+    ("Email", "URL"):     "CONTAINS",
     ("Email", "FileHash"): "ATTACHED",
+    ("Email", "Email"):   "SENT_TO",         
 
     # ===== Cloud =====
-    ("CloudResource", "IP"): "ASSIGNED_TO",
-    ("CloudResource", "Host"): "RUNS_ON",
-    ("CloudResource", "User"): "OWNED_BY",
-
     ("User", "CloudResource"): "ACCESSED",
+    ("CloudResource", "IP"):   "ASSIGNED_TO",
+    ("CloudResource", "Host"): "RUNS_ON",
 
     # ===== Vulnerability =====
-    ("CVE", "Host"): "AFFECTS",
-    ("CVE", "Process"): "AFFECTS",
+    ("CVE", "Host"):          "AFFECTS",
+    ("CVE", "Process"):       "AFFECTS",
     ("CVE", "CloudResource"): "AFFECTS",
-    ("CVE", "FileHash"): "EXPLOITS",
 }
 
+# ── SIEM ──────────────────────────────────────────────────────────────────────
 SIEM_INCLUDE = {
-    # existing
-    "users":  ["user"],
-    "hosts":  ["destination_host"],
-    "ips":    ["source_ip"],
-    # new
-    "urls":   ["url", "request_url"],
-    "emails": ["sender_email", "recipient_email"],
+    "nodes": {
+        "users":            ["user"],
+        "ips":              ["source_ip"],          
+        "hosts":            ["destination_host"],   
+        "urls":             ["url"], 
+        "sender_emails":    ["sender_email"],       
+        "recipient_emails": ["recipient_email"],    
+    },
+    "edges": [
+        ("source_ip",        "destination_host"),   
+        ("user",            "destination_host"),   
+        ("sender_email",    "recipient_email"),    
+        ("sender_email",    "url"),                
+    ]
 }
 
-CLOUD_INCLUDE = {
-    # existing
-    "hosts":   ["source_host"],
-    "ips":     ["destination_ip"],
-    "domains": ["destination_domain"],
-    # new
-    "urls":            ["resource_url"],
-    "cloud_resources": ["resource_id", "instance_id", "bucket_name"],
-    "emails":          ["user_email"],
-    "cves":            ["vulnerability_id"],
-}
-
+# ── EDR ───────────────────────────────────────────────────────────────────────
 EDR_INCLUDE = {
-    # existing
-    "users":       ["user"],
-    "hosts":       ["destination_host"],
-    "ips":         ["destination_ip"],
-    "domains":     ["destination_domain"],
-    "file_hashes": ["file_hash"],
-    # new
-    "urls":        ["url", "request_url"],
-    "processes":   ["process_name", "parent_process"],
-    "cves":        ["cve_id"],
+    "nodes": {
+        "users":            ["user"],
+        "hosts":            ["destination_host"],
+        "ips":              ["destination_ip"],
+        "domains":          ["destination_domain"],
+        "file_hashes":      ["file_hash"],
+        "processes":        ["process_name"],
+        "parent_processes": ["parent_process"],
+        "cves":             ["cve_id"],
+        "urls":             ["url"]
+    },
+    "edges": [
+        # Core & Network
+        ("user",             "destination_host"), 
+        ("file_hash",        "destination_host"), 
+        ("destination_host", "destination_ip"),
+        ("destination_host", "destination_domain"),
+        ("destination_host", "url"),
+        
+        # Process Relations (Sửa lỗi cô lập hành vi như evt-016)
+        ("parent_process",   "process_name"),     
+        ("process_name",     "destination_host"), # Process RUNS_ON Host
+        ("process_name",     "user"),             # Process EXECUTED_BY User
+        ("process_name",     "destination_ip"),   # Process CONNECTED_TO IP
+        ("process_name",     "destination_domain"),# Process CONNECTED_TO Domain
+
+        # Vulnerability (Sửa lỗi mất CVE dữ liệu EDR)
+        ("cve_id",           "destination_host"), # CVE AFFECTS Host
+        ("cve_id",           "process_name"),     # CVE AFFECTS Process
+    ]
+}
+
+# ── Cloud ─────────────────────────────────────────────────────────────────────
+CLOUD_INCLUDE = {
+    "nodes": {
+        "users":           ["user"],               
+        "hosts":           ["source_host"],
+        "ips":             ["destination_ip"],
+        "domains":         ["destination_domain"],
+        "urls":            ["url"],
+        "cloud_resources": ["resource_id"],        
+        "cves":            ["cve_id"],             
+    },
+    "edges": [
+        ("source_host",       "destination_ip"),     
+        ("source_host",       "destination_domain"), 
+        ("destination_domain", "destination_ip"),     
+        ("source_host",       "url"),
+        
+        # SỬA TẠI ĐÂY: Thay "cloud_resources" bằng tên trường thực tế "resource_id"
+        ("user",              "resource_id"),    # Sẽ map thành (User, CloudResource) -> ACCESSED
+        ("resource_id",       "destination_ip"), # Sẽ map thành (CloudResource, IP) -> ASSIGNED_TO
+        ("resource_id",       "source_host"),    # Sẽ map thành (CloudResource, Host) -> RUNS_ON
+        
+        # Lỗ hổng Cloud
+        ("cve_id",            "resource_id"),    # Sẽ map thành (CVE, CloudResource) -> AFFECTS
+    ]
 }
 
 TENANT_DATABASE = {
