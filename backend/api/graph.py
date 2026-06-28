@@ -7,13 +7,11 @@ router = APIRouter()
 
 @router.post("/ingest")
 async def ingest(tenant: str,events: dict):
-    print(tenant)
     await services.ingest(tenant, events)
     return APIResponse(message="Ingest completed")
 
 @router.post("/ingest/sample")
 async def ingest_sample(tenant: str, file:str):
-    print(tenant, file)
     await services.ingest_sample(tenant, file)
     return APIResponse(message="Sample data ingested!")
 

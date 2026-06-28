@@ -475,6 +475,10 @@
   <aside class="right">
     <p class="eyebrow">Tìm kiếm mối quan hệ N-Hop</p>
     <div class="filter-box">
+      <label for="hopTypeSelect">Entity Type (Nhãn Node)</label>
+        <select id="hopTypeSelect">
+          <option value="">—Type—</option>
+        </select>
       <label for="hopValueInput">Value (Giá trị Node mục tiêu)</label>
       <input id="hopValueInput" type="text" placeholder="vd: admin hoặc 1.2.3.4">
 
@@ -606,6 +610,7 @@ function normalizeList(raw){
 
 const typeSelect = document.getElementById('globalTypeSelect');
 const relSelect  = document.getElementById('globalRelSelect');
+const hopSelect  = document.getElementById('hopTypeSelect');
 
 async function loadFilterDropdowns() {
   try {
@@ -628,6 +633,7 @@ async function loadFilterDropdowns() {
 
     rebuildSelect(typeSelect, types, '— Tất cả thực thể —', currentType);
     rebuildSelect(relSelect,  rels,  '— Tất cả quan hệ —',  currentRel);
+    rebuildSelect(hopSelect, types, '— Tất cả thực thể —', currentType);
 
     setConnState(true);
   } catch (err) {
@@ -747,6 +753,7 @@ function renderDynamicChips(entities, fallbackType) {
 
     chip.addEventListener('click', () => {
       document.getElementById('hopValueInput').value = ent.id;
+      document.getElementById('hopTypeSelect').value = ent.type;
       const foundNode = cy.nodes().filter(
         n => n.data('id') === ent.id
       );
@@ -902,6 +909,8 @@ const cy = cytoscape({
 
 cy.on('tap', 'node', (evt)=>{
   showDetail(evt.target.data());
+  document.getElementById('hopValueInput').value = evt.target.data().id;
+  document.getElementById('hopTypeSelect').value = evt.target.data().type;
 });
 
 /* ---------------------------------------------------------
@@ -1294,7 +1303,7 @@ async function runGraphExplore() {
 }
 
 async function runHopSearch() {
-  const type = document.getElementById('globalTypeSelect').value.trim();
+  const type = document.getElementById('hopTypeSelect').value.trim();
   const value = document.getElementById('hopValueInput').value.trim();
   const hop = document.getElementById('hopDepthInput').value.trim() || '1';
   const btn = document.getElementById('hopSearchBtn');
