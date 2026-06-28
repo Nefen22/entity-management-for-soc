@@ -748,7 +748,7 @@ function renderDynamicChips(entities, fallbackType) {
     chip.addEventListener('click', () => {
       document.getElementById('hopValueInput').value = ent.id;
       const foundNode = cy.nodes().filter(
-        n => n.data('id') === ent.type+":"+ent.id
+        n => n.data('id') === ent.id
       );
 
       if (foundNode.length) {

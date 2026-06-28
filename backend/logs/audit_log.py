@@ -14,4 +14,4 @@ def write_audit_log(action: str, entity_type: str, entity_id: str, change: dict 
         "change": change or {}
     }
     with open(PATH, "a") as f:
-        f.write(json.dumps(entry) + "\n")
+        f.write(json.dumps(entry) + ",\n")

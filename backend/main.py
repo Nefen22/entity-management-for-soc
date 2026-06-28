@@ -3,17 +3,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.tenants import router as tenants_router
 from contextlib import asynccontextmanager
 from pathlib import Path
-from database.neo4j import indexing_for_entities, driver
+from database.neo4j import init_db, driver
+from api.graph import ingest_sample
+from datasets.seed import SEED
 import asyncio
+import os
+
+RESET_DB = os.getenv("RESET_DB", "true").lower() == "true"
+SEED_DATA = os.getenv("SEED_DATA", "true").lower() == "true"
+SEED_NAME = os.getenv("SEED_NAME", "DEMO")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    Path("/app/backend/logs/audit_log.json").write_text("")
     await wait_for_neo4j()
-    await indexing_for_entities()
+    if RESET_DB:
+        Path("/app/backend/logs/audit_log.json").write_text("")
+        await init_db(RESET_DB)
+    if SEED_DATA:
+        seed = SEED[SEED_NAME]
+        await seed_db(seed)
 
     yield
+
+async def seed_db(seed:dict):
+    for tenant, file in seed.items():
+        await ingest_sample(tenant=tenant, file=file)
 
 async def wait_for_neo4j(retries: int = 10, delay: float = 3.0):
     from neo4j.exceptions import ServiceUnavailable
