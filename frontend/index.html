@@ -1063,8 +1063,8 @@ function drawGraph(raw, fallbackType = "Entity", rootValue = "") {
 
   const elements = [];
   nodes.forEach(n => {
-    const fullLabel = n.properties?.value || n.properties?.name || n.id;
-    const isRoot = rootValue && String(fullLabel).toLowerCase() === rootValue.toLowerCase();
+    const fullLabel = n.type+":"+ n.id;
+    const isRoot = rootValue && String(n.id).toLowerCase() === rootValue.toLowerCase();
     elements.push({
       group: "nodes",
       data: {
@@ -1220,7 +1220,7 @@ function applyGraphMask(raw, focusType = null, node_id=null) {
                 width: 45,
                 height: 45,
                 borderWidth: 2,
-                opacity: 0.8
+                opacity: 0.6
             });
         }
     });
@@ -1359,6 +1359,7 @@ function showDetail(data) {
   const props = data.properties || {};
   const type  = data.type || '—';
   const id    = data.id   || '—';
+  const displayId = `${type}:${id}`;
 
   const GROUPS = {
     IP:            { base: ['value', 'evidence'],                                   enrich: { Network: ['asn','organization','network'], Geo: ['continent','country','country_name','timezone','latitude','longitude'] } },
@@ -1504,7 +1505,7 @@ function showDetail(data) {
     <div class="detail-label">Type</div>
     <span class="type-pill" style="border-color:${colorFor(type)};color:${colorFor(type)}">${escapeHtml(type)}</span>
     <div class="detail-label">ID</div>
-    <div class="detail-value">${escapeHtml(id)}</div>
+    <div class="detail-value">${escapeHtml(displayId)}</div>
     ${renderSection('Thông tin cơ bản', baseProps, false)}
     ${enrichHtml}
     ${renderSection('Khác', otherProps, false)}

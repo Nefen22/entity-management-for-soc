@@ -25,10 +25,10 @@ async def format_drawing(lst: list):
     for rels in lst:
         source = rels["source"]
         source_label = [rel for rel in rels["source_label"] if rel not in TENANT_DATABASE.values()][0]
-        source_name = source_label + ":" + source[MAPPING_ENTITIES_KEY[source_label]]
+        source_name = source[MAPPING_ENTITIES_KEY[source_label]]
         target = rels["target"]
         target_label = [rel for rel in rels["target_label"] if rel not in TENANT_DATABASE.values()][0]
-        target_name = target_label + ":" + target[MAPPING_ENTITIES_KEY[target_label]]
+        target_name = target[MAPPING_ENTITIES_KEY[target_label]]
         pair_nodes=[check_n_add_nodes(nodes_check,{"id": source_name, "type": source_label, "properties": source}),
                     check_n_add_nodes(nodes_check, {"id": target_name, "type": target_label, "properties": target})]
         nodes+=[node for node in pair_nodes if node is not None]
