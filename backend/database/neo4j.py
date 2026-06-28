@@ -11,14 +11,26 @@ PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASSWORD))
 
+async def init_db(reset: bool):
+    if reset:
+        await drop_all_indexes()
+        await clear_database()
+        await indexing_for_entities()
+
+
+
+async def clear_database():
+    async with driver.session() as session:
+        query="""MATCH (n) DETACH DELETE n"""
+        await session.run(query)
+
 async def indexing_for_entities():
-    index = 0
     async with driver.session() as session:
         task = []
         for key, value in MAPPING_ENTITIES_KEY_CLEAN.items():
             query="""CREATE INDEX {value}_index IF NOT EXISTS
                     FOR (n:{type})
-                    ON (n.{value})""".format(value=value, index=index, type=key)
+                    ON (n.{value})""".format(value=value, type=key)
             task.append(session.run(query))
         for t in task:
             await t
