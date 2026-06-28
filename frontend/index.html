@@ -557,8 +557,9 @@ async function loadTenants() {
 tenantSelect.addEventListener("change", () => {
   currentTenant = tenantSelect.value;
   localStorage.setItem("eg_tenant", currentTenant);
-  _graphInitialized = false;  // ← reset flag
-  initAll();                  // ← initAll → runGraphExplore → _graphInitialized=false → drawGraph
+  // Đổi tenant → reset graph để fetch lại từ đầu
+  _graphInitialized = false;
+  initAll();
 });
 
 /* ---------------------------------------------------------
@@ -790,14 +791,19 @@ function renderDynamicChips(entities, fallbackType) {
           enrichBtn.classList.remove('loading');
           enrichBtn.classList.add('done');
 
-          const node = cy.nodes().filter(
-            n => n.data('id') === ent.type+":"+ent.id
-          );
+          // Dùng id từ response thay vì tự ghép ent.type+":"+ent.id
+          const nodeId = json.data?.id;
+          const node = nodeId ? cy.getElementById(nodeId) : cy.collection();
 
           if (node.length) {
+            const enrichedProps = json.data?.properties || {};
+            node.data('properties', {
+              ...node.data('properties'),
+              ...enrichedProps
+            });
             cy.nodes().unselect();
             node.select();
-            showDetail(json.data);
+            showDetail(node.data());
             cy.animate({ center: { eles: node } }, { duration: 300 });
           }
         } catch {
@@ -1153,37 +1159,86 @@ function mergeIntoGraph(raw, fallbackType = "Entity", rootValue = "") {
  * Không remove, không re-render, không chạy layout.
  * Node/edge đã bị hide trước đó có thể được show lại nếu API trả về.
  */
-function applyGraphMask(raw, fallbackType = "Entity") {
-  const { nodes, edges } = collectGraphElements(raw, fallbackType);
+function applyGraphMask(raw, focusType = null, node_id=null) {
+  const { nodes, edges } = collectGraphElements(raw);
 
   if (!nodes.length) {
     toggleCanvasEmpty(true, "Không tìm thấy thực thể nào khớp với điều kiện lọc.");
-    // Vẫn giữ graph nhưng ẩn hết để tránh xóa layout
     cy.elements().hide();
     return;
   }
 
-  // Build set ID từ response
-  const visibleNodeIds = new Set(nodes.map(n => n.id));
+  const visibleNodes = new Map(
+    nodes.map(n => [n.id, n])
+  );
+
   const visibleEdgeKeys = new Set(
     edges.map(e => `${e.start}__${e.end}__${e.type}`)
   );
 
   cy.batch(() => {
-    // Node: show nếu trong response, hide nếu không
+
     cy.nodes().forEach(n => {
-      if (visibleNodeIds.has(n.id())) {
+        const nodeData = visibleNodes.get(n.id());
+
+        if (!nodeData) {
+            n.hide();
+            return;
+        }
+
         n.show();
-      } else {
-        n.hide();
-      }
+        
+        // Hop search: chỉ highlight node gốc
+        if (focusType === 'Entity'){
+          n.style({
+                width: 45,
+                height: 45,
+                borderWidth: 2,
+                opacity: 1
+            });
+        }
+        else if (node_id && n.id() === node_id) {
+            n.style({
+                width: 60,
+                height: 60,
+                borderWidth: 4,
+                opacity: 1
+            });
+        }
+        // Type filter
+        else if (focusType && nodeData.type === focusType) {
+            n.style({
+                width: 60,
+                height: 60,
+                borderWidth: 4,
+                opacity: 1
+            });
+        }
+        // Neighbor
+        else {
+            n.style({
+                width: 45,
+                height: 45,
+                borderWidth: 2,
+                opacity: 0.8
+            });
+        }
     });
 
-    // Edge: show nếu trong response VÀ cả 2 đầu đều visible
     cy.edges().forEach(e => {
-      const key = `${e.data('source')}__${e.data('target')}__${e.data('type')}`;
-      if (visibleEdgeKeys.has(key) && e.source().visible() && e.target().visible()) {
+      const key =
+        `${e.data('source')}__${e.data('target')}__${e.data('type')}`;
+
+      if (
+        visibleEdgeKeys.has(key) &&
+        e.source().visible() &&
+        e.target().visible()
+      ) {
         e.show();
+
+        e.style({
+          opacity: 0.5
+        });
       } else {
         e.hide();
       }
@@ -1192,7 +1247,6 @@ function applyGraphMask(raw, fallbackType = "Entity") {
 
   toggleCanvasEmpty(cy.nodes(':visible').length === 0);
 }
-
 /* Show lại toàn bộ graph (reset mask) */
 function showFullGraph() {
   cy.elements().show();
@@ -1226,13 +1280,11 @@ async function runGraphExplore() {
     if (!_graphInitialized) {
       // Lần đầu: render full, chạy layout
       drawGraph(data, typeFilter || 'Entity');
-    } else if (!hasFilter) {
-      // Xóa filter (reset) → show lại toàn bộ graph, không re-render
-      showFullGraph();
-    } else {
-      // Có filter: API trả về subset → chỉ mask hide/show, không re-render
-      applyGraphMask(data, typeFilter || 'Entity');
-    }
+    } 
+    // Xóa filter (reset) → show lại toàn bộ graph, không re-render
+    showFullGraph();
+    // Có filter: API trả về subset → chỉ mask hide/show, không re-render
+    applyGraphMask(data, typeFilter || 'Entity');
   } catch(err) {
     setConnState(false);
     toggleCanvasEmpty(true, "Lỗi kết nối cơ sở dữ liệu đồ thị: " + err.message);
@@ -1270,15 +1322,11 @@ async function runHopSearch() {
     setConnState(true);
 
     if (!_graphInitialized) {
-      // Chưa có graph → render lần đầu
       drawGraph(data, type, value);
     } else {
-      // Đã có graph → merge node mới (nếu có), rồi mask để chỉ hiện subgraph hop
-      mergeIntoGraph(data, type, value);
-      applyGraphMask(data, type);
-
-      // Dim nhẹ những node không thuộc subgraph (vẫn visible nhưng mờ hơn)
-      // → đã được applyGraphMask ẩn hết rồi, không cần dim thêm
+      // N-hop = filter từ 1 node → applyGraphMask như filter thường
+      console.log(value)
+      applyGraphMask(data, type, type+":"+value);
     }
 
     const node = cy.nodes().filter(n => n.data('id') === type+":"+value);
