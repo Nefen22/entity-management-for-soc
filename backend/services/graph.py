@@ -40,27 +40,33 @@ async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
     #return result
     return await format_drawing(result)
 
-async def get_entities_follow(tenant: str, type: str, relationship: str):
-    record = await repo.get_entities_follow(tenant=tenant, type=type, relationship=relationship)
-    nodes_check = {}
-    result = []
-    for rels in record:
-        source = rels["source"]
-        source_label = [rel for rel in rels["source_label"] if rel not in TENANT_DATABASE.values()][0]
-        source_name = source[MAPPING_ENTITIES_KEY[source_label]]
-        target = rels["target"]
-        target_label = [rel for rel in rels["target_label"] if rel not in TENANT_DATABASE.values()][0]
-        target_name = target[MAPPING_ENTITIES_KEY[target_label]]
-        pair_nodes=[check_n_add_nodes(nodes_check,{"id": source_name, "type": source_label, "properties": source}),
-                    check_n_add_nodes(nodes_check, {"id": target_name, "type": target_label, "properties": target})]
-        result+=[node for node in pair_nodes if node is not None and (type is None or node["type"] == type)]
-    return result
-            
+# async def explore_entites(tenant: str, type: str, relationship: str):
+#     result = await repo.explore_entites(tenant=tenant, type=type, relationship=relationship)
+#     record = await format_drawing(result)
+#     return record
 
-async def explore_entites(tenant: str, type: str, relationship: str):
-    result = await repo.explore_entites(tenant=tenant, type=type, relationship=relationship)
-    record = await format_drawing(result)
-    return record
+async def clusters(tenant: str):
+    result = await repo.clusters(tenant)
+    nodes = [{  "id": "Cluster_"+[label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
+                "type": "Cluster",
+                "entity_type": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
+                "count": record["count"]
+            } for record in result["nodes"]]
+    edges = [{
+                "source": [label for label in record["source_label"] if label not in TENANT_DATABASE.values()][0],
+                "target": [label for label in record["target_label"] if label not in TENANT_DATABASE.values()][0],
+                "type"  : record["rel_type"],
+                "count" : record["count"]
+            } for record in result["edges"]]
+    return {
+        "nodes": nodes,
+        "edges": edges
+    }
+
+async def entity_in_cluster(tenant: str, type: str):
+    result = await repo.entity_in_cluster(tenant, type)
+    return await format_drawing(result)
+
 
 async def get_types(tenant: str, relationship:str):
     result = await repo.get_types(tenant,relationship)

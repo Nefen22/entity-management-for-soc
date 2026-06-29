@@ -43,28 +43,31 @@ async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
                     RETURN startNode(rel) AS source, labels(startNode(rel)) AS source_label,
                             endNode(rel) AS target, labels(endNode(rel)) AS target_label,
                             type(rel) AS edge_type,
-                            properties(rel) AS prop""".format(key_value=f"{{{MAPPING_ENTITIES_KEY[type]} : $value}}" if type else "",
+                            properties(rel) AS prop""".format(key_value=f"{{{MAPPING_ENTITIES_KEY[type]} : $value}}" if type and value else "",
                                                               type=":" + MAPPING_ENTITIES_TYPE[type] if type else "",
                                                               hop=hop,
                                                               tenant=TENANT_DATABASE[tenant])
         result = await session.run(query, value=value)
         return await result.data()
-    
-async def explore_entites(tenant: str, type: str, relationship: str):
+
+async def clusters(tenant: str):
     async with driver.session() as session:
-        query="""MATCH p=(entity: {tenant} {type})-[r{relationship}]-(to:{tenant})
-                    RETURN startNode(r) AS source, labels(startNode(r)) AS source_label,
-                            endNode(r) AS target, labels(endNode(r)) AS target_label,
-                            type(r) AS edge_type,
-                            properties(r) AS prop""".format(tenant=TENANT_DATABASE[tenant],
-                                                              type=":"+MAPPING_ENTITIES_TYPE[type] if type else "",
-                                                              relationship=":"+relationship if relationship else "")
-        result = await session.run(query)
-        record = await result.data()
-        return record
-    
-async def get_entities_follow(tenant: str, type: str, relationship: str):
-    result = await explore_entites(tenant, type, relationship)
+        query_edges = """MATCH (a:{tenant})-[r]->(b:{tenant})
+                    RETURN labels(a) AS source_label,
+                    type(r) AS rel_type,
+                    labels(b) AS target_label,
+                    COUNT(r) AS count""".format(tenant=TENANT_DATABASE[tenant])
+        edges = await session.run(query_edges)
+        query_nodes = """MATCH (a:{tenant})
+                    RETURN labels(a) AS label, COUNT(*) AS count""".format(tenant=TENANT_DATABASE[tenant])
+        nodes = await session.run(query_nodes)
+        return {
+            "nodes": await nodes.data(),
+            "edges": await edges.data()
+        }
+
+async def entity_in_cluster(tenant: str, type: str):
+    result = await get_relationship_n_hop(tenant=tenant, type=type, value = None, hop=1)
     return result
 
 async def get_types(tenant: str, relationship:str):
