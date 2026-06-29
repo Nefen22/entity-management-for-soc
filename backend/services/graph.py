@@ -40,14 +40,9 @@ async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
     #return result
     return await format_drawing(result)
 
-# async def explore_entites(tenant: str, type: str, relationship: str):
-#     result = await repo.explore_entites(tenant=tenant, type=type, relationship=relationship)
-#     record = await format_drawing(result)
-#     return record
-
 async def clusters(tenant: str):
     result = await repo.clusters(tenant)
-    nodes = [{  "id": "Cluster_"+[label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
+    nodes = [{  "id": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
                 "type": "Cluster",
                 "entity_type": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
                 "count": record["count"]
@@ -63,10 +58,14 @@ async def clusters(tenant: str):
         "edges": edges
     }
 
-async def entity_in_cluster(tenant: str, type: str):
-    result = await repo.entity_in_cluster(tenant, type)
-    return await format_drawing(result)
-
+async def entities_types_in_cluster(tenant: str, type: str):
+    result = await repo.entities_types_in_cluster(tenant, type)
+    return [{
+        "id": record["node"][MAPPING_ENTITIES_KEY[
+            [label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
+        "type": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
+        "relationship_count": record["count"]
+    } for record in result]
 
 async def get_types(tenant: str, relationship:str):
     result = await repo.get_types(tenant,relationship)
@@ -80,6 +79,6 @@ async def get_types(tenant: str, relationship:str):
             labels.append(ele["label"][0])
     return labels
 
-async def get_relationships(tenant: str, type:str):
-    result = await repo.get_relationships(tenant, type)
+async def filter_relationship(tenant: str, type:str):
+    result = await repo.filter_relationship(tenant, type)
     return [ele["relationshipType"][0] if isinstance(ele["relationshipType"], list) else ele["relationshipType"]  for ele in result]

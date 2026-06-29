@@ -15,20 +15,15 @@ async def ingest_sample(tenant: str, file:str):
     await services.ingest_sample(tenant, file)
     return APIResponse(message="Sample data ingested!")
 
-@router.get("/all-types")
+@router.get("/get-types")
 async def get_types(tenant: str, relationship:str | None = None):
     result = await services.get_types(tenant, relationship)
     return APIResponse(message=f"Get all types: Completed", data=result)
 
-@router.get("/all-relationships")
-async def get_relationships(tenant: str, type:str | None = None):
-    result = await services.get_relationships(tenant, type)
-    return APIResponse(message=f"Get all relationships: Completed", data=result)
-
-# @router.get("/explore")
-# async def explore_entites(tenant: str, type:str | None=None, relationship:str | None=None):
-#     result = await services.explore_entites(tenant, type, relationship)
-#     return APIResponse(message=f"Get all success!", data=result)
+@router.get("/filter-relationships")
+async def filter_relationship(tenant: str, type:str | None = None):
+    result = await services.filter_relationship(tenant=tenant, type=type)
+    return APIResponse(message=f"Get filter {type} relationship with completed", data=result)
 
 @router.get("/clusters")
 async def clusters(tenant: str):
@@ -36,11 +31,11 @@ async def clusters(tenant: str):
     return APIResponse(message=f"Get all clusters success!", data=result)
 
 @router.get("/clusters/{type}")
-async def entity_in_cluster(tenant: str, type: str):
-    result = await services.entity_in_cluster(tenant, type)
+async def entities_types_in_cluster(tenant: str, type: str):
+    result = await services.entities_types_in_cluster(tenant, type)
     return APIResponse(message=f"Get all entity from cluster_{type} success!", data=result)
 
-@router.get("/{type}/{value:path}/{hop}")
-async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
+@router.get("/entities/{type}/{value:path}")
+async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int | None = 1):
     result = await services.get_relationship_n_hop(tenant=tenant, type=type, value=value, hop=hop)
-    return APIResponse(message=f"Get query {hop} hop frrom {value} completed", data=result)
+    return APIResponse(message=f"Get {hop}-hop graph from {value} successfully", data=result)

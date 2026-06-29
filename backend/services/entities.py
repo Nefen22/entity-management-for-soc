@@ -11,6 +11,14 @@ async def post_entity(tenant: str, type:str, value:str):
         pass
     await repo.post_entity(tenant, type, value)
 
+async def get_all_entities(tenant: str):
+    result = await repo.get_all_entities(tenant=tenant)
+    return [{
+        "id": record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
+        "label": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
+        "properties": record["node"]
+    } for record in result]
+
 async def get_entity(tenant: str, type:str, value: str):
     result = await repo.get_entity(tenant=tenant, type=type, value=value)
     if result is None:
@@ -22,9 +30,14 @@ async def get_entity(tenant: str, type:str, value: str):
         "type": labels[0],
         "properties": record["entity"]
     } 
-async def get_list_entity_type(tenant: str,type:str):
-    result = await repo.get_list_entity_type(tenant=tenant, type=type)
-    return await format_drawing(result)
+
+async def get_list_entity(tenant: str,type:str, relationship:str | None = None):
+    result = await repo.get_list_entity(tenant=tenant, type=type, relationship=relationship)
+    return [{
+        "id": record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
+        "label": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
+        "properties": record["node"]
+    } for record in result]
 
 async def check_existed_logs(tenant: str, type:str, value:str, merge = False):
     existed = await get_entity(tenant=tenant, type=type, value=value)

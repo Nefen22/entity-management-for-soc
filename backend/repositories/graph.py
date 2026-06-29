@@ -65,10 +65,15 @@ async def clusters(tenant: str):
             "nodes": await nodes.data(),
             "edges": await edges.data()
         }
-
-async def entity_in_cluster(tenant: str, type: str):
-    result = await get_relationship_n_hop(tenant=tenant, type=type, value = None, hop=1)
-    return result
+    
+async def entities_types_in_cluster(tenant: str, type: str):
+    async with driver.session() as session:
+        query="""MATCH (node:{tenant}:{type})-[r]-(target)
+                RETURN  node,
+                        labels(node) AS label,
+                        COUNT(r) AS count""".format(tenant=TENANT_DATABASE[tenant], type=MAPPING_ENTITIES_TYPE[type])
+        result = await session.run(query)
+        return await result.data()
 
 async def get_types(tenant: str, relationship:str):
     async with driver.session() as session:
@@ -78,9 +83,9 @@ async def get_types(tenant: str, relationship:str):
         result = await session.run(query)
         return await result.data()
 
-async def get_relationships(tenant: str, type:str):
+async def filter_relationship(tenant: str, type:str):
     async with driver.session() as session:
         query = """MATCH (n:{tenant}{type})-[r]-(t:{tenant})
-                RETURN DISTINCT type(r) AS relationshipType""".format(tenant=TENANT_DATABASE[tenant], type=":"+type if type else "")
+                RETURN DISTINCT type(r) AS relationshipType""".format(tenant=TENANT_DATABASE[tenant], type=":"+MAPPING_ENTITIES_TYPE[type] if type else "")
         result = await session.run(query)
         return await result.data()

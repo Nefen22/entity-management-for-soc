@@ -4,9 +4,14 @@ from models.responses import APIResponse
 
 router = APIRouter()
 
+@router.get("")
+async def get_all_entities(tenant: str):
+    result = await services.get_all_entities(tenant=tenant)
+    return APIResponse(message=f"Get {type}: Completed", data=result)
+
 @router.get("/{type}")
-async def get_list_entity_type(tenant: str,type:str):
-    result = await services.get_list_entity_type(tenant=tenant, type=type)
+async def get_list_entity_type_rels(tenant: str,type:str, relationship: str | None = None):
+    result = await services.get_list_entity(tenant=tenant, type=type, relationship = relationship)
     return APIResponse(message=f"Get {type}: Completed", data=result)
 
 @router.get("/{type}/{value:path}")

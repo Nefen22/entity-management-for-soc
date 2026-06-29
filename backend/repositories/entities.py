@@ -13,11 +13,25 @@ async def get_entity(tenant: str, type: str, value: str):
         if not record:
             return None
         return record
+    
+async def get_all_entities(tenant: str):
+    async with driver.session() as session:
+        query ="""MATCH (node: {tenant})
+                    RETURN node, labels(node) AS label
+                    """.format(tenant=TENANT_DATABASE[tenant])
+        result = await session.run(query)
+        return await result.data()
 
- 
-async def get_list_entity_type(tenant: str, type:str):
-    result = await get_relationship_n_hop(tenant=tenant, type=type, hop = 1, value=None)
-    return result
+async def get_list_entity(tenant: str, type:str, relationship:str):
+    async with driver.session() as session:
+        rel = ""
+        if relationship:
+            rel = f"-[rel:{relationship}]-(t)"
+        query ="""MATCH (node: {tenant} {type}) {rels}
+                    RETURN node, labels(node) AS label
+                    """.format(tenant=TENANT_DATABASE[tenant], type = ":"+MAPPING_ENTITIES_TYPE[type], rels=rel)
+        result = await session.run(query)
+        return await result.data()
 
 async def post_entity(tenant: str, type: str, value: str):
     type = type if type != "file-hashes" else "file_hashes"
