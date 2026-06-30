@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, status
 import repositories.entities as repo
 from models.responses import APIResponse
 from logs.audit_log import write_audit_log
-from .function import format_drawing
 from database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE,MAPPING_ENTITIES_TYPE
 
 async def post_entity(tenant: str, type:str, value:str):
