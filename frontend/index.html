@@ -959,8 +959,23 @@ function renderActionPanel(node) {
 async function showDetail(node) {
   const area = document.getElementById('detailPanel');
   data = node;
+  let relationships = [];
+
   if (Object.keys(data.properties).length === 0){
-    console.log("query")
+
+      if (data.isCluster !== "true") {
+        try {
+          const result = await safeFetchJson(
+            apiUrl(
+              `/graphs/entities/${encodeURIComponent(type)}/${encodeURIComponent(data.id)}?hop=1`
+            )
+          );
+          console.log(result)
+          relationships = result.edges;
+        } catch (err) {
+          console.error(err);
+        }
+      }
       const fetch = await safeFetchJson(
         apiUrl(
           `/entities/${encodeURIComponent(data.type)}/${encodeURIComponent(data.id)}`
@@ -968,7 +983,6 @@ async function showDetail(node) {
       );
       data = fetch
   }
-  console.log(data)
   props=data.properties;
   const type = data.isCluster === "true"
     ? "CLUSTER"
@@ -982,23 +996,6 @@ async function showDetail(node) {
     `)
     .join('') ||
     '<div class="empty-note">Không có thuộc tính.</div>';
-
-  let relationships = [];
-
-  // Chỉ query relationship với entity thường
-  if (data.isCluster !== "true") {
-    try {
-      const result = await safeFetchJson(
-        apiUrl(
-          `/graphs/entities/${encodeURIComponent(type)}/${encodeURIComponent(data.id)}?hop=1`
-        )
-      );
-      console.log(result)
-      relationships = result.edges;
-    } catch (err) {
-      console.error(err);
-    }
-  }
 
   const relsHtml = relationships.length
     ? relationships
@@ -1081,19 +1078,18 @@ async function showDetail(node) {
           apiUrl(path),
           { method: "POST" }
         );
-
-        const nodeId = result.id || data.id;
+        const nodeId = data.id;
         const cyNode = cy.getElementById(nodeId);
 
         if (cyNode.length) {
           const merged = {
             ...cyNode.data("properties"),
-            ...(result.properties || {})
+            ...(result.properties)
           };
 
           cyNode.data("properties", merged);
-
-          showDetail(cyNode);
+          
+          showDetail(result);
         }
 
         showToast("Enrichment hoàn tất");
