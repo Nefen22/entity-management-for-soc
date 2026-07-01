@@ -252,9 +252,17 @@ AWS_S3       = re.compile(r"\bs3://[a-z0-9.\-]+(?:/[^\s\"']*)?\b")
 AWS_INSTANCE = re.compile(r"\bi-[0-9a-f]{8,17}\b")
 CLOUD_RESOURCE = [AWS_ARN, AWS_S3, AWS_INSTANCE]
 
+DOMAIN = re.compile(
+    r"\b(?!(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"  # Loại trừ IP để không bị trùng lặp thực thể
+    r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+"
+    r"[a-zA-Z]{2,6}\b"
+)
+
+
 # ── Gom tất cả theo entity type ──────────────────────────────────────────────
 ALL_PATTERNS: dict[str, list[re.Pattern]] = {
     "ips":            [IPV4],
+    "domains":         [DOMAIN],
     "urls":           [URL],
     "file_hashes":      HASH,
     "emails":         [EMAIL],

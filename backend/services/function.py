@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from backend.database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY, TENANT_DATABASE
+from database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY, TENANT_DATABASE
 from neo4j.time import DateTime
 from datetime import datetime
 import time

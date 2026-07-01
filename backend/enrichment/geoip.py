@@ -3,11 +3,14 @@ import geoip2.database
 import ipaddress
 import json
 from cachetools import TTLCache
+from pathlib import Path
 
 geoip2_cache = TTLCache(maxsize=1000, ttl=3600)
+CURRENT_DIR = Path(__file__).resolve().parent
+JSON_PATH = CURRENT_DIR / "data"
 
-reader_city = geoip2.database.Reader("/data/GeoLite2-City.mmdb")
-reader_asn = geoip2.database.Reader("/data/GeoLite2-ASN.mmdb")
+reader_city = geoip2.database.Reader(f"{JSON_PATH}/GeoLite2-City.mmdb")
+reader_asn = geoip2.database.Reader(f"{JSON_PATH}/GeoLite2-ASN.mmdb")
 
 async def enrichment_ip_func(value: str):
     try:

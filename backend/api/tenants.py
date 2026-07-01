@@ -10,6 +10,7 @@ router = APIRouter(prefix = "/api/tenants")
 
 def validate_tenant(tenant: str):
     if tenant not in TENANT_DATABASE.keys():
+        print("tenants not found")
         raise HTTPException(404, "Tenant not found")
     return tenant
 
@@ -20,4 +21,5 @@ router.include_router(graphs_router, prefix = "/{tenant}/graphs", tags = ["Graph
 @router.get("")
 def get_tenants():
     return list(TENANT_DATABASE.keys())
+
 

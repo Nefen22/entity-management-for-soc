@@ -1,7 +1,7 @@
 import re 
 from .base_parser import BaseParser
 from .edge_parser import Vertex
-from backend.database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_TYPE, ALL_PATTERNS
+from database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_TYPE, ALL_PATTERNS
 import ipaddress
 
 
@@ -13,6 +13,7 @@ class AlertParser(BaseParser):
     def from_event(cls, event: dict):
         message = event.get("message")
         lst = []
+        time = str(event.get("timestamp"))
         nodes= []
         for k,v in ALL_PATTERNS.items():
             sub_lst = []
@@ -21,7 +22,9 @@ class AlertParser(BaseParser):
             lst+=sub_lst
         edges = [{"source": s_node,
                    "target": t_node,
-                   "type": MAPPING_RELATIONSHIPS[s_node.type][t_node.type] if (s_node.type, t_node.type) in MAPPING_RELATIONSHIPS.keys() else ""}
+                   "type": MAPPING_RELATIONSHIPS[(s_node.type,t_node.type)] if (s_node.type, t_node.type) in MAPPING_RELATIONSHIPS.keys() else "",
+                   "time": time,
+                   }
                    for s_node in nodes for t_node in nodes]
         edges=[edge for edge in edges if edge["type"] != ""]
         return cls(

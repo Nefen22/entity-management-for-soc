@@ -6,7 +6,13 @@ from cachetools import TTLCache
 from database.neo4j import driver
 
 hash_cache = TTLCache(maxsize=1000, ttl=3500)
-with open("/data/virustotal.json") as f:
+from pathlib import Path
+
+CURRENT_DIR = Path(__file__).resolve().parent
+JSON_PATH = CURRENT_DIR / "data" / "virustotal.json" 
+
+
+with open(JSON_PATH) as f:
     load_hash = json.load(f) 
 
 
@@ -20,7 +26,7 @@ async def enrichment_file_hash_func(hash_value:str):
     else:
         enrich_element = lookup_hash(hash_value = hash_value)
         if enrich_element is None:
-            return []
+            return {}
         hash_cache[hash_value] = enrich_element
     return enrich_element
 

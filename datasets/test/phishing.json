@@ -1,0 +1,195 @@
+[
+  {
+    "event_id": "ds1-evt-001",
+    "timestamp": "2026-06-01T09:00:00Z",
+    "source_type": "siem",
+    "event_type": "email_receive",
+    "user": "hr.manager",
+    "sender_email": "rewards@hr-portal-update.com",
+    "recipient_email": "hr.manager@company.local",
+    "destination_domain": "hr-portal-update.com",
+    "url": "http://hr-portal-update.com/login.php"
+  },
+  {
+    "event_id": "ds1-evt-002",
+    "timestamp": "2026-06-01T09:02:00Z",
+    "source_type": "edr",
+    "event_type": "url_request",
+    "user": "hr.manager",
+    "destination_host": "DESKTOP-HR01",
+    "url": "http://hr-portal-update.com/bonus_doc.exe",
+    "destination_ip": "198.51.100.23"
+  },
+  {
+    "event_id": "ds1-evt-003",
+    "timestamp": "2026-06-01T09:03:15Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "hr.manager",
+    "destination_host": "DESKTOP-HR01",
+    "file_hash": "e99a18c428cb38d5f260853678922e03"
+  },
+  {
+    "event_id": "ds1-evt-004",
+    "timestamp": "2026-06-01T09:03:16Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "hr.manager",
+    "destination_host": "DESKTOP-HR01",
+    "process_name": "bonus_doc.exe",
+    "parent_process": "explorer.exe",
+    "file_hash": "e99a18c428cb38d5f260853678922e03"
+  },
+  {
+    "event_id": "ds1-evt-005",
+    "timestamp": "2026-06-01T09:03:18Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "SYSTEM",
+    "destination_host": "DESKTOP-HR01",
+    "process_name": "cmd.exe",
+    "parent_process": "bonus_doc.exe"
+  },
+  {
+    "event_id": "ds1-evt-006",
+    "timestamp": "2026-06-01T09:03:20Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "SYSTEM",
+    "destination_host": "DESKTOP-HR01",
+    "process_name": "whoami.exe",
+    "parent_process": "cmd.exe"
+  },
+  {
+    "event_id": "ds1-evt-007",
+    "timestamp": "2026-06-01T09:05:00Z",
+    "source_type": "edr",
+    "event_type": "network_connection",
+    "source_host": "DESKTOP-HR01",
+    "destination_ip": "198.51.100.23",
+    "destination_domain": "c2-server.net"
+  },
+  {
+    "event_id": "ds1-evt-008",
+    "timestamp": "2026-06-01T09:10:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "SYSTEM",
+    "destination_host": "DESKTOP-HR01",
+    "process_name": "powershell.exe",
+    "parent_process": "cmd.exe"
+  },
+  {
+    "event_id": "ds1-evt-009",
+    "timestamp": "2026-06-01T09:15:00Z",
+    "source_type": "edr",
+    "event_type": "vulnerability_detected",
+    "destination_host": "DESKTOP-HR01",
+    "cve_id": "CVE-2022-26923",
+    "process_name": "powershell.exe"
+  },
+  {
+    "event_id": "ds1-evt-010",
+    "timestamp": "2026-06-01T09:20:00Z",
+    "source_type": "edr",
+    "event_type": "network_connection",
+    "source_host": "DESKTOP-HR01",
+    "destination_ip": "192.168.10.5",
+    "destination_port": 445
+  },
+  {
+    "event_id": "ds1-evt-011",
+    "timestamp": "2026-06-01T09:22:00Z",
+    "source_type": "edr",
+    "event_type": "network_connection",
+    "source_host": "DESKTOP-HR01",
+    "destination_ip": "192.168.10.12",
+    "destination_port": 3389
+  },
+  {
+    "event_id": "ds1-evt-012",
+    "timestamp": "2026-06-01T09:30:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "hr.manager",
+    "source_ip": "192.168.10.50",
+    "destination_host": "DC-SERVER-01",
+    "status": "failed"
+  },
+  {
+    "event_id": "ds1-evt-013",
+    "timestamp": "2026-06-01T09:31:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "hr.manager",
+    "source_ip": "192.168.10.50",
+    "destination_host": "DC-SERVER-01",
+    "status": "failed"
+  },
+  {
+    "event_id": "ds1-evt-014",
+    "timestamp": "2026-06-01T09:32:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "hr.manager",
+    "source_ip": "192.168.10.50",
+    "destination_host": "DC-SERVER-01",
+    "status": "success"
+  },
+  {
+    "event_id": "ds1-evt-015",
+    "timestamp": "2026-06-01T09:35:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "hr.manager",
+    "destination_host": "DC-SERVER-01",
+    "process_name": "ntdsutil.exe",
+    "parent_process": "cmd.exe"
+  },
+  {
+    "event_id": "ds1-evt-016",
+    "timestamp": "2026-06-01T09:40:00Z",
+    "source_type": "edr",
+    "event_type": "file_creation",
+    "user": "hr.manager",
+    "destination_host": "DC-SERVER-01",
+    "file_path": "C:\\Windows\\Temp\\ntds.dit"
+  },
+  {
+    "event_id": "ds1-evt-017",
+    "timestamp": "2026-06-01T09:45:00Z",
+    "source_type": "cloud",
+    "event_type": "dns_request",
+    "source_host": "DC-SERVER-01",
+    "destination_domain": "filetransfer.io"
+  },
+  {
+    "event_id": "ds1-evt-018",
+    "timestamp": "2026-06-01T09:47:00Z",
+    "source_type": "cloud",
+    "event_type": "network_connection",
+    "source_host": "DC-SERVER-01",
+    "destination_ip": "104.21.43.11",
+    "destination_domain": "filetransfer.io"
+  },
+  {
+    "event_id": "ds1-evt-019",
+    "timestamp": "2026-06-01T10:00:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "administrator",
+    "source_ip": "192.168.10.50",
+    "destination_host": "DC-SERVER-01",
+    "status": "success"
+  },
+  {
+    "event_id": "ds1-evt-020",
+    "timestamp": "2026-06-01T10:05:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "administrator",
+    "destination_host": "DC-SERVER-01",
+    "process_name": "vssadmin.exe",
+    "parent_process": "cmd.exe"
+  }
+]

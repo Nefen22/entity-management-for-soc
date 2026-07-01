@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from .edge_parser import EdgePaser, Vertex
-from backend.database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_RELATIONSHIPS
+from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_RELATIONSHIPS
 
 
 def clean(lst):

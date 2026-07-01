@@ -6,7 +6,7 @@ DEMO_DATASETS  = {
 
 TEST_DATASETS = {
     "phishing": "test/phishing.json",
-    "ransomeware": "test/ransomeware.json",
+    "ransomware": "test/ransomware.json",
     "insider_threat": "test/insider_threat.json",
 }
 

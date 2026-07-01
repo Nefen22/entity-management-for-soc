@@ -2,8 +2,9 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 
-PATH = Path("/app/backend/logs/audit_log.json")
-PATH.parent.mkdir(parents=True, exist_ok=True)
+CURRENT_DIR = Path(__file__).resolve().parent
+LOG_DIR = CURRENT_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 def write_audit_log(action: str, entity_type: str, entity_id: str, change: dict | None = None):
     entry = {
@@ -13,5 +14,5 @@ def write_audit_log(action: str, entity_type: str, entity_id: str, change: dict 
         "entity_id": entity_id,
         "change": change or {}
     }
-    with open(PATH, "a") as f:
+    with open(LOG_DIR/"audit_log.json", "a") as f:
         f.write(json.dumps(entry) + ",\n")

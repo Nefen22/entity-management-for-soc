@@ -1,0 +1,193 @@
+[
+  {
+    "event_id": "ds2-evt-001",
+    "timestamp": "2026-06-02T23:00:00Z",
+    "source_type": "siem",
+    "event_type": "network_connection",
+    "source_ip": "45.133.201.10",
+    "destination_ip": "10.0.3.15",
+    "destination_port": 8080
+  },
+  {
+    "event_id": "ds2-evt-002",
+    "timestamp": "2026-06-02T23:01:10Z",
+    "source_type": "edr",
+    "event_type": "vulnerability_detected",
+    "destination_host": "APP-SERVER-02",
+    "cve_id": "CVE-2021-44228",
+    "process_name": "java.exe"
+  },
+  {
+    "event_id": "ds2-evt-003",
+    "timestamp": "2026-06-02T23:02:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "process_name": "cmd.exe",
+    "parent_process": "java.exe"
+  },
+  {
+    "event_id": "ds2-evt-004",
+    "timestamp": "2026-06-02T23:03:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "process_name": "powershell.exe",
+    "parent_process": "cmd.exe"
+  },
+  {
+    "event_id": "ds2-evt-005",
+    "timestamp": "2026-06-02T23:04:15Z",
+    "source_type": "edr",
+    "event_type": "url_request",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "url": "http://malicious-actor.com/encryptor.exe",
+    "destination_ip": "45.133.201.10"
+  },
+  {
+    "event_id": "ds2-evt-006",
+    "timestamp": "2026-06-02T23:04:18Z",
+    "source_type": "edr",
+    "event_type": "file_creation",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "file_path": "C:\\Users\\Public\\encryptor.exe",
+    "file_hash": "88889999aaaabbbbccccddddeeeeffff"
+  },
+  {
+    "event_id": "ds2-evt-007",
+    "timestamp": "2026-06-02T23:05:00Z",
+    "source_type": "edr",
+    "event_type": "file_execution",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "file_hash": "88889999aaaabbbbccccddddeeeeffff"
+  },
+  {
+    "event_id": "ds2-evt-008",
+    "timestamp": "2026-06-02T23:05:01Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "process_name": "encryptor.exe",
+    "parent_process": "powershell.exe"
+  },
+  {
+    "event_id": "ds2-evt-009",
+    "timestamp": "2026-06-02T23:05:05Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "process_name": "vssadmin.exe",
+    "parent_process": "encryptor.exe"
+  },
+  {
+    "event_id": "ds2-evt-010",
+    "timestamp": "2026-06-02T23:05:07Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "process_name": "wbadmin.exe",
+    "parent_process": "encryptor.exe"
+  },
+  {
+    "event_id": "ds2-evt-011",
+    "timestamp": "2026-06-02T23:05:10Z",
+    "source_type": "edr",
+    "event_type": "file_modification",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "file_path": "D:\\Database\\prod_db.mdf",
+    "action": "renamed",
+    "new_extension": ".locked"
+  },
+  {
+    "event_id": "ds2-evt-012",
+    "timestamp": "2026-06-02T23:05:15Z",
+    "source_type": "edr",
+    "event_type": "file_modification",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "file_path": "D:\\Database\\prod_db.ldf",
+    "action": "renamed",
+    "new_extension": ".locked"
+  },
+  {
+    "event_id": "ds2-evt-013",
+    "timestamp": "2026-06-02T23:05:30Z",
+    "source_type": "edr",
+    "event_type": "file_creation",
+    "user": "tomcat_user",
+    "destination_host": "APP-SERVER-02",
+    "file_path": "D:\\Database\\README_RECOVERY.txt"
+  },
+  {
+    "event_id": "ds2-evt-014",
+    "timestamp": "2026-06-02T23:10:00Z",
+    "source_type": "cloud",
+    "event_type": "network_connection",
+    "source_host": "APP-SERVER-02",
+    "destination_ip": "45.133.201.10",
+    "destination_domain": "onion.to"
+  },
+  {
+    "event_id": "ds2-evt-015",
+    "timestamp": "2026-06-02T23:15:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "admin",
+    "source_ip": "192.168.1.15",
+    "destination_host": "APP-SERVER-02",
+    "status": "success"
+  },
+  {
+    "event_id": "ds2-evt-016",
+    "timestamp": "2026-06-02T23:18:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "admin",
+    "destination_host": "APP-SERVER-02",
+    "process_name": "taskmgr.exe",
+    "parent_process": "explorer.exe"
+  },
+  {
+    "event_id": "ds2-evt-017",
+    "timestamp": "2026-06-02T23:20:00Z",
+    "source_type": "edr",
+    "event_type": "process_terminate",
+    "user": "admin",
+    "destination_host": "APP-SERVER-02",
+    "process_name": "encryptor.exe"
+  },
+  {
+    "event_id": "ds2-evt-018",
+    "timestamp": "2026-06-02T23:25:00Z",
+    "source_type": "cloud",
+    "event_type": "dns_request",
+    "source_host": "APP-SERVER-02",
+    "destination_domain": "microsoft.com"
+  },
+  {
+    "event_id": "ds2-evt-019",
+    "timestamp": "2026-06-02T23:30:00Z",
+    "source_type": "edr",
+    "event_type": "vulnerability_detected",
+    "destination_host": "APP-SERVER-02",
+    "cve_id": "CVE-2023-34362"
+  },
+  {
+    "event_id": "ds2-evt-020",
+    "timestamp": "2026-06-02T23:35:00Z",
+    "source_type": "siem",
+    "event_type": "service_state_change",
+    "destination_host": "APP-SERVER-02",
+    "service_name": "MSSQLSERVER",
+    "status": "stopped"
+  }
+]

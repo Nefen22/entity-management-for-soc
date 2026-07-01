@@ -1,0 +1,192 @@
+[
+  {
+    "event_id": "ds3-evt-001",
+    "timestamp": "2026-06-03T14:00:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "mark.bad",
+    "source_ip": "192.168.5.110",
+    "destination_host": "DESKTOP-MARK"
+  },
+  {
+    "event_id": "ds3-evt-002",
+    "timestamp": "2026-06-03T14:05:00Z",
+    "source_type": "cloud",
+    "event_type": "resource_access",
+    "user": "mark.bad",
+    "resource_id": "arn:aws:s3:::corp-financial-records-2026",
+    "action": "ListBucket",
+    "destination_ip": "52.216.10.35"
+  },
+  {
+    "event_id": "ds3-evt-003",
+    "timestamp": "2026-06-03T14:06:00Z",
+    "source_type": "cloud",
+    "event_type": "resource_access",
+    "user": "mark.bad",
+    "resource_id": "arn:aws:s3:::corp-financial-records-2026/Q1_report.xlsx",
+    "action": "GetObject",
+    "destination_ip": "52.216.10.35"
+  },
+  {
+    "event_id": "ds3-evt-004",
+    "timestamp": "2026-06-03T14:07:00Z",
+    "source_type": "cloud",
+    "event_type": "resource_access",
+    "user": "mark.bad",
+    "resource_id": "arn:aws:s3:::corp-financial-records-2026/Q2_report.xlsx",
+    "action": "GetObject",
+    "destination_ip": "52.216.10.35"
+  },
+  {
+    "event_id": "ds3-evt-005",
+    "timestamp": "2026-06-03T14:08:00Z",
+    "source_type": "cloud",
+    "event_type": "resource_access",
+    "user": "mark.bad",
+    "resource_id": "arn:aws:s3:::corp-financial-records-2026/customer_list.csv",
+    "action": "GetObject",
+    "destination_ip": "52.216.10.35"
+  },
+  {
+    "event_id": "ds3-evt-006",
+    "timestamp": "2026-06-03T14:15:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "mark.bad",
+    "destination_host": "DESKTOP-MARK",
+    "process_name": "winrar.exe",
+    "parent_process": "explorer.exe"
+  },
+  {
+    "event_id": "ds3-evt-007",
+    "timestamp": "2026-06-03T14:16:00Z",
+    "source_type": "edr",
+    "event_type": "file_creation",
+    "user": "mark.bad",
+    "destination_host": "DESKTOP-MARK",
+    "file_path": "C:\\Users\\mark.bad\\Documents\\leak_data.rar",
+    "file_hash": "11223344556677889900aabbccddeeff"
+  },
+  {
+    "event_id": "ds3-evt-008",
+    "timestamp": "2026-06-03T14:20:00Z",
+    "source_type": "cloud",
+    "event_type": "dns_request",
+    "source_host": "DESKTOP-MARK",
+    "destination_domain": "mega.nz"
+  },
+  {
+    "event_id": "ds3-evt-009",
+    "timestamp": "2026-06-03T14:21:00Z",
+    "source_type": "edr",
+    "event_type": "url_request",
+    "user": "mark.bad",
+    "destination_host": "DESKTOP-MARK",
+    "url": "https://mega.nz/upload",
+    "destination_ip": "31.216.144.5"
+  },
+  {
+    "event_id": "ds3-evt-010",
+    "timestamp": "2026-06-03T14:22:00Z",
+    "source_type": "cloud",
+    "event_type": "network_connection",
+    "source_host": "DESKTOP-MARK",
+    "destination_ip": "31.216.144.5",
+    "bytes_sent": 45000000
+  },
+  {
+    "event_id": "ds3-evt-011",
+    "timestamp": "2026-06-03T14:30:00Z",
+    "source_type": "siem",
+    "event_type": "email_send",
+    "user": "mark.bad",
+    "sender_email": "mark.bad@corp.local",
+    "recipient_email": "mark.bad.private@gmail.com",
+    "subject": "Resignation Letter"
+  },
+  {
+    "event_id": "ds3-evt-012",
+    "timestamp": "2026-06-03T14:35:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "mark.bad",
+    "destination_host": "DESKTOP-MARK",
+    "process_name": "cmd.exe",
+    "parent_process": "explorer.exe"
+  },
+  {
+    "event_id": "ds3-evt-013",
+    "timestamp": "2026-06-03T14:36:00Z",
+    "source_type": "edr",
+    "event_type": "process_create",
+    "user": "mark.bad",
+    "destination_host": "DESKTOP-MARK",
+    "process_name": "cipher.exe",
+    "parent_process": "cmd.exe"
+  },
+  {
+    "event_id": "ds3-evt-014",
+    "timestamp": "2026-06-03T14:40:00Z",
+    "source_type": "edr",
+    "event_type": "file_deletion",
+    "user": "mark.bad",
+    "destination_host": "DESKTOP-MARK",
+    "file_path": "C:\\Users\\mark.bad\\Documents\\leak_data.rar"
+  },
+  {
+    "event_id": "ds3-evt-015",
+    "timestamp": "2026-06-03T14:45:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "security_officer",
+    "source_ip": "192.168.1.5",
+    "destination_host": "SIEM-CONSOLE"
+  },
+  {
+    "event_id": "ds3-evt-016",
+    "timestamp": "2026-06-03T14:50:00Z",
+    "source_type": "cloud",
+    "event_type": "resource_access",
+    "user": "security_officer",
+    "resource_id": "arn:aws:iam::123456789:user/mark.bad",
+    "action": "PutUserPolicy"
+  },
+  {
+    "event_id": "ds3-evt-017",
+    "timestamp": "2026-06-03T14:52:00Z",
+    "source_type": "cloud",
+    "event_type": "policy_change",
+    "user": "security_officer",
+    "policy_name": "DenyAllCloudAccess",
+    "target_user": "mark.bad"
+  },
+  {
+    "event_id": "ds3-evt-018",
+    "timestamp": "2026-06-03T15:00:00Z",
+    "source_type": "cloud",
+    "event_type": "resource_access",
+    "user": "mark.bad",
+    "resource_id": "arn:aws:s3:::corp-financial-records-2026",
+    "action": "ListBucket",
+    "status": "AccessDenied"
+  },
+  {
+    "event_id": "ds3-evt-019",
+    "timestamp": "2026-06-03T15:05:00Z",
+    "source_type": "edr",
+    "event_type": "vulnerability_detected",
+    "destination_host": "DESKTOP-MARK",
+    "cve_id": "CVE-2020-0601"
+  },
+  {
+    "event_id": "ds3-evt-020",
+    "timestamp": "2026-06-03T15:10:00Z",
+    "source_type": "siem",
+    "event_type": "authentication",
+    "user": "mark.bad",
+    "source_ip": "192.168.5.110",
+    "destination_host": "DESKTOP-MARK",
+    "action": "logout"
+  }
+]

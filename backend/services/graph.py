@@ -8,7 +8,7 @@ from models.responses import APIResponse
 import repositories.graph as repo
 from .entities import post_entity, check_existed_logs
 from logs.audit_log import write_audit_log
-from backend.database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
+from database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
 from .function import format_drawing, check_n_add_nodes
 
 
@@ -16,6 +16,8 @@ from .function import format_drawing, check_n_add_nodes
 async def ingest(tenant: str, events: dict):
     if events.get("source_type") == "alert":
         sub_event = AlertParser.from_event(events)
+        if sub_event is None:
+            pass
     else:
         sub_event = JsonParser.from_event(events, events.get("source_type"))
     rel = sub_event.get_relationship()
