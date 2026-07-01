@@ -1,6 +1,6 @@
 from database.neo4j import driver
 from parsers.edge_parser import EdgePaser
-from backend.database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, TENANT_DATABASE
+from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, TENANT_DATABASE
 
 
 async def post_relationship(tenant: str, edge: EdgePaser):

@@ -100,7 +100,6 @@ MAPPING_RELATIONSHIPS = {
     ("Host", "Domain"):   "RESOLVED",
     ("Domain", "IP"):     "RESOLVES_TO",
     ("Host", "URL"):      "REQUESTED",
-    ("Host", "IP"):       "CONNECTED_TO", # Bổ sung Host -> IP trực tiếp
 
     # ===== Process =====
     ("Process", "Host"):     "RUNS_ON",
@@ -108,14 +107,14 @@ MAPPING_RELATIONSHIPS = {
     ("Process", "FileHash"): "LOADED",
     ("Process", "IP"):       "CONNECTED_TO",
     ("Process", "URL"):      "REQUESTED",
-    ("Process", "Process"):  "SPAWNED",       
-    ("Process", "Domain"):   "CONNECTED_TO",  # Bổ sung Process -> Domain (Cho evt-016)
+    ("Process", "Process"):  "SPAWNED",     
+    ("Process", "Domain"):   "CONNECTED_TO",
 
     # ===== URL / Domain =====
     ("URL", "Domain"): "BELONGS_TO",
 
     # ===== Email =====
-    ("User", "Email"):    "OWNS",
+    ("User", "Email"):     "OWNS",
     ("Email", "Domain"):  "HOSTED_BY",
     ("Email", "URL"):     "CONTAINS",
     ("Email", "FileHash"): "ATTACHED",
@@ -133,6 +132,7 @@ MAPPING_RELATIONSHIPS = {
 }
 
 # ── SIEM ──────────────────────────────────────────────────────────────────────
+# Đã bổ sung file_hashes để phân tích sâu kịch bản Phishing đính kèm Malware độc hại
 SIEM_INCLUDE = {
     "nodes": {
         "users":            ["user"],
@@ -140,13 +140,16 @@ SIEM_INCLUDE = {
         "hosts":            ["destination_host"],   
         "urls":             ["url"], 
         "sender_emails":    ["sender_email"],       
-        "recipient_emails": ["recipient_email"],    
+        "recipient_emails": ["recipient_email"],
+        "file_hashes":      ["file_hash"] 
     },
     "edges": [
         ("source_ip",        "destination_host"),   
         ("user",            "destination_host"),   
         ("sender_email",    "recipient_email"),    
-        ("sender_email",    "url"),                
+        ("sender_email",    "url"),
+        ("sender_email",    "file_hash"), # Khôi phục liên kết Email -> File độc hại đính kèm (ATTACHED)
+        ("user",            "sender_email") # Khôi phục mối liên kết User -> Email (OWNS) khi gửi mail
     ]
 }
 
@@ -171,16 +174,17 @@ EDR_INCLUDE = {
         ("destination_host", "destination_domain"),
         ("destination_host", "url"),
         
-        # Process Relations (Sửa lỗi cô lập hành vi như evt-016)
-        ("parent_process",   "process_name"),     
-        ("process_name",     "destination_host"), # Process RUNS_ON Host
-        ("process_name",     "user"),             # Process EXECUTED_BY User
-        ("process_name",     "destination_ip"),   # Process CONNECTED_TO IP
-        ("process_name",     "destination_domain"),# Process CONNECTED_TO Domain
+        # Process Relations
+        ("parent_process",   "process_name"),     # (Process, Process) -> SPAWNED
+        ("process_name",     "destination_host"), # (Process, Host) -> RUNS_ON
+        ("process_name",     "user"),             # (Process, User) -> EXECUTED_BY
+        ("process_name",     "file_hash"),        # (Process, FileHash) -> LOADED (Quan trọng!)
+        ("process_name",     "destination_ip"),   # (Process, IP) -> CONNECTED_TO
+        ("process_name",     "destination_domain"),# (Process, Domain) -> CONNECTED_TO
 
-        # Vulnerability (Sửa lỗi mất CVE dữ liệu EDR)
-        ("cve_id",           "destination_host"), # CVE AFFECTS Host
-        ("cve_id",           "process_name"),     # CVE AFFECTS Process
+        # Vulnerability
+        ("cve_id",           "destination_host"), 
+        ("cve_id",           "process_name"),     
     ]
 }
 
@@ -201,22 +205,17 @@ CLOUD_INCLUDE = {
         ("destination_domain", "destination_ip"),     
         ("source_host",       "url"),
         
-        # SỬA TẠI ĐÂY: Thay "cloud_resources" bằng tên trường thực tế "resource_id"
-        ("user",              "resource_id"),    # Sẽ map thành (User, CloudResource) -> ACCESSED
-        ("resource_id",       "destination_ip"), # Sẽ map thành (CloudResource, IP) -> ASSIGNED_TO
-        ("resource_id",       "source_host"),    # Sẽ map thành (CloudResource, Host) -> RUNS_ON
+        # Cloud Access & Mapping
+        ("user",              "resource_id"),    # (User, CloudResource) -> ACCESSED
+        ("resource_id",       "destination_ip"), # (CloudResource, IP) -> ASSIGNED_TO
+        ("resource_id",       "source_host"),    # (CloudResource, Host) -> RUNS_ON
         
         # Lỗ hổng Cloud
-        ("cve_id",            "resource_id"),    # Sẽ map thành (CVE, CloudResource) -> AFFECTS
+        ("cve_id",            "resource_id"),    # (CVE, CloudResource) -> AFFECTS
     ]
 }
 
-TENANT_DATABASE = {
-    "acme": "Tenant_Acme",
-    "google": "Tenant_Google",
-    "internal": "Tenant_Internal"
-}
-
+TENANT_DATABASE = {}
 
 # ── IP ───────────────────────────────────────────────────────────────────────
 IPV4 = re.compile(

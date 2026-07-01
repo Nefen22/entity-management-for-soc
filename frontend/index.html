@@ -525,6 +525,7 @@ async function loadOverviewClusterGraph() {
         group: 'nodes',
         data: {
           id: `Cluster:${type}`,
+          fullLabel: `${type}`,
           label: `${type} (${c.count})`,
           color: colorFor(type),
           size: 58,
@@ -1032,8 +1033,8 @@ async function showDetail(node) {
     relsHtml = relationships.length
     ? relationships.map(rel => `
         <div class="prop-row">
-          <span class="k">${shorten(rel.id, 10)}</span>
-          <span class="v"> (${rel.relationship_count}) relationships</span>
+          <span class="k">${shorten(rel.id, 16)}</span>
+          <span class="v">(${rel.relationship_count}) relationships</span>
         </div>
       `).join("")
     : '<div class="empty-note">Cluster chưa được mở hoặc không có entity.</div>';
@@ -1067,7 +1068,7 @@ async function showDetail(node) {
     </span>
 
     <div class="id-box">
-    ${data.type}:${data.fullLabel || data.id}
+    ${type}:${data.fullLabel || data.id}
     </div>
 
     ${enrichHtml}

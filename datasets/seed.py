@@ -1,11 +1,13 @@
 DEMO_DATASETS  = {
-    "acme": "sample_data.json",
-    "google": "new_sample.json",
-    "internal": "sample_data1.json"
+    "acme": "demo/sample_data.json",
+    "google": "demo/sample_data1.json",
+    "internal": "demo/sample_data2.json"
 }
 
 TEST_DATASETS = {
-
+    "phishing": "test/phishing.json",
+    "ransomeware": "test/ransomeware.json",
+    "insider_threat": "test/insider_threat.json",
 }
 
 SEED={

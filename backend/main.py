@@ -6,6 +6,7 @@ from pathlib import Path
 from database.neo4j import init_db, driver
 from api.graph import ingest_sample
 from datasets.seed import SEED
+from database.constraints import TENANT_DATABASE
 import asyncio
 import os
 
@@ -26,8 +27,16 @@ async def lifespan(app: FastAPI):
 
     yield
 
+async def load_tenant(tenant: str):
+    TENANT_DATABASE[tenant] = f"Tenant_{tenant}"
+    async with driver.session() as session:
+        await session.run(
+            f"CREATE (n:{TENANT_DATABASE[tenant]} {{dummy: true}}) DETACH DELETE n"
+        )
+
 async def seed_db(seed:dict):
     for tenant, file in seed.items():
+        await load_tenant(tenant)
         await ingest_sample(tenant=tenant, file=file)
 
 async def wait_for_neo4j(retries: int = 10, delay: float = 3.0):
