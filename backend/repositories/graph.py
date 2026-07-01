@@ -12,11 +12,11 @@ async def post_relationship(tenant: str, edge: EdgePaser):
         query="""MERGE (from: {tenant}:{from_label} {{{f_key}: $from_value}})
                 MERGE (to: {tenant}:{to_label} {{{t_key}: $to_value}})
                 MERGE (from)-[r:{connect_type}]->(to)
-                ON CREATE SET r.first_seen = $time,
-                                r.last_seen = $time,
+                ON CREATE SET r.first_seen = datetime($time),
+                                r.last_seen = datetime($time),
                                 r.count = 1,
                                 r.evidences = [$evidence]
-                ON MATCH SET r.last_seen = $time,
+                ON MATCH SET r.last_seen = datetime($time),
                                 r.count = r.count + 1,
                                 r.evidences =
                                 CASE

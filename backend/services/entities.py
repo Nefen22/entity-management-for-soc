@@ -3,6 +3,7 @@ import repositories.entities as repo
 from models.responses import APIResponse
 from logs.audit_log import write_audit_log
 from database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE,MAPPING_ENTITIES_TYPE
+from .function import format_neo4j_data
 
 async def post_entity(tenant: str, type:str, value:str):
     result = await check_existed_logs(tenant=tenant, type=type, value=value)
@@ -15,7 +16,7 @@ async def get_all_entities(tenant: str):
     return [{
         "id": record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
         "label": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
-        "properties": record["node"]
+        "properties": format_neo4j_data(record["node"])
     } for record in result]
 
 async def get_entity(tenant: str, type:str, value: str):
@@ -27,7 +28,7 @@ async def get_entity(tenant: str, type:str, value: str):
     return {
         "id": record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
         "type": labels[0],
-        "properties": record["entity"]
+        "properties": format_neo4j_data(record["entity"])
     } 
 
 async def get_list_entity(tenant: str,type:str, relationship:str | None = None):
@@ -35,7 +36,7 @@ async def get_list_entity(tenant: str,type:str, relationship:str | None = None):
     return [{
         "id": record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
         "label": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
-        "properties": record["node"]
+        "properties": format_neo4j_data(record["node"])
     } for record in result]
 
 async def check_existed_logs(tenant: str, type:str, value:str, merge = False):

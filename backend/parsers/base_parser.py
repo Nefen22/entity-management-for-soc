@@ -46,6 +46,6 @@ class BaseParser(BaseModel):
         return self.nodes
 
     def get_relationship(self):
-        relationships = [EdgePaser(src=edge["source"], dest=edge["target"], connect_type=edge["type"], evidence=self.evidence, time=edge["time"]) for edge in self.edges]
+        relationships = [EdgePaser(src=edge["source"], dest=edge["target"], connect_type=edge["type"], evidence=self.evidence, time=str(edge["time"])) for edge in self.edges]
         
         return relationships

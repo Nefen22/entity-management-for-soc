@@ -20,6 +20,6 @@ router.include_router(graphs_router, prefix = "/{tenant}/graphs", tags = ["Graph
 
 @router.get("")
 def get_tenants():
-    return list(TENANT_DATABASE.keys())
+    return APIResponse(message="GET tenants completed", data=list(TENANT_DATABASE.keys()))
 
 

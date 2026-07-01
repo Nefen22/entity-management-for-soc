@@ -3,7 +3,7 @@ import repositories.enrichment as repo
 from models.responses import APIResponse
 from logs.audit_log import write_audit_log
 from database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE
-from .function import format_drawing
+from .function import format_neo4j_data
 
 async def enrichment_ip(tenant: str, value:str):
     data = await repo.enrichment_ip(tenant, value)
@@ -20,7 +20,7 @@ async def enrichment_ip(tenant: str, value:str):
     return {
         "id": record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
         "type": labels[0],
-        "properties": record["entity"]
+        "properties": format_neo4j_data(record["entity"])
     }
 
 async def enrichment_file_hash(tenant: str, value:str):
@@ -38,5 +38,5 @@ async def enrichment_file_hash(tenant: str, value:str):
     return {
         "id": record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
         "type": labels[0],
-        "properties": record["entity"]
+        "properties": format_neo4j_data(record["entity"])
     }

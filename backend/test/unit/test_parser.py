@@ -7,13 +7,12 @@ Unit tests for parser layer.
 Không cần DB, không cần Neo4j — toàn bộ dependency được mock bởi conftest.
 """
 import sys, types, pytest
-from conftest import MAPPING_ENTITIES_KEY
 from unittest.mock import MagicMock
 
 from parsers.base_parser   import BaseParser
 from parsers.json_parser   import JsonParser
 from parsers.alert_parser  import AlertParser
-from parsers.edge_parser   import Vertex
+from mocks.constraints import MAPPING_ENTITIES_KEY,MAPPING_ENTITIES_TYPE,SIEM_INCLUDE, CLOUD_INCLUDE, EDR_INCLUDE
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -33,7 +32,6 @@ class TestBaseParserSplitNodesEdges:
             "destination_host": "DESKTOP-001",
             "source_ip": "10.0.0.1",
         }
-        from conftest import SIEM_INCLUDE
         parser = self._make_parser()
         nodes, edges = parser.split_nodes_edges(event, SIEM_INCLUDE)
 
@@ -44,7 +42,6 @@ class TestBaseParserSplitNodesEdges:
 
     def test_skips_missing_fields(self):
         event = {"timestamp": "2024-01-01T00:00:00Z", "user": "admin"}
-        from conftest import SIEM_INCLUDE
         parser = self._make_parser()
         nodes, _ = parser.split_nodes_edges(event, SIEM_INCLUDE)
         # Chỉ có user — destination_host và source_ip không có trong event
@@ -57,7 +54,6 @@ class TestBaseParserSplitNodesEdges:
             "source_ip": "192.168.1.1",
             "destination_host": "SERVER-01",
         }
-        from conftest import SIEM_INCLUDE
         parser = self._make_parser()
         _, edges = parser.split_nodes_edges(event, SIEM_INCLUDE)
 
@@ -73,7 +69,6 @@ class TestBaseParserSplitNodesEdges:
             "source_ip": "1.2.3.4",
             "destination_domain": "example.com",
         }
-        from conftest import CLOUD_INCLUDE
         # CLOUD_INCLUDE không có edge IP→Domain
         parser = self._make_parser()
         _, edges = parser.split_nodes_edges(event, CLOUD_INCLUDE)
@@ -86,7 +81,6 @@ class TestBaseParserSplitNodesEdges:
             "user": "alice",
             "destination_host": "WS-002",
         }
-        from conftest import SIEM_INCLUDE
         parser = self._make_parser()
         _, edges = parser.split_nodes_edges(event, SIEM_INCLUDE)
 
@@ -225,6 +219,7 @@ class TestAlertParser:
 
     def test_extracts_ip_from_message(self):
         event = {
+            "timestamp": "2026-06-03T15:10:00Z",
             "event_id": "alert-001",
             "source_type": "alert",
             "message": "Suspicious login from 203.0.113.10 to host DESKTOP-001",
@@ -235,6 +230,7 @@ class TestAlertParser:
 
     def test_extracts_domain_from_message(self):
         event = {
+            "timestamp": "2026-06-03T15:10:00Z",
             "event_id": "alert-002",
             "source_type": "alert",
             "message": "Connection to 198.1.1.1 detected",
@@ -245,6 +241,7 @@ class TestAlertParser:
 
     def test_extracts_file_hash_md5(self):
         event = {
+            "timestamp": "2026-06-03T15:10:00Z",
             "event_id": "alert-003",
             "source_type": "alert",
             "message": "File hash 44d88612fea8a8f36de82e1278abb02f found on host",
@@ -255,6 +252,7 @@ class TestAlertParser:
 
     def test_extracts_multiple_entities(self):
         event = {
+            "timestamp": "2026-06-03T15:10:00Z",
             "event_id": "alert-004",
             "source_type": "alert",
             "message": "IP 1.2.3.4 connected to evil-download.com, hash 44d88612fea8a8f36de82e1278abb02f",
@@ -266,13 +264,14 @@ class TestAlertParser:
         assert "44d88612fea8a8f36de82e1278abb02f" in values
 
     def test_empty_message_returns_no_nodes(self):
-        event = {"event_id": "alert-empty", "source_type": "alert", "message": ""}
+        event = {"timestamp": "2026-06-03T15:10:00Z","event_id": "alert-empty", "source_type": "alert", "message": ""}
         parser = AlertParser.from_event(event)
         assert parser.nodes == []
 
     def test_no_false_positive_private_ip(self):
         """192.168.x.x vẫn là IP hợp lệ về mặt regex."""
         event = {
+            "timestamp": "2026-06-03T15:10:00Z",
             "event_id": "alert-005",
             "source_type": "alert",
             "message": "Login from 192.168.1.100",
@@ -283,6 +282,7 @@ class TestAlertParser:
 
     def test_node_types_are_correct(self):
         event = {
+            "timestamp": "2026-06-03T15:10:00Z",
             "event_id": "alert-006",
             "source_type": "alert",
             "message": "Alert: 10.0.0.5 contacted google.com",

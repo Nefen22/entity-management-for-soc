@@ -40,12 +40,13 @@ async def format_drawing(lst: list):
                     "source": source_name,
                     "target": target_name,
                     "type": rels["edge_type"],
-                    "rel_properties": rels["prop"]
+                    "rel_properties": format_neo4j_data(rels["prop"])
                 })
     return{
         "nodes": nodes,
         "edges": edges,
     }
+
 def format_neo4j_data(data):
 
     if isinstance(data, dict):

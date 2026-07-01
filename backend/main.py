@@ -12,23 +12,22 @@ import os
 
 RESET_DB = os.getenv("RESET_DB", "true").lower() == "true"
 SEED_DATA = os.getenv("SEED_DATA", "true").lower() == "true"
-SEED_NAME = os.getenv("SEED_NAME", "DEMO")
+SEED_NAME = os.getenv("SEED_NAME", "")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
-    await wait_for_neo4j()
-    if RESET_DB:
-        Path("/app/backend/logs/audit_log.json").write_text("")
-        await init_db(RESET_DB)
     if SEED_DATA:
         seed = SEED[SEED_NAME]
-        await seed_db(seed)
+        for tenant in seed.keys():
+            TENANT_DATABASE[tenant] = f"Tenant_{tenant}"
+        if RESET_DB:
+            Path("/app/backend/logs/audit_log.json").write_text("")
+            await init_db(RESET_DB)
+            await seed_db(seed)
 
     yield
 
 async def load_tenant(tenant: str):
-    TENANT_DATABASE[tenant] = f"Tenant_{tenant}"
     async with driver.session() as session:
         await session.run(
             f"CREATE (n:{TENANT_DATABASE[tenant]} {{dummy: true}}) DETACH DELETE n"
@@ -38,20 +37,6 @@ async def seed_db(seed:dict):
     for tenant, file in seed.items():
         await load_tenant(tenant)
         await ingest_sample(tenant=tenant, file=file)
-
-async def wait_for_neo4j(retries: int = 10, delay: float = 3.0):
-    from neo4j.exceptions import ServiceUnavailable
-    for attempt in range(retries):
-        try:
-            async with driver.session() as session:
-                await session.run("RETURN 1")
-            print("Neo4j connected")
-            return
-        except ServiceUnavailable:
-            print(f"Neo4j not ready, retry {attempt + 1}/{retries}...")
-            await asyncio.sleep(delay)
-    raise RuntimeError("Neo4j unavailable after retries")
-
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(

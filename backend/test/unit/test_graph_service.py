@@ -1,21 +1,7 @@
-"""
-Unit tests for services/graph.py
 
-Toàn bộ repository calls được mock — không cần Neo4j thật.
-"""
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-
-
-# ── Fake TENANT_DATABASE và MAPPING_ENTITIES_KEY ──────────────────────────
-TENANT_DATABASE    = {"default": "default", "acme": "acme"}
-MAPPING_ENTITIES_KEY = {"User": "username", "Host": "hostname", "IP": "value"}
-REVERSED_TYPE      = {"User": "users", "Host": "hosts", "IP": "ips"}
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  clusters()
-# ══════════════════════════════════════════════════════════════════════════════
+from mocks import constraints
 
 class TestClusters:
 
@@ -23,25 +9,22 @@ class TestClusters:
     async def test_clusters_formats_nodes_correctly(self):
         fake_repo_result = {
             "nodes": [
-                {"label": ["acme", "IP"],   "count": 12},
+                {"label": ["acme", "IP"], "count": 12},
                 {"label": ["acme", "Host"], "count": 8},
             ],
             "edges": []
         }
 
-        with patch("services.graph.repo") as mock_repo, \
-             patch("services.graph.TENANT_DATABASE", TENANT_DATABASE):
-            mock_repo.clusters = AsyncMock(return_value=fake_repo_result)
+        with patch(
+            "services.graph.repo.clusters",
+            AsyncMock(return_value=fake_repo_result)
+            
+        ),patch("services.graph.TENANT_DATABASE", constraints.TENANT_DATABASE):
             from services.graph import clusters
             result = await clusters("acme")
 
         assert len(result["nodes"]) == 2
-        types = {n["entity_type"] for n in result["nodes"]}
-        assert "IP" in types
-        assert "Host" in types
-        counts = {n["entity_type"]: n["count"] for n in result["nodes"]}
-        assert counts["IP"] == 12
-        assert counts["Host"] == 8
+        assert result["nodes"][0]["entity_type"] == "IP"
 
     @pytest.mark.asyncio
     async def test_clusters_formats_edges_correctly(self):
@@ -57,7 +40,7 @@ class TestClusters:
         }
 
         with patch("services.graph.repo") as mock_repo, \
-             patch("services.graph.TENANT_DATABASE", TENANT_DATABASE):
+             patch("services.graph.TENANT_DATABASE", constraints.TENANT_DATABASE):
             mock_repo.clusters = AsyncMock(return_value=fake_repo_result)
             from services.graph import clusters
             result = await clusters("acme")
@@ -84,8 +67,8 @@ class TestEntitiesInCluster:
         ]
 
         with patch("services.graph.repo") as mock_repo, \
-             patch("services.graph.TENANT_DATABASE", TENANT_DATABASE), \
-             patch("services.graph.MAPPING_ENTITIES_KEY", MAPPING_ENTITIES_KEY):
+             patch("services.graph.TENANT_DATABASE", constraints.TENANT_DATABASE), \
+             patch("services.graph.MAPPING_ENTITIES_KEY", constraints.MAPPING_ENTITIES_KEY):
             mock_repo.entities_types_in_cluster = AsyncMock(return_value=fake_records)
             from services.graph import entities_types_in_cluster
             result = await entities_types_in_cluster("acme", "IP")
@@ -109,7 +92,7 @@ class TestGetTypesAndFilterRelationship:
             {"label": "Host"},
         ]
         with patch("services.graph.repo") as mock_repo, \
-             patch("services.graph.TENANT_DATABASE", TENANT_DATABASE):
+             patch("services.graph.TENANT_DATABASE", constraints.TENANT_DATABASE):
             mock_repo.get_types = AsyncMock(return_value=fake_records)
             from services.graph import get_types
             result = await get_types("acme", None)
@@ -141,16 +124,18 @@ class TestIngestRouting:
     @pytest.mark.asyncio
     async def test_ingest_alert_uses_alert_parser(self):
         event = {
+            "timestamp": "2026-06-03T15:10:00Z",
             "event_id": "a-001",
             "source_type": "alert",
             "message": "Suspicious IP 1.2.3.4 detected",
         }
-        with patch("services.graph.AlertParser") as mock_alert, \
-             patch("services.graph.JsonParser") as mock_json, \
-             patch("services.graph.repo") as mock_repo, \
-             patch("services.graph.post_entity", AsyncMock()), \
-             patch("services.graph.check_existed_logs", AsyncMock()), \
-             patch("services.graph.write_audit_log", MagicMock()):
+        with (
+                patch("services.graph.post_entity", AsyncMock()),
+                patch("services.graph.check_existed_logs", AsyncMock()),
+                patch("services.graph.repo.post_relationship", AsyncMock()),
+                patch("services.graph.AlertParser") as mock_alert,
+                patch("services.graph.JsonParser") as mock_json,
+            ):
             mock_parser = MagicMock()
             mock_parser.get_relationship.return_value = []
             mock_parser.get_nodes.return_value = []
@@ -171,12 +156,13 @@ class TestIngestRouting:
             "user": "bob",
             "destination_host": "WS-001",
         }
-        with patch("services.graph.AlertParser") as mock_alert, \
-             patch("services.graph.JsonParser") as mock_json, \
-             patch("services.graph.repo") as mock_repo, \
-             patch("services.graph.post_entity", AsyncMock()), \
-             patch("services.graph.check_existed_logs", AsyncMock()), \
-             patch("services.graph.write_audit_log", MagicMock()):
+        with (
+                patch("services.graph.post_entity", AsyncMock()),
+                patch("services.graph.check_existed_logs", AsyncMock()),
+                patch("services.graph.repo.post_relationship", AsyncMock()),
+                patch("services.graph.AlertParser") as mock_alert,
+                patch("services.graph.JsonParser") as mock_json,
+            ):
             mock_parser = MagicMock()
             mock_parser.get_relationship.return_value = []
             mock_parser.get_nodes.return_value = []

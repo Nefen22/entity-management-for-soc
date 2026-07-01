@@ -214,16 +214,19 @@
     "destination_domain": "database-update.net"
   },
   {
+    "timestamp": "2024-06-01T09:45:00Z",
     "event_id": "alert-001",
     "source_type": "alert",
     "message": "Detected outbound connection to 185.220.101.45 and domain malicious.ru. Related hash: 44d88612fea8a8f36de82e1278abb02f"
   },
   {
+    "timestamp": "2024-06-01T09:45:00Z",
     "event_id": "alert-002",
     "source_type": "alert",
     "message": "Threat intelligence feed reports evil-download.com communicating with 45.33.32.156. MD5: 11111111111111111111111111111111"
   },
   {
+    "timestamp": "2024-06-01T09:45:00Z",
     "event_id": "alert-003",
     "source_type": "alert",
     "message": "Suspicious activity detected from IP 8.8.8.8 contacting google.com"

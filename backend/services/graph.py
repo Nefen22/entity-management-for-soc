@@ -9,7 +9,7 @@ import repositories.graph as repo
 from .entities import post_entity, check_existed_logs
 from logs.audit_log import write_audit_log
 from database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
-from .function import format_drawing, check_n_add_nodes
+from .function import format_drawing
 
 
 #Services

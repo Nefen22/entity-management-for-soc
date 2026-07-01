@@ -8,6 +8,7 @@ from pathlib import Path
 URI = os.getenv("NEO4J_URI")
 USER = os.getenv("NEO4J_USER")
 PASSWORD = os.getenv("NEO4J_PASSWORD")
+TESTING_IN_DOCKER = os.getenv("TESTING_IN_DOCKER", "true").lower() == "true"
 
 driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASSWORD))
 
@@ -16,8 +17,6 @@ async def init_db(reset: bool):
         await drop_all_indexes()
         await clear_database()
         await indexing_for_entities()
-
-
 
 async def clear_database():
     async with driver.session() as session:
