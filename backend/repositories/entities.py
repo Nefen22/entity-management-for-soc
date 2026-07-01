@@ -28,7 +28,7 @@ async def get_list_entity(tenant: str, type:str, relationship:str):
         if relationship:
             rel = f"-[rel:{relationship}]-(t)"
         query ="""MATCH (node: {tenant} {type}) {rels}
-                    RETURN node, labels(node) AS label
+                    RETURN DISTINCT node, labels(node) AS label
                     """.format(tenant=TENANT_DATABASE[tenant], type = ":"+MAPPING_ENTITIES_TYPE[type], rels=rel)
         result = await session.run(query)
         return await result.data()

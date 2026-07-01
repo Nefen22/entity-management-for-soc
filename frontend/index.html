@@ -590,12 +590,12 @@ async function toggleCluster(clusterId) {
       if (cy.getElementById(id).length) return;
 
       const angle = (i / total) * Math.PI * 2;
-      const relCount = ent.properties?.connection_count;
+      const relCount = ent.relationship_count;
       elements.push({
         group: 'nodes',
         data: {
           id,
-          label: shorten(ent.value || ent.id, 16) + (relCount ? ` (${relCount})` : ''),
+          label: shorten(ent.id, 16) + (relCount ? ` (${relCount})` : ''),
           fullLabel: ent.value || ent.id,
           color: colorFor(type),
           size: 32,
@@ -959,23 +959,8 @@ function renderActionPanel(node) {
 async function showDetail(node) {
   const area = document.getElementById('detailPanel');
   data = node;
-  let relationships = [];
 
   if (Object.keys(data.properties).length === 0){
-
-      if (data.isCluster !== "true") {
-        try {
-          const result = await safeFetchJson(
-            apiUrl(
-              `/graphs/entities/${encodeURIComponent(type)}/${encodeURIComponent(data.id)}?hop=1`
-            )
-          );
-          console.log(result)
-          relationships = result.edges;
-        } catch (err) {
-          console.error(err);
-        }
-      }
       const fetch = await safeFetchJson(
         apiUrl(
           `/entities/${encodeURIComponent(data.type)}/${encodeURIComponent(data.id)}`
@@ -997,7 +982,21 @@ async function showDetail(node) {
     .join('') ||
     '<div class="empty-note">Không có thuộc tính.</div>';
 
-  const relsHtml = relationships.length
+  let relationships = [];
+  let relsHtml;
+  if (data.isCluster !== "true") {
+    try {
+      const result = await safeFetchJson(
+        apiUrl(
+          `/graphs/entities/${encodeURIComponent(type)}/${encodeURIComponent(data.id)}?hop=1`
+        )
+      );
+
+      relationships = result.edges || [];
+    } catch (err) {
+      console.error(err);
+    }
+    relsHtml = relationships.length
     ? relationships
         .map(rel => {
           const isSource = rel.source === data.id;
@@ -1017,6 +1016,29 @@ async function showDetail(node) {
         })
         .join("")
     : '<div class="empty-note">Không có mối quan hệ.</div>';
+  }else{
+    try {
+      const result = await safeFetchJson(
+        apiUrl(
+          `/graphs/clusters/${encodeURIComponent(data.clusterType)}`
+        )
+      );
+
+      relationships = result || [];
+      console.log(relationships)
+    } catch (err) {
+      console.error(err);
+    }
+    relsHtml = relationships.length
+    ? relationships.map(rel => `
+        <div class="prop-row">
+          <span class="k">${shorten(rel.id, 10)}</span>
+          <span class="v"> (${rel.relationship_count}) relationships</span>
+        </div>
+      `).join("")
+    : '<div class="empty-note">Cluster chưa được mở hoặc không có entity.</div>';
+  }
+ 
 
   let enrichHtml = "";
 
@@ -1029,6 +1051,13 @@ async function showDetail(node) {
       </div>
     `;
   }
+  rels = data.isCluster !== "true"?
+      `<div class="eyebrow" style="margin-top:12px;">
+      Relationships (${relationships.length})
+      </div>`: 
+      `<div class="eyebrow" style="margin-top:12px;">
+        Entities (${relationships.length})
+      </div>`;
 
   area.innerHTML = `
     <span class="type-badge"
@@ -1047,9 +1076,7 @@ async function showDetail(node) {
       ${propsHtml}
     </div>
 
-    <div class="eyebrow" style="margin-top:12px;">
-      Relationships (${relationships.length})
-    </div>
+    ${rels}
 
     <div>
       ${relsHtml}
