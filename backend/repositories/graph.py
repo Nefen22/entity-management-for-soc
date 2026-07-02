@@ -92,3 +92,21 @@ async def filter_relationship(tenant: str, type:str):
                 RETURN DISTINCT type(r) AS relationshipType""".format(tenant=TENANT_DATABASE[tenant], type=":"+MAPPING_ENTITIES_TYPE[type] if type else "")
         result = await session.run(query)
         return await result.data()
+
+async def path_finding(tenant: str, type: str, value:str, dest_type:str, dest_value:str):
+    async with driver.session() as session:
+        query = """MATCH (src:{tenant}{src_type}{{{src_key}:$src_value}}),
+                (dest:{tenant}{dest_type}{{{dest_key}:$dest_value}}),
+                p = shortestPath((src)-[*..15]-(dest))
+                UNWIND relationships(p) AS rel
+                    WITH DISTINCT rel
+                    RETURN startNode(rel) AS source, labels(startNode(rel)) AS source_label,
+                            endNode(rel) AS target, labels(endNode(rel)) AS target_label,
+                            type(rel) AS edge_type,
+                            properties(rel) AS prop""".format(tenant=TENANT_DATABASE[tenant],
+                                                            src_type=":"+MAPPING_ENTITIES_TYPE[type] if type else "",
+                                                            src_key=MAPPING_ENTITIES_KEY[type],
+                                                            dest_type=":"+MAPPING_ENTITIES_TYPE[dest_type] if type else "",
+                                                            dest_key=MAPPING_ENTITIES_KEY[dest_type])
+        result = await session.run(query, src_value=value, dest_value=dest_value)
+        return await result.data()

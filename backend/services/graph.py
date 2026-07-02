@@ -32,11 +32,11 @@ async def ingest(tenant: str, event: dict):
         result = await repo.post_relationship(tenant, ele_rel)
         if src_check:
             s_label = [label for label in result["src_label"] if label not in TENANT_DATABASE.values()][0]
-            src_r = Node(id=result["src"][MAPPING_ENTITIES_KEY[s_label]],label=s_label,properties=result["src"])
+            src_r = Node(id=result["src"][MAPPING_ENTITIES_KEY[s_label]],type=s_label,properties=result["src"])
             await write_node_create_log(src_r)
         if dest_check:
             d_label = [label for label in result["dest_label"] if label not in TENANT_DATABASE.values()][0]
-            dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],label=d_label,properties=result["dest"])
+            dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],type=d_label,properties=result["dest"])
             await write_node_create_log(dest_r)
 
 async def batch_sample(tenant: str, file: str):
@@ -92,3 +92,7 @@ async def get_types(tenant: str, relationship:str):
 async def filter_relationship(tenant: str, type:str):
     result = await repo.filter_relationship(tenant, type)
     return [ele["relationshipType"][0] if isinstance(ele["relationshipType"], list) else ele["relationshipType"]  for ele in result]
+
+async def path_finding(tenant: str, type: str, value:str, dest_type:str, dest_value:str):
+    result = await repo.path_finding(tenant=tenant, type=type, value=value, dest_type=dest_type, dest_value=dest_value)
+    return await format_drawing(result)

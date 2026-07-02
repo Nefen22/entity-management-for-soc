@@ -39,3 +39,8 @@ async def entities_types_in_cluster(tenant: str, type: str):
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int | None = 1):
     result = await services.get_relationship_n_hop(tenant=tenant, type=type, value=value, hop=hop)
     return APIResponse(message=f"Get {hop}-hop graph from {value} successfully", data=result)
+
+@router.get("/path/types/{type}/values/{value:path}/dest-types/{dest_type}/dest-values/{dest_value:path}")
+async def path_finding(tenant: str, type: str, value:str, dest_type:str, dest_value:str):
+    result = await services.path_finding(tenant=tenant, type=type, value=value, dest_type=dest_type, dest_value=dest_value)
+    return APIResponse(message=f"Get path from {value} to {dest_value} successfully", data=result)

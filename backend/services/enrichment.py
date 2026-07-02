@@ -27,7 +27,7 @@ async def enrichment_ip(tenant: str, value:str):
     labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
     return Node(
         id= record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
-        label= labels[0],
+        type= labels[0],
         properties= format_neo4j_data(record["entity"])
     )
 
@@ -50,6 +50,6 @@ async def enrichment_file_hash(tenant: str, value:str):
     labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
     return Node(
         id= record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
-        label= labels[0],
+        type= labels[0],
         properties= format_neo4j_data(record["entity"])
     )

@@ -419,17 +419,60 @@
     </div>
   </div>
 
-  <aside class="right">
-    <p class="eyebrow">Bảng hành động</p>
-    <div class="card" id="actionPanel">
-      <div class="detail-empty">Chọn một cụm hoặc một thực thể trên đồ thị để bắt đầu.</div>
+<aside class="right">
+
+  <p class="eyebrow">Bảng hành động</p>
+
+  <div class="card" id="actionPanel">
+    <div class="detail-empty">
+      Chọn một cụm hoặc một thực thể trên đồ thị để bắt đầu.
+    </div>
+  </div>
+
+  <!-- Path Finding -->
+  <div class="card" id="pathPanel" hidden style="margin-top:10px;">
+
+    <p class="eyebrow" style="margin-bottom:10px;">
+      Path Finding
+    </p>
+
+    <div class="prop-row">
+      <span class="k">Source</span>
+      <span class="v" id="pathSource">Chưa chọn</span>
     </div>
 
-    <p class="eyebrow" style="margin-top:6px;">Chi tiết thực thể</p>
-    <div class="card" id="detailPanel">
-      <div class="detail-empty">Chưa có đối tượng nào được chọn.</div>
+    <div class="prop-row">
+      <span class="k">Target</span>
+      <span class="v" id="pathTarget">Chưa chọn</span>
     </div>
-  </aside>
+
+    <div
+      id="pathHint"
+      class="detail-empty"
+      style="margin:12px 0;">
+      Chọn node đích trên đồ thị.
+    </div>
+
+    <button
+      id="findPathBtn"
+      class="block secondary"
+      disabled>
+      Find Shortest Path
+    </button>
+
+  </div>
+
+  <p class="eyebrow" style="margin-top:6px;">
+    Chi tiết thực thể
+  </p>
+
+  <div class="card" id="detailPanel">
+    <div class="detail-empty">
+      Chưa có đối tượng nào được chọn.
+    </div>
+  </div>
+
+</aside>
 
 </div>
 
@@ -476,6 +519,41 @@ async function safeFetchJson(url, options) {
   return json.data !== undefined ? json.data : json;
 }
 
+let pathFindingMode = false;
+let pathSource = null;
+let pathTarget = null;
+
+function togglePathFinding() {
+
+    pathFindingMode = !pathFindingMode;
+
+    const panel = document.getElementById("pathPanel");
+    const btn = document.getElementById("togglePathBtn");
+
+    panel.hidden = !pathFindingMode;
+
+    if (pathFindingMode) {
+
+        pathSource = selectedNode;
+
+        document.getElementById("pathSource").textContent =
+            pathSource?.id ?? "Chưa chọn";
+
+        document.getElementById("pathTarget").textContent =
+            "Chưa chọn";
+
+        document.getElementById("findPathBtn").disabled = true;
+
+        btn.innerHTML = "✕ Cancel Path";
+
+    } else {
+
+        pathSource = null;
+        pathTarget = null;
+
+        btn.innerHTML = "⇄ Find Path";
+    }
+}
 /* =========================================================
    CYTOSCAPE INIT
 ========================================================= */
@@ -735,7 +813,7 @@ async function toggleCluster(clusterId) {
           size: 32,
           isCluster: "false",
           belongsTo: clusterId,
-          type,
+          type: type,
           isNewExpanded: false,
           properties: ent.properties || {}
         },
@@ -834,7 +912,7 @@ function renderEntityChips(list) {
   if (!list.length) { listEl.innerHTML = '<div class="empty-note">Không tìm thấy thực thể phù hợp.</div>'; return; }
 
   listEl.innerHTML = list.slice(0, 200).map(e => {
-    const type = e.label || document.getElementById('globalTypeSelect').value || 'Entity';
+    const type = e.type || document.getElementById('globalTypeSelect').value || 'Entity';
     const value = e.value || e.id;
     return `
       <div class="chip" data-type="${type}" data-value="${value}">
@@ -1105,10 +1183,11 @@ async function showDetail(node) {
   if (Object.keys(data.properties).length === 0){
       const fetch = await safeFetchJson(
         apiUrl(
-          `/entities/types/${encodeURIComponent(data.label)}/values/${encodeURIComponent(data.id)}`
+          `/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}`
         )
       );
       data = fetch
+      console.log(data)
   }
   props=data.properties;
   const type = data.isCluster === "true"
@@ -1130,7 +1209,7 @@ async function showDetail(node) {
     try {
       const result = await safeFetchJson(
         apiUrl(
-          `/graphs/entities/types/${encodeURIComponent(type)}/values/${encodeURIComponent(data.id)}?hop=1`
+          `/graphs/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}?hop=1`
         )
       );
 
