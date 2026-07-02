@@ -879,8 +879,8 @@ async function startInvestigation(type, value) {
         group: 'nodes',
         data: {
           id: n.id,
-          label: shorten(n.properties?.value || n.properties?.name || n.id, 16),
-          fullLabel: n.properties?.value || n.id,
+          label: shorten(n.id, 16),
+          fullLabel: n.id,
           color: colorFor(n.type),
           size: isRoot ? 46 : 34,
           isCluster: "false",
@@ -914,8 +914,8 @@ async function startInvestigation(type, value) {
    4 & 5. HOP EXPAND + MERGE (preserve existing positions)
 ========================================================= */
 async function hopExpand(type, value, hop) {
-  const targetNode = cy.getElementById(`${type}:${value}`).length
-    ? cy.getElementById(`${type}:${value}`)
+  const targetNode = cy.getElementById(`${value}`).length
+    ? cy.getElementById(`${value}`)
     : cy.nodes().filter(n => n.data('fullLabel') === value);
 
   const origin = targetNode.length ? targetNode.position() : { x: 0, y: 0 };
@@ -1105,7 +1105,7 @@ async function showDetail(node) {
   if (Object.keys(data.properties).length === 0){
       const fetch = await safeFetchJson(
         apiUrl(
-          `/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}`
+          `/entities/types/${encodeURIComponent(data.label)}/values/${encodeURIComponent(data.id)}`
         )
       );
       data = fetch
@@ -1267,11 +1267,9 @@ async function showDetail(node) {
       try {
         const path =
           type === "IP"
-            ? `/enrichments/types/ips/values/${encodeURIComponent(
-                data.fullLabel || data.id
+            ? `/enrichments/types/ips/values/${encodeURIComponent(data.id
               )}`
-            : `/enrichments/types/file-hashes/values/${encodeURIComponent(
-                data.fullLabel || data.id
+            : `/enrichments/types/file-hashes/values/${encodeURIComponent(data.id
               )}`;
 
         const result = await safeFetchJson(
@@ -1280,7 +1278,6 @@ async function showDetail(node) {
         );
         const nodeId = data.id;
         const cyNode = cy.getElementById(nodeId);
-
         if (cyNode.length) {
           const merged = {
             ...cyNode.data("properties"),
@@ -1288,8 +1285,7 @@ async function showDetail(node) {
           };
 
           cyNode.data("properties", merged);
-          
-          showDetail(result);
+          showDetail(cyNode.data());
         }
 
         showToast("Enrichment hoàn tất");

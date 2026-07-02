@@ -50,7 +50,7 @@ def test_get_entity(api):
     entity = r.json()["data"]
 
     assert entity["id"] == "hr.manager"
-    assert entity["type"] == "User"
+    assert entity["label"] == "User"
 
 def test_graph_one_hop(api):
     r = api.get(

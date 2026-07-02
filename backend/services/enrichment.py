@@ -25,14 +25,14 @@ async def enrichment_ip(tenant: str, value:str):
             time= str(datetime.now())
         )
     labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
-    return {
-        "id": record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
-        "type": labels[0],
-        "properties": format_neo4j_data(record["entity"])
-    }
+    return Node(
+        id= record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
+        label= labels[0],
+        properties= format_neo4j_data(record["entity"])
+    )
 
 async def enrichment_file_hash(tenant: str, value:str):
-    node_before = await get_entity(tenant=tenant, type='ips', value=value)
+    node_before = await get_entity(tenant=tenant, type='FileHash', value=value)
     if not node_before:
         return None
     data = await repo.enrichment_file_hash(tenant, value)
@@ -42,14 +42,14 @@ async def enrichment_file_hash(tenant: str, value:str):
             entity_type="FileHash",
             entity_id=value,
             change = {
-                "before": node_before,
+                "before": node_before.json(),
                 "after": record
             },
-            time= datetime.now()
+            time= str(datetime.now())
         )
     labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
-    return {
-        "id": record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
-        "type": labels[0],
-        "properties": format_neo4j_data(record["entity"])
-    }
+    return Node(
+        id= record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
+        label= labels[0],
+        properties= format_neo4j_data(record["entity"])
+    )

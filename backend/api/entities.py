@@ -12,4 +12,4 @@ async def get_list_entity(tenant: str,type:str | None=None, relationship: str | 
 @router.get("/types/{type}/values/{value:path}")
 async def get_entity(tenant: str,type:str, value):
     result = await services.get_entity(tenant=tenant, type=type, value=value)
-    return APIResponse(message=f"Get {value}: Completed", data=result)
+    return APIResponse(message=f"Get {value}: Completed", data=dict(result))

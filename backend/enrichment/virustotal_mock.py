@@ -15,7 +15,6 @@ JSON_PATH = CURRENT_DIR / "data" / "virustotal.json"
 with open(JSON_PATH) as f:
     load_hash = json.load(f) 
 
-
 def lookup_hash(hash_value: str):
     return load_hash.get(hash_value)
 
