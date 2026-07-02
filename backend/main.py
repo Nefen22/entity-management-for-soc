@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from api.tenants import router as tenants_router
+from api.logs import router as logs_router
 from contextlib import asynccontextmanager
 from pathlib import Path
 from database.neo4j import init_db, driver
@@ -47,6 +48,7 @@ app.add_middleware(
 )
 
 app.include_router(tenants_router)
+app.include_router(logs_router)
 
 @app.get("/")
 async def root():

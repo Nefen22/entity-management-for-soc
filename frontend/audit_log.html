@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>SOC Audit Logs System</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #07090d;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Tùy chỉnh thanh cuộn siêu mảnh theo phong cách cyber punk */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0f1420; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body class="text-slate-300 min-h-screen flex flex-col h-screen overflow-hidden">
+
+  <header class="bg-[#0f1420] border-b border-slate-800 px-6 py-3 flex justify-between items-center shrink-0">
+    <div class="flex items-center space-x-3">
+      <span class="text-emerald-400 text-lg">📋</span>
+      <div>
+        <h1 class="text-sm font-bold text-slate-100 tracking-wider uppercase">Audit Logs</h1>
+        <p class="text-[10px] text-slate-500 font-mono">Nhật ký thay đổi thực thể hệ thống</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center space-x-3">
+      <div class="text-xs text-slate-400 font-mono">
+        Tổng số: <span id="logCount" class="text-emerald-400 font-bold">0</span> records
+      </div>
+      <a href="/" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-1.5 rounded border border-slate-700 transition flex items-center space-x-1">
+        <span>◀</span> <span>Quay lại Dashboard</span>
+      </a>
+    </div>
+  </header>
+
+  <section class="bg-[#0b0f17] border-b border-slate-800/60 p-4 shrink-0 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tìm kiếm Entity ID</label>
+      <input type="text" id="searchId" placeholder="Nhập ID thực thể (Ví dụ: IP, Hostname...)" 
+             class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition">
+    </div>
+    <div>
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Loại thực thể (Entity Type)</label>
+      <select id="filterType" class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 transition">
+        <option value="ALL">-- Tất cả loại --</option>
+        <option value="User">User</option>
+        <option value="Host">Host</option>
+        <option value="IP">IP</option>
+        <option value="Domain">Domain</option>
+        <option value="FileHash">FileHash</option>
+        <option value="URL">URL</option>
+        <option value="Process">Process</option>
+        <option value="Email">Email</option>
+        <option value="CloudResource">CloudResource</option>
+        <option value="CVE">CVE</option>
+      </select>
+    </div>
+    <div class="flex items-end">
+      <button onclick="executeFilter()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-900 font-bold text-xs uppercase tracking-wider py-2 rounded transition shadow-lg shadow-cyan-950/20">
+        Áp dụng bộ lọc
+      </button>
+    </div>
+  </section>
+
+  <main class="flex-1 bg-[#07090d] p-4 min-h-0 flex flex-col">
+    <div class="border border-slate-800 bg-[#0f1420]/50 rounded flex flex-col flex-1 min-h-0 overflow-hidden">
+      
+      <div class="overflow-auto flex-1">
+        <table class="w-full text-left border-collapse font-mono text-[11px]">
+          <thead class="sticky top-0 bg-[#0f1420] z-10 shadow-sm">
+            <tr class="text-slate-400 border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider">
+              <th class="p-3 w-1/5">Thời gian</th>
+              <th class="p-3 w-24">Hành động</th>
+              <th class="p-3 w-1/4">Đối tượng thực thể</th>
+              <th class="p-3">Chi tiết thuộc tính thay đổi (Properties)</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody" class="divide-y divide-slate-900">
+            <tr>
+              <td colspan="4" class="p-8 text-center text-slate-500">Đang đồng bộ dữ liệu từ nhật ký hệ thống...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <footer class="bg-[#0f1420] border-t border-slate-800 px-4 py-2 flex justify-between items-center shrink-0 text-xs">
+        <button id="btnPrevPage" onclick="navigatePage(-1)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition disabled:opacity-20 disabled:pointer-events-none">
+          ◀ Trang trước
+        </button>
+        <span id="pageInfo" class="text-slate-400 font-mono text-[11px]">Trang -- / --</span>
+        <button id="btnNextPage" onclick="navigatePage(1)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition disabled:opacity-20 disabled:pointer-events-none">
+          Trang sau ▶
+        </button>
+      </footer>
+
+    </div>
+  </main>
+
+  <script>
+    let logCurrentPage = 1;
+    const logPageSize = 15;
+
+    // Đồng bộ bảng màu mã Hex chính xác từ hàm colorFor của index.html
+    const entityColors = {
+      User: "#60a5fa", Host: "#f59e0b", IP: "#4ade80", Domain: "#a78bfa",
+      FileHash: "#fb7185", URL: "#22d3ee", Process: "#e879f9", Email: "#facc15",
+      CloudResource: "#34d399", CVE: "#f87171", Entity: "#94a3b8"
+    };
+
+    // Hàm gọi API lấy dữ liệu phân trang thực tế từ Backend
+    async function fetchLogs(page) {
+      try {
+        logCurrentPage = page;
+        
+        // Đọc giá trị filter hiện tại từ UI
+        const searchKeyword = document.getElementById('searchId').value.trim();
+        const typeKeyword = document.getElementById('filterType').value;
+
+        // Xây dựng URL cơ bản
+        let url = `/api/logs?page=${page}&limit=${logPageSize}`;
+        
+        // (Tùy chọn) Nếu API hỗ trợ filter, gửi kèm lên backend
+        // if (searchKeyword) url += `&search=${encodeURIComponent(searchKeyword)}`;
+        // if (typeKeyword !== 'ALL') url += `&entity_type=${typeKeyword}`;
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Mất kết nối hệ thống log API");
+        const res = await response.json();
+
+        // Cập nhật Metadata lên giao diện
+        document.getElementById('logCount').innerText = res.metadata.total_records;
+        document.getElementById('pageInfo').innerText = `Trang ${res.metadata.current_page} / ${res.metadata.total_pages}`;
+        
+        // Trạng thái các nút bấm phân trang
+        document.getElementById('btnPrevPage').disabled = !res.metadata.has_previous;
+        document.getElementById('btnNextPage').disabled = !res.metadata.has_next;
+
+        renderLogTable(res.data, searchKeyword, typeKeyword);
+      } catch (err) {
+        console.error("Lỗi fetch logs:", err);
+        document.getElementById('logTableBody').innerHTML = `
+          <tr>
+            <td colspan="4" class="p-6 text-center text-rose-400 font-mono">[!] Không thể kết nối tới tệp tin logs hoặc lỗi API 500.</td>
+          </tr>
+        `;
+      }
+    }
+
+    function navigatePage(step) {
+      fetchLogs(logCurrentPage + step);
+    }
+
+    function executeFilter() {
+      fetchLogs(1); // Khi bấm lọc, ép hệ thống chạy lại từ trang 1
+    }
+
+    // Hàm đổ dữ liệu log ra bảng
+    function renderLogTable(logs, filterId = "", filterType = "ALL") {
+      const tbody = document.getElementById('logTableBody');
+      tbody.innerHTML = '';
+
+      // Thực hiện client-side filter bổ trợ nếu API trả về toàn bộ danh sách chưa filter
+      const filteredLogs = logs.filter(log => {
+        if (filterType !== "ALL" && log.entity_type !== filterType) return false;
+        if (filterId && !log.entity_id.toLowerCase().includes(filterId.toLowerCase())) return false;
+        return true;
+      });
+
+      if (filteredLogs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-600 italic">Không tìm thấy bản ghi log nào phù hợp với bộ lọc hiện tại.</td></tr>`;
+        return;
+      }
+
+      filteredLogs.forEach(log => {
+        // Thiết kế nhãn hành động chuẩn hóa
+        const actionBadge = log.action === 'CREATE' 
+          ? `<span class="bg-emerald-950/60 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[10px] font-bold">CREATE</span>`
+          : `<span class="bg-blue-950/60 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold">UPDATE</span>`;
+
+        // Lấy mã màu chuẩn từ index.html
+        const color = entityColors[log.entity_type] || "#94a3b8";
+
+        // Phân tích cú pháp dữ liệu cột Change data
+        let propertiesString = "";
+
+        try {
+            const before =
+                typeof log.change.before === "string"
+                    ? (log.change.before ? JSON.parse(log.change.before) : {})
+                    : (log.change.before || {});
+
+            const after =
+                typeof log.change.after === "string"
+                    ? (log.change.after ? JSON.parse(log.change.after) : {})
+                    : (log.change.after || {});
+
+            const beforeProps = before.properties || before.entity || before;
+            const afterProps = after.properties || after.entity || after;
+
+            if (log.action === "CREATE") {
+
+                propertiesString = `
+                    <div class="space-y-1">
+                        ${Object.entries(afterProps).map(([k,v]) => `
+                            <div>
+                                <span class="text-slate-500">${k}</span>
+                                :
+                                <span class="text-emerald-400">${JSON.stringify(v)}</span>
+                            </div>
+                        `).join("")}
+                    </div>
+                `;
+
+            } else {
+
+                const keys = [...new Set([
+                    ...Object.keys(beforeProps),
+                    ...Object.keys(afterProps)
+                ])];
+
+                propertiesString = `
+                    <div class="space-y-1">
+                        ${keys.map(k => `
+                            <div>
+                                <span class="text-slate-500">${k}</span>
+
+                                <span class="text-red-400 line-through">
+                                    ${JSON.stringify(beforeProps[k])}
+                                </span>
+
+                                <span class="text-slate-500 mx-1">→</span>
+
+                                <span class="text-emerald-400">
+                                    ${JSON.stringify(afterProps[k])}
+                                </span>
+                            </div>
+                        `).join("")}
+                    </div>
+                `;
+            }
+
+        } catch (e) {
+
+            propertiesString = `
+                <pre class="text-xs text-slate-400 whitespace-pre-wrap">
+        ${JSON.stringify(log.change, null, 2)}
+                </pre>
+            `;
+
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-[#121824]/60 transition border-b border-slate-900/60';
+        tr.innerHTML = `
+          <td class="p-3 text-slate-500 font-mono text-[11px]">${log.timestamp || 'N/A'}</td>
+          <td class="p-3">${actionBadge}</td>
+          <td class="p-3">
+            <span style="color: ${color}; border-color: ${color}40; background-color: ${color}10" class="border px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider mr-2">
+              ${log.entity_type}
+            </span>
+            <span class="text-slate-200 font-bold">${log.entity_id}</span>
+          </td>
+          <td class="p-3 text-slate-400 align-top" title='${JSON.stringify(log.change)}'>${propertiesString}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* =========================================================
+       HÀM NHẬN DIỆN URL PARAMETER KHI ĐƯỢC CHUYỂN TỪ INDEX.HTML
+    ========================================================= */
+    document.addEventListener("DOMContentLoaded", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const searchIdFromUrl = urlParams.get('searchId');
+      const entityTypeFromUrl = urlParams.get('entityType');
+
+      // Tự động điền bộ lọc nếu có tham số truyền từ Đồ thị sang
+      if (searchIdFromUrl) {
+        document.getElementById('searchId').value = searchIdFromUrl;
+      }
+      if (entityTypeFromUrl && entityColors[entityTypeFromUrl]) {
+        document.getElementById('filterType').value = entityTypeFromUrl;
+      }
+
+      // Kích hoạt nạp dữ liệu lần đầu tiên
+      fetchLogs(1);
+    });
+  </script>
+</body>
+</html>

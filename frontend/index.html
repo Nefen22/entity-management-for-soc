@@ -383,7 +383,13 @@
       </div>
     </div>
 
-    <p class="eyebrow" style="margin-top:auto; padding-top:10px;">Giải thuật hiển thị</p>
+    <a href="/audit_log.html" target="_blank" style="text-decoration:none;">
+      <button class="block secondary" style="margin-bottom:6px;">
+        Audit Logs
+      </button>
+    </a>
+ 
+    <p class="eyebrow" style="padding-top:10px;">Giải thuật hiển thị</p>
     <div class="card">
       <select id="layoutSelect">
         <option value="cose">Force-Directed (Cose)</option>
@@ -839,7 +845,7 @@ function renderEntityChips(list) {
   }).join('');
 
   listEl.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => startInvestigation(chip.dataset.type, chip.dataset.value));
+    chip.addEventListener('dblclick', () => startInvestigation(chip.dataset.type, chip.dataset.value));
   });
 }
 
