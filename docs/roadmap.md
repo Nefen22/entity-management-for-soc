@@ -4,10 +4,8 @@ MVP
 ✓ Enrichment
 ✓ Audit logs
 ✓ Cytoscape visualization polish
-
-Next
-□ Unit tests
-□ CI/CD
+✓ Unit tests
+✓ CI/CD
 
 Future
 □ Kafka ingestion

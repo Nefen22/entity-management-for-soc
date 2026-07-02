@@ -42,7 +42,6 @@ services:
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=password123
       - RESET_DB=true
-      - SEED_DATA=true
       - SEED_NAME=DEMO
     ports:
       - "8000:8000"

@@ -10,10 +10,10 @@ async def ingest(tenant: str,events: dict):
     await services.ingest(tenant, events)
     return APIResponse(message="Ingest completed")
 
-@router.post("/ingest/sample")
-async def ingest_sample(tenant: str, file:str):
-    await services.ingest_sample(tenant, file)
-    return APIResponse(message="Sample data ingested!")
+@router.post("/ingest/batch")
+async def batch_sample(tenant: str, file:str):
+    await services.batch_sample(tenant, file)
+    return APIResponse(message="Batch data ingested!")
 
 @router.get("/get-types")
 async def get_types(tenant: str, relationship:str | None = None):

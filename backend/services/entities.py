@@ -4,12 +4,30 @@ from models.responses import APIResponse
 from logs.audit_log import write_audit_log
 from database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE,MAPPING_ENTITIES_TYPE
 from .function import format_neo4j_data
+from models.node import Node
+from datetime import datetime
 
-async def post_entity(tenant: str, type:str, value:str):
-    result = await check_existed_logs(tenant=tenant, type=type, value=value)
-    if result is not None:
-        pass
-    await repo.post_entity(tenant, type, value)
+async def write_node_create_log(node: Node, action = 'CREATE', before_node: Node | None = None):
+    label = node.label
+    write_audit_log(
+        action=action,
+        entity_type=label,
+        entity_id=node.id,
+        change={"before": {},
+                "after": node.json()}
+                if not before_node else
+                {"before": before_node.json(),
+                 "after": node.json()},
+        time= str(datetime.now())
+    )
+
+async def post_entity(tenant: str, type:str, value:str, time: str):
+    if (await check_existed_logs(tenant=tenant, type=type, value=value)):
+        result = await repo.post_entity(tenant, type, value)
+        label = [label for label in result["label"] if label not in TENANT_DATABASE.values()][0]
+        node = Node(id = result[label], label = result["label"], properties=result["properties"])
+        await write_node_create_log(node=node)
+        
 
 async def get_entity(tenant: str, type:str, value: str):
     result = await repo.get_entity(tenant=tenant, type=type, value=value)
@@ -17,29 +35,20 @@ async def get_entity(tenant: str, type:str, value: str):
         return None
     record = result.data()
     labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
-    return {
-        "id": record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
-        "type": labels[0],
-        "properties": format_neo4j_data(record["entity"])
-    } 
+    return Node(
+        id = record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
+        label = labels[0],
+        properties = format_neo4j_data(record["entity"])
+    ) 
 
 async def get_list_entity(tenant: str,type:str, relationship:str | None = None, start:str | None = None, end:str | None = None):
     result = await repo.get_list_entity(tenant=tenant, type=type, relationship = relationship, start=start, end=end)
-    return [{
-        "id": record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
-        "label": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
-        "properties": format_neo4j_data(record["node"])
-    } for record in result]
+    return [Node(
+            id = record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
+            label = [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
+            properties = format_neo4j_data(record["node"])
+        ) for record in result]
 
 async def check_existed_logs(tenant: str, type:str, value:str, merge = False):
     existed = await get_entity(tenant=tenant, type=type, value=value)
-    action = ""
-    if not existed:
-        action = "CREATE"
-        write_audit_log(
-                action=action,
-                entity_type=type,
-                entity_id=value,
-                change = existed.data() if existed else {}
-            )
-    return existed
+    return existed is None

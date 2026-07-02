@@ -6,32 +6,40 @@ from parsers.json_parser import JsonParser
 import json
 from models.responses import APIResponse
 import repositories.graph as repo
-from .entities import post_entity, check_existed_logs
-from logs.audit_log import write_audit_log
+from .entities import post_entity, check_existed_logs, write_node_create_log
 from database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
 from .function import format_drawing
+from models.node import Node
 
 
 #Services
-async def ingest(tenant: str, events: dict):
-    if events.get("source_type") == "alert":
-        sub_event = AlertParser.from_event(events)
+async def ingest(tenant: str, event: dict):
+    if event.get("source_type") == "alert":
+        sub_event = AlertParser.from_event(event)
         if sub_event is None:
             pass
     else:
-        sub_event = JsonParser.from_event(events, events.get("source_type"))
+        sub_event = JsonParser.from_event(event, event.get("source_type"))
     rel = sub_event.get_relationship()
     for type, value in sub_event.get_nodes():
         if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:
             continue 
         for node in value:
-            await post_entity(tenant=tenant, type=type, value=node)
+            await post_entity(tenant=tenant, type=type, value=node, time=event["timestamp"])
     for ele_rel in rel:
-        await check_existed_logs(tenant, ele_rel.src.type, ele_rel.src.value, True)
-        await check_existed_logs(tenant, ele_rel.dest.type, ele_rel.dest.value, True)
-        await repo.post_relationship(tenant, ele_rel)
+        src_check = await check_existed_logs(tenant, ele_rel.src.type, ele_rel.src.value, True)
+        dest_check = await check_existed_logs(tenant, ele_rel.dest.type, ele_rel.dest.value, True)
+        result = await repo.post_relationship(tenant, ele_rel)
+        if src_check:
+            s_label = [label for label in result["src_label"] if label not in TENANT_DATABASE.values()][0]
+            src_r = Node(id=result["src"][MAPPING_ENTITIES_KEY[s_label]],label=s_label,properties=result["src"])
+            await write_node_create_log(src_r)
+        if dest_check:
+            d_label = [label for label in result["dest_label"] if label not in TENANT_DATABASE.values()][0]
+            dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],label=d_label,properties=result["dest"])
+            await write_node_create_log(dest_r)
 
-async def ingest_sample(tenant: str, file: str):
+async def batch_sample(tenant: str, file: str):
     with open(f'./datasets/{file}', 'r', encoding='utf-8') as file:
         data = json.load(file)
     for event in data:

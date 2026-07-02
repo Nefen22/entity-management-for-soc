@@ -1096,7 +1096,6 @@ function renderActionPanel(node) {
 async function showDetail(node) {
   const area = document.getElementById('detailPanel');
   data = node;
-
   if (Object.keys(data.properties).length === 0){
       const fetch = await safeFetchJson(
         apiUrl(
@@ -1265,7 +1264,7 @@ async function showDetail(node) {
             ? `/enrichments/types/ips/values/${encodeURIComponent(
                 data.fullLabel || data.id
               )}`
-            : `/enrichments/types/file-hashes/valuees/${encodeURIComponent(
+            : `/enrichments/types/file-hashes/values/${encodeURIComponent(
                 data.fullLabel || data.id
               )}`;
 

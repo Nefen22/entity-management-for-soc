@@ -9,25 +9,28 @@ async def post_relationship(tenant: str, edge: EdgePaser):
         dest = edge.dest
         connect_type = edge.connect_type
         evidence = edge.evidence
-        query="""MERGE (from: {tenant}:{from_label} {{{f_key}: $from_value}})
-                MERGE (to: {tenant}:{to_label} {{{t_key}: $to_value}})
-                MERGE (from)-[r:{connect_type}]->(to)
+        query="""MERGE (src: {tenant}:{from_label} {{{f_key}: $from_value}})
+                MERGE (dest: {tenant}:{to_label} {{{t_key}: $to_value}})
+                MERGE (src)-[r:{connect_type}]->(dest)
                 ON CREATE SET r.first_seen = datetime($time),
                                 r.last_seen = datetime($time),
                                 r.count = 1,
                                 r.evidences = [$evidence]
                 ON MATCH SET r.last_seen = datetime($time),
                                 r.count = r.count + 1,
-                                r.evidences =
-                                CASE
-                                    WHEN $evidence IN r.evidences
-                                    THEN r.evidences
-                                    ELSE r.evidences + $evidence
-                                END
+                                r.evidences =   CASE
+                                                    WHEN $evidence IN r.evidences
+                                                    THEN r.evidences
+                                                    ELSE r.evidences + $evidence
+                                                END
+                RETURN  src, labels(src) AS src_label,
+                        dest, labels(dest) AS dest_label
                 """.format(from_label=src.type, f_key=MAPPING_ENTITIES_KEY[src.type], 
                         to_label=dest.type, t_key=MAPPING_ENTITIES_KEY[dest.type],
                         connect_type=connect_type, tenant = TENANT_DATABASE[tenant])
-        await session.run(query,from_value=src.value, to_value=dest.value, evidence=evidence, time = edge.time)
+
+        result = await session.run(query,from_value=src.value, to_value=dest.value, evidence=evidence, time = edge.time)
+        return await result.single()
 
 async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
     type = type if type != "file-hashes" else "file_hashes"
