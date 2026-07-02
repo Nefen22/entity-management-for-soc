@@ -39,17 +39,8 @@ build:
 
 scan_trivy:
   stage: scan
-  image: docker:24
-  services:
-    - docker:24-dind
-  before_script:
-    - docker info
-    - apk add --no-cache curl
-    - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+  image: 
+    name: aquasec/trivy:latest
+    entrypoint: [""] 
   script:
-    - docker build -t $IMAGE_NAME .
-    - ./bin/trivy image \
-        --severity HIGH,CRITICAL \
-        --ignore-unfixed \
-        --exit-code 1 \
-        $IMAGE_NAME
+    - trivy image --input image.tar --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --format table
