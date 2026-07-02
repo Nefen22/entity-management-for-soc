@@ -11,10 +11,22 @@ services:
       - app-test
 
     healthcheck:
-      test: ["CMD","cypher-shell","-u","neo4j","-p","password123","RETURN 1"]
+      test:
+        [
+          "CMD",
+          "cypher-shell",
+          "-u",
+          "neo4j",
+          "-p",
+          "password123",
+          "--encryption",
+          "false",
+          "RETURN 1;"
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 10s
 
   api-test:
     build: .
