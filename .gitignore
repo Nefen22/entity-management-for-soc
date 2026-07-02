@@ -27,9 +27,6 @@ env/
 .env.*
 !.env.example
 
-# GeoIP databases (large binary files)
-*.mmdb
-
 # Neo4j data
 neo4j/data/
 neo4j/logs/

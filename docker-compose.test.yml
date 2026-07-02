@@ -18,6 +18,9 @@ services:
 
   api-test:
     build: .
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       - PYTHONPATH=/app:/app/backend
       - TESTING_IN_DOCKER=true
@@ -29,6 +32,7 @@ services:
       - SEED_NAME=TEST
     volumes:
       - .:/app
+      - ./backend/enrichment/data:/app/backend/enrichment/data
     networks:
       - app-test
     depends_on:

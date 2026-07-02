@@ -572,6 +572,7 @@ async function toggleCluster(clusterId) {
     expandedClusters.delete(clusterId);
     clusterNode.data('expanded', 'false');
     clusterNode.data('size', 58);
+    renderActionPanel(clusterNode);
     runLayout();
     return;
   }
@@ -619,6 +620,7 @@ async function toggleCluster(clusterId) {
     clusterNode.data('expanded', 'true');
     clusterNode.data('size', 40);
     expandedClusters.add(clusterId);
+    renderActionPanel(clusterNode);
     runLayout({ fit: false });
   } catch (err) {
     console.error(err);
@@ -928,7 +930,7 @@ function renderActionPanel(node) {
         ${isExp ? '⊟ Thu gọn cụm' : '⊞ Mở rộng cụm'}
       </button>
     `;
-    document.getElementById('clusterToggleBtn').addEventListener('click', () => { toggleCluster(data.id); renderActionPanel(node); });
+    document.getElementById('clusterToggleBtn').addEventListener('click', () => { toggleCluster(data.id)});
     return;
   }
 
@@ -1026,7 +1028,6 @@ async function showDetail(node) {
       );
 
       relationships = result || [];
-      console.log(relationships)
     } catch (err) {
       console.error(err);
     }
@@ -1154,7 +1155,10 @@ document.getElementById('tenantSelect').addEventListener('change', function () {
 });
 
 cy.on('add remove', () => updateStats());
-cy.on('dbltap', 'node[isCluster="true"]', (evt) => toggleCluster(evt.target.id()));
+cy.on('dbltap', 'node[isCluster="true"]', (evt) =>{
+                                          toggleCluster(evt.target.id());
+
+                                        });
 
 async function initApp() {
   await loadTenants();
