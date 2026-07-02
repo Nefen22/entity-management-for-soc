@@ -34,7 +34,6 @@ async def get_list_entity(tenant: str, type:str, relationship:str, start:str | N
                                type = ":"+MAPPING_ENTITIES_TYPE[type] if type else "",
                                relationship=":"+relationship if relationship else "",
                                date_filter = date_time)
-        print(query)
         result = await session.run(query, start=start, end=end)
         return await result.data()
 

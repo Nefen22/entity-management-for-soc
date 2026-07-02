@@ -1,12 +1,13 @@
 stages:
   - test
   - build
+  - scan
 
 variables:
   DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
+  IMAGE_NAME: entity-management-soc-test:latest
 
-# ── Test stage ────────────────────────────────────────────────────────────────
 test:
   stage: test
   image: docker:24
@@ -16,24 +17,39 @@ test:
     - docker info
     - docker compose version
   script:
-    - docker compose -f docker-compose.test.yml up
-        --build
-        --abort-on-container-exit
-        --exit-code-from api-test
+    - docker compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from api-test
   after_script:
     - docker compose -f docker-compose.test.yml down -v --remove-orphans
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
 
-# ── Build stage (chỉ chạy khi push lên main) ─────────────────────────────────
 build:
   stage: build
   image: docker:24
   services:
     - docker:24-dind
-  only:
-    - main
   before_script:
     - docker info
   script:
-    - docker build -t entity-management-soc:latest .
-    - echo "Build completed successfully"
+    - docker build -t $IMAGE_NAME .
+    - docker save $IMAGE_NAME -o image.tar
+  artifacts:
+    paths:
+      - image.tar
+    expire_in: 1 hour
+
+scan_trivy:
+  stage: scan
+  image: docker:24
+  services:
+    - docker:24-dind
+  before_script:
+    - docker info
+    - apk add --no-cache curl
+    - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+  script:
+    - docker build -t $IMAGE_NAME .
+    - ./bin/trivy image \
+        --severity HIGH,CRITICAL \
+        --ignore-unfixed \
+        --exit-code 1 \
+        $IMAGE_NAME

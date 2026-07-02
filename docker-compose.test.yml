@@ -29,6 +29,7 @@ services:
       start_period: 10s
 
   api-test:
+    image: entity-management-soc-test
     build: .
     dns:
       - 8.8.8.8
@@ -44,7 +45,6 @@ services:
       - SEED_NAME=TEST
     volumes:
       - .:/app
-      - ./backend/enrichment/data:/app/backend/enrichment/data
     networks:
       - app-test
     depends_on:
