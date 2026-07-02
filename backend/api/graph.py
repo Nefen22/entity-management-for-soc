@@ -30,12 +30,12 @@ async def clusters(tenant: str):
     result = await services.clusters(tenant)
     return APIResponse(message=f"Get all clusters success!", data=result)
 
-@router.get("/clusters/{type}")
+@router.get("/clusters/types/{type}")
 async def entities_types_in_cluster(tenant: str, type: str):
     result = await services.entities_types_in_cluster(tenant, type)
     return APIResponse(message=f"Get all entity from cluster_{type} success!", data=result)
 
-@router.get("/entities/{type}/{value:path}")
+@router.get("/entities/types/{type}/values/{value:path}")
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int | None = 1):
     result = await services.get_relationship_n_hop(tenant=tenant, type=type, value=value, hop=hop)
     return APIResponse(message=f"Get {hop}-hop graph from {value} successfully", data=result)

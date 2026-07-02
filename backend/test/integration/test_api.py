@@ -13,7 +13,7 @@ def test_get_tenants(api):
 
 
 def test_get_all_entities(api):
-    r = api.get(f"/api/tenants/{TENANT}/entities")
+    r = api.get(f"/api/tenants/{TENANT}/entities/lists")
 
     assert r.status_code == 200
 
@@ -29,7 +29,7 @@ def test_get_all_entities(api):
 
 
 def test_get_label(api):
-    r = api.get(f"/api/tenants/{TENANT}/entities/User")
+    r = api.get(f"/api/tenants/{TENANT}/entities/lists?type=User")
 
     assert r.status_code == 200
 
@@ -42,7 +42,7 @@ def test_get_label(api):
 
 def test_get_entity(api):
     r = api.get(
-        f"/api/tenants/{TENANT}/entities/User/hr.manager"
+        f"/api/tenants/{TENANT}/entities/types/User/values/hr.manager"
     )
 
     assert r.status_code == 200
@@ -54,7 +54,7 @@ def test_get_entity(api):
 
 def test_graph_one_hop(api):
     r = api.get(
-        f"/api/tenants/{TENANT}/graphs/entities/User/hr.manager?hop=1"
+        f"/api/tenants/{TENANT}/graphs/entities/types/User/values/hr.manager?hop=1"
     )
 
     assert r.status_code == 200
@@ -66,7 +66,7 @@ def test_graph_one_hop(api):
 
 def test_graph_two_hop(api):
     r = api.get(
-        f"/api/tenants/{TENANT}/graphs/entities/User/hr.manager?hop=2"
+        f"/api/tenants/{TENANT}/graphs/entities/types/User/values/hr.manager?hop=2"
     )
 
     assert r.status_code == 200
@@ -115,7 +115,7 @@ def test_clusters(api):
 
 def test_cluster_entities(api):
     r = api.get(
-        f"/api/tenants/{TENANT}/graphs/clusters/User"
+        f"/api/tenants/{TENANT}/graphs/clusters/types/User"
     )
 
     assert r.status_code == 200
@@ -127,7 +127,7 @@ def test_cluster_entities(api):
 
 def test_ip_enrichment(api):
     r = api.post(
-        f"/api/tenants/{TENANT}/enrichments/ips/104.21.43.11"
+        f"/api/tenants/{TENANT}/enrichments/types/ips/values/104.21.43.11"
     )
 
     assert r.status_code == 200
@@ -138,7 +138,7 @@ def test_ip_enrichment(api):
     
 def test_hash_enrichment(api):
     r = api.post(
-        f"/api/tenants/{TENANT}/enrichments/file-hashes/e99a18c428cb38d5f260853678922e03"
+        f"/api/tenants/{TENANT}/enrichments/types/file-hashes/values/e99a18c428cb38d5f260853678922e03"
     )
 
     assert r.status_code == 200
