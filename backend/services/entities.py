@@ -11,14 +11,6 @@ async def post_entity(tenant: str, type:str, value:str):
         pass
     await repo.post_entity(tenant, type, value)
 
-async def get_all_entities(tenant: str):
-    result = await repo.get_all_entities(tenant=tenant)
-    return [{
-        "id": record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
-        "label": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
-        "properties": format_neo4j_data(record["node"])
-    } for record in result]
-
 async def get_entity(tenant: str, type:str, value: str):
     result = await repo.get_entity(tenant=tenant, type=type, value=value)
     if result is None:
@@ -31,8 +23,8 @@ async def get_entity(tenant: str, type:str, value: str):
         "properties": format_neo4j_data(record["entity"])
     } 
 
-async def get_list_entity(tenant: str,type:str, relationship:str | None = None):
-    result = await repo.get_list_entity(tenant=tenant, type=type, relationship=relationship)
+async def get_list_entity(tenant: str,type:str, relationship:str | None = None, start:str | None = None, end:str | None = None):
+    result = await repo.get_list_entity(tenant=tenant, type=type, relationship = relationship, start=start, end=end)
     return [{
         "id": record["node"][MAPPING_ENTITIES_KEY[[label for label in record["label"] if label not in TENANT_DATABASE.values()][0]]],
         "label": [label for label in record["label"] if label not in TENANT_DATABASE.values()][0],
