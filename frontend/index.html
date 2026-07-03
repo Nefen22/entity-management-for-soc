@@ -429,9 +429,23 @@
     </div>
   </div>
 
-  <!-- Path Finding -->
+  <p class="eyebrow" style="margin-top:6px;">
+    Chi tiết thực thể
+  </p>
+  
+  <div class="card" id="detailPanel">
+    <div class="detail-empty">
+      Chưa có đối tượng nào được chọn.
+    </div>
+  </div>
+   <!-- Path Finding -->
   <div class="card" id="pathPanel" hidden style="margin-top:10px;">
-
+      <button
+          id="togglePathBtn"
+          class="block secondary"
+          style="margin-top:8px;">
+          ⇄ Find Path
+      </button>
     <p class="eyebrow" style="margin-bottom:10px;">
       Path Finding
     </p>
@@ -461,17 +475,6 @@
     </button>
 
   </div>
-
-  <p class="eyebrow" style="margin-top:6px;">
-    Chi tiết thực thể
-  </p>
-
-  <div class="card" id="detailPanel">
-    <div class="detail-empty">
-      Chưa có đối tượng nào được chọn.
-    </div>
-  </div>
-
 </aside>
 
 </div>
@@ -666,8 +669,9 @@ cy.on("tap", "node", (e) => {
       renderActionPanel(node);
       return;
     }
-    selectedNode = node.data()
 
+    selectedNode = node.data()
+    renderActionPanel(node);
     showDetail(selectedNode);
     
     if (pathFindingMode) {
@@ -1075,6 +1079,7 @@ async function startInvestigation(type, value) {
 
     runLayout();
     refreshHopNodeSelect();
+    syncLayoutSwitch();
     renderInvestigationFilters();
 
     const rootNode = cy.nodes('.root').length ? cy.nodes('.root') : cy.nodes().first();
@@ -1124,7 +1129,7 @@ async function hopExpand(type, value, hop) {
       });
       cy.getElementById(n.id).unlock();
     });
-
+    
     edges.forEach((e, idx) => {
       const src = e.source || e.start, dst = e.target || e.end, label = e.type;
       const exists = cy.edges().some(ex => ex.data('source') === src && ex.data('target') === dst && ex.data('label') === label);
@@ -1134,9 +1139,7 @@ async function hopExpand(type, value, hop) {
       cy.add({ group: 'edges', data: { id, source: src, target: dst, label, isNewExpanded: true } });
     });
 
-    if (addedAny) {
-      cy.layout({ name: 'cose', animate: true, animationDuration: 350, fit: false, nodeRepulsion: 28000, idealEdgeLength: 70 }).run();
-    }
+    cy.layout({ name: 'cose', animate: true, animationDuration: 350, fit: false, nodeRepulsion: 28000, idealEdgeLength: 70 }).run();
     setTimeout(() => cy.nodes().unlock(), 400);
 
     refreshHopNodeSelect();
@@ -1237,10 +1240,7 @@ let currentSelectedNode = null;
 function renderActionPanel(node) {
   const panel = document.getElementById('actionPanel');
   const data = node.data();
-  currentSelectedNode = {
-      id: data.fullLabel || data.id,
-      type: data.type
-  };
+  currentSelectedNode = data
   if (data.isCluster === "true") {
     const isExp = expandedClusters.has(data.id);
     panel.innerHTML = `
@@ -1264,14 +1264,6 @@ function renderActionPanel(node) {
         <button id="startInvBtn" class="block">
           ▶ Bắt đầu điều tra
         </button>
-
-        <button
-          id="togglePathBtn"
-          class="block secondary"
-          style="margin-top:8px;">
-          ⇄ Find Path
-        </button>
-      </div>
     `;
 
     document.getElementById('startInvBtn')
@@ -1302,22 +1294,16 @@ function renderActionPanel(node) {
         </button>
       </div>
 
-      <button
-          id="togglePathBtn"
-          class="block secondary"
-          style="margin-top:8px;">
-          ⇄ Find Path
-      </button>
     `;
 
     document.getElementById('quickHop1Btn')
       .addEventListener('click', () =>
-        hopExpand(data.type, data.fullLabel || data.id, 1)
+        hopExpand(data.type, data.id, 1)
       );
 
     document.getElementById('quickHop2Btn')
       .addEventListener('click', () =>
-        hopExpand(data.type, data.fullLabel || data.id, 2)
+        hopExpand(data.type, data.id, 2)
       );
 
     document.getElementById('togglePathBtn')
@@ -1555,7 +1541,6 @@ document.getElementById('tenantSelect').addEventListener('change', function () {
 cy.on('add remove', () => updateStats());
 cy.on('dbltap', 'node[isCluster="true"]', (evt) =>{
                                           toggleCluster(evt.target.id());
-
                                         });
 cy.on('dbltap', 'node[isCluster="false"]', (evt) =>{
                                             let node = evt.target;

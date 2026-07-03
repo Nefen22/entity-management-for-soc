@@ -7,13 +7,11 @@ MAPPING_ENTITIES_TYPE={
     "hosts": "Host",
     "domains": "Domain",
     "file_hashes": "FileHash",
-    # new
     "urls": "URL",
     "processes": "Process",
     "cloud_resources": "CloudResource",
     "emails": "Email",
     "cves": "CVE",
-    # reverse lookup (Type → Type)
     "IP": "IP",
     "User": "User",
     "Host": "Host",
@@ -132,7 +130,6 @@ MAPPING_RELATIONSHIPS = {
 }
 
 # ── SIEM ──────────────────────────────────────────────────────────────────────
-# Đã bổ sung file_hashes để phân tích sâu kịch bản Phishing đính kèm Malware độc hại
 SIEM_INCLUDE = {
     "nodes": {
         "users":            ["user"],
@@ -148,8 +145,8 @@ SIEM_INCLUDE = {
         ("user",            "destination_host"),   
         ("sender_email",    "recipient_email"),    
         ("sender_email",    "url"),
-        ("sender_email",    "file_hash"), # Khôi phục liên kết Email -> File độc hại đính kèm (ATTACHED)
-        ("user",            "sender_email") # Khôi phục mối liên kết User -> Email (OWNS) khi gửi mail
+        ("sender_email",    "file_hash"),
+        ("user",            "sender_email") 
     ]
 }
 
@@ -167,14 +164,12 @@ EDR_INCLUDE = {
         "urls":             ["url"]
     },
     "edges": [
-        # Core & Network
         ("user",             "destination_host"), 
         ("file_hash",        "destination_host"), 
         ("destination_host", "destination_ip"),
         ("destination_host", "destination_domain"),
         ("destination_host", "url"),
         
-        # Process Relations
         ("parent_process",   "process_name"),     # (Process, Process) -> SPAWNED
         ("process_name",     "destination_host"), # (Process, Host) -> RUNS_ON
         ("process_name",     "user"),             # (Process, User) -> EXECUTED_BY
@@ -182,7 +177,6 @@ EDR_INCLUDE = {
         ("process_name",     "destination_ip"),   # (Process, IP) -> CONNECTED_TO
         ("process_name",     "destination_domain"),# (Process, Domain) -> CONNECTED_TO
 
-        # Vulnerability
         ("cve_id",           "destination_host"), 
         ("cve_id",           "process_name"),     
     ]
@@ -205,13 +199,11 @@ CLOUD_INCLUDE = {
         ("destination_domain", "destination_ip"),     
         ("source_host",       "url"),
         
-        # Cloud Access & Mapping
-        ("user",              "resource_id"),    # (User, CloudResource) -> ACCESSED
-        ("resource_id",       "destination_ip"), # (CloudResource, IP) -> ASSIGNED_TO
-        ("resource_id",       "source_host"),    # (CloudResource, Host) -> RUNS_ON
-        
+        ("user",              "resource_id"),    
+        ("resource_id",       "destination_ip"), 
+        ("resource_id",       "source_host"),    
         # Lỗ hổng Cloud
-        ("cve_id",            "resource_id"),    # (CVE, CloudResource) -> AFFECTS
+        ("cve_id",            "resource_id"),   
     ]
 }
 
