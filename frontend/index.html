@@ -534,12 +534,14 @@ function togglePathFinding() {
 
     if (pathFindingMode) {
 
-        const data = cy.$(":selected").data();
+        if (!currentSelectedNode) {
+            showToast("Hãy chọn một node trước.");
+            pathFindingMode = false;
+            panel.hidden = true;
+            return;
+        }
 
-        pathSource = {
-            id: data.fullLabel || data.id,
-            type: data.type
-        };
+        pathSource = currentSelectedNode
 
         pathTarget = null;
 
@@ -547,7 +549,7 @@ function togglePathFinding() {
             `${pathSource.type}: ${pathSource.id}`;
 
         document.getElementById("pathTarget").textContent =
-            "← Chọn node đích trên đồ thị";
+            "Chưa chọn";
 
         document.getElementById("findPathBtn").disabled = true;
 
@@ -560,12 +562,10 @@ function togglePathFinding() {
 
         document.getElementById("pathSource").textContent = "Chưa chọn";
         document.getElementById("pathTarget").textContent = "Chưa chọn";
-
         document.getElementById("findPathBtn").disabled = true;
 
         btn.innerHTML = "⇄ Find Path";
     }
-
 }
 /* =========================================================
    CYTOSCAPE INIT
@@ -671,21 +671,19 @@ cy.on("tap", "node", (e) => {
     showDetail(selectedNode);
     
     if (pathFindingMode) {
+ 
+        pathTarget = selectedNode;
 
-      if (data.id === pathSource.id) {
-          showToast("Hãy chọn node khác làm Target.");
-          return;
-      }
+        document.getElementById("pathTarget").textContent =
+            pathTarget.id;
 
-      pathTarget = {
-          id: data.fullLabel || data.id,
-          type: data.type
-      };
-
-      document.getElementById("pathTarget").textContent =
-          `${pathTarget.type}: ${pathTarget.id}`;
-
-      document.getElementById("findPathBtn").disabled = false;
+        document.getElementById("findPathBtn").disabled = false;
+    }
+    else {
+        pathSource = selectedNode
+        currentSelectedNode = selectedNode
+        document.getElementById("pathSource").textContent =
+            pathSource.id;
     }
 
 });
@@ -1273,18 +1271,17 @@ function renderActionPanel(node) {
           style="margin-top:8px;">
           ⇄ Find Path
         </button>
-
       </div>
     `;
 
-    document.getElementById("startInvBtn")
-        .addEventListener("click", () =>
-            startInvestigation(data.type, data.fullLabel || data.id)
-        );
+    document.getElementById('startInvBtn')
+      .addEventListener('click', () =>
+        startInvestigation(data.type, data.fullLabel || data.id)
+      );
 
-    document.getElementById("togglePathBtn")
-        .addEventListener("click", togglePathFinding);
-
+    document.getElementById('togglePathBtn')
+      .addEventListener('click', togglePathFinding);
+    document.getElementById('startInvBtn').addEventListener('click', () => startInvestigation(data.type, data.fullLabel || data.id));
   } else {
     panel.innerHTML = `
       <div style="font-weight:600;font-size:12.5px;color:var(--amber);">
@@ -1311,17 +1308,7 @@ function renderActionPanel(node) {
           style="margin-top:8px;">
           ⇄ Find Path
       </button>
-      
-      <button
-        id="exportGraphBtn"
-        class="block secondary"
-        style="margin-top:8px;">
-        🖼 Export Graph
-      </button>
     `;
-    
-    document.getElementById("exportGraphBtn")
-        .addEventListener("click", exportGraphImage);
 
     document.getElementById('quickHop1Btn')
       .addEventListener('click', () =>
@@ -1351,7 +1338,6 @@ async function showDetail(node) {
         )
       );
       data = fetch
-      console.log(data)
   }
   props=data.properties;
   const type = data.isCluster === "true"
@@ -1543,22 +1529,6 @@ async function showDetail(node) {
     });
   }
   
-}
-
-function exportGraphImage() {
-
-    const png64 = cy.png({
-        full: true,          // Xuất toàn bộ graph
-        scale: 3,            // Độ phân giải cao
-        bg: "#0f172a"        // Màu nền
-    });
-
-    const link = document.createElement("a");
-    link.href = png64;
-    link.download = `graph-${new Date().toISOString().slice(0,19)}.png`;
-    link.click();
-
-    showToast("Đã xuất ảnh đồ thị.");
 }
 
 /* =========================================================

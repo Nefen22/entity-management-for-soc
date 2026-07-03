@@ -21,11 +21,11 @@ docker-compose up -d
 ### Quick Demo
 
 ```bash
-# Ingest sample data
-POST /api/tenants/{tenant}/graphs/ingest/sample
+# Ingest batch data
+POST /api/tenants/{tenant}/graphs/ingest/batch
 
 # Query entity graph (4-hop)
-GET /api/tenants/{tenant}/graphs/ip/8.8.8.8/graph/4
+GET /api/tenants/{tenant}/graphs/entities/types/ip/values/8.8.8.8/graph/4
 ```
 
 ---
@@ -110,11 +110,14 @@ Relationship metadata:
 ### Investigation Features
 
 * Entity lookup
-* Relationship exploration
-* Multi-hop traversal
-* N-hop investigation
+* Multi-hop investigation
+* Cluster expansion / collapse
+* Investigation mode
 * Relationship filtering
 * Entity type filtering
+* Global search
+* Shortest path finding between two entities
+* Audit log viewer
 
 ---
 
@@ -132,10 +135,25 @@ Supported layouts:
 Features:
 
 * Dynamic filtering
-* Expand subgraphs
-* Node details panel
+* Cluster expand/collapse
+* Interactive investigation mode
+* Entity detail panel
 * Relationship metadata display
-* Interactive navigation
+* Path finding visualization
+* Audit log view
+* Graph export (PNG)
+* Multiple graph layouts
+
+---
+
+### Security & DevOps
+
+* Docker Compose deployment
+* GitHub Actions CI
+* GitLab CI
+* Trivy container vulnerability scanning
+* Health checks for Neo4j
+* Integration tests with Docker Compose
 
 ---
 
@@ -152,6 +170,7 @@ Example:
 API examples:
 
 ```
+/api/tenants/logs
 /api/tenants/{tenant}/entities
 /api/tenants/{tenant}/graphs
 /api/tenants/{tenant}/enrichments
@@ -180,28 +199,6 @@ API examples:
 
 ---
 
-## Architecture
-
-```
-Event
-  ↓
-Parser (SIEM / EDR / Cloud / Custom JSON)
-  ↓
-Service Layer
-  ↓
-Neo4j (label-based multi-tenant)
-  ↓
-Visualization (Cytoscape.js)
-```
-
-* Service layer architecture
-* API layer separation
-* Parser abstraction
-* Multi-tenant routing
-* Graph-based investigation model
-
----
-
 ## Implemented Features
 
 * [x] Entity extraction (10 entity types)
@@ -209,28 +206,55 @@ Visualization (Cytoscape.js)
 * [x] Multi-hop investigation
 * [x] GeoIP enrichment
 * [x] Mock VirusTotal enrichment
-* [x] Relationship metadata (first_seen, last_seen, count, evidence)
+* [x] Relationship metadata (first_seen, last_seen, count, evidences)
 * [x] Graph visualization
 * [x] Multiple layouts
 * [x] Dynamic filtering
-* [x] Audit log
 * [x] Multi-tenant support (label-based)
 * [x] Neo4j indexing
 * [x] REST API with Swagger docs
 * [x] Docker Compose deployment
+* [x] Investigation mode
+* [x] Cluster expand/collapse
+* [x] Shortest path finding
+* [x] Audit log viewer
+* [x] Graph export (PNG)
+* [x] GitHub Actions CI
+* [x] GitLab CI
+* [x] Trivy vulnerability scanning
 
 ---
 
-## Roadmap
+## Architecture
 
-* [ ] Unit and integration tests
-* [ ] CI/CD pipeline
-* [ ] Path finding between arbitrary entities
-* [ ] Entity deduplication and merge
-* [ ] Export graph to PNG/JSON
-* [ ] Time-based graph filtering
-* [ ] Kafka batch ingestion
-* [ ] LLM-based entity extraction from free-text alerts
+See [architecture.md](architecture.md)
+---
+
+## Documentation
+
+- Requirements
+- Architecture
+- Roadmap
+
+---
+
+## Screenshots
+
+### Graph Explorer
+
+![Graph Explorer](docs/images/graph.png)
+
+### Investigation Mode
+
+![Investigation](docs/images/investigation.png)
+
+### Path Finding
+
+![Path Finding](docs/images/pathfinding.png)
+
+### Audit Logs
+
+![Audit Logs](docs/images/auditlogs.png)
 
 ---
 
