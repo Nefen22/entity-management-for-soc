@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     for tenant in seed.keys():
         TENANT_DATABASE[tenant] = f"Tenant_{tenant}"
     if RESET_DB:
-        Path("/app/backend/logs/logs/audit_log.json").write_text("")
+        Path("/app/backend/logs/logs/audit_log.jsonl").write_text("")
         await init_db(RESET_DB)
         await seed_db(seed)
 

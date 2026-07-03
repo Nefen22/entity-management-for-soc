@@ -19,13 +19,13 @@ def test_get_all_entities(api):
 
     data = r.json()["data"]
     # Có User
-    assert any(e["label"] == "User" and e["id"] == "hr.manager" for e in data)
+    assert any(e["type"] == "User" and e["id"] == "hr.manager" for e in data)
 
     # Có Host
-    assert any(e["label"] == "Host" and e["id"] == "DESKTOP-HR01" for e in data)
+    assert any(e["type"] == "Host" and e["id"] == "DESKTOP-HR01" for e in data)
 
     # Có Domain
-    assert any(e["label"] == "Domain" and e["id"] == "filetransfer.io" for e in data)
+    assert any(e["type"] == "Domain" and e["id"] == "filetransfer.io" for e in data)
 
 
 def test_get_label(api):

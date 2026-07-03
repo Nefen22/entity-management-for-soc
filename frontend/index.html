@@ -368,7 +368,7 @@
         <select id="hopNodeSelect"></select>
         <label>Độ sâu Hop</label>
         <div class="hop-bar">
-          <input type="number" id="hopDepthInput" value="1" min="1" max="4">
+          <input type="number" id="hopDepthInput" value="1" min="1" max="6">
           <button id="hopExpandBtn" class="block">⇲ Mở rộng</button>
         </div>
       </div>
@@ -522,7 +522,7 @@ async function safeFetchJson(url, options) {
 let pathFindingMode = false;
 let pathSource = null;
 let pathTarget = null;
-
+const btn = document.getElementById("togglePathBtn");
 function togglePathFinding() {
 
     pathFindingMode = !pathFindingMode;
@@ -534,13 +534,20 @@ function togglePathFinding() {
 
     if (pathFindingMode) {
 
-        pathSource = selectedNode;
+        const data = cy.$(":selected").data();
+
+        pathSource = {
+            id: data.fullLabel || data.id,
+            type: data.type
+        };
+
+        pathTarget = null;
 
         document.getElementById("pathSource").textContent =
-            pathSource?.id ?? "Chưa chọn";
+            `${pathSource.type}: ${pathSource.id}`;
 
         document.getElementById("pathTarget").textContent =
-            "Chưa chọn";
+            "← Chọn node đích trên đồ thị";
 
         document.getElementById("findPathBtn").disabled = true;
 
@@ -551,8 +558,14 @@ function togglePathFinding() {
         pathSource = null;
         pathTarget = null;
 
+        document.getElementById("pathSource").textContent = "Chưa chọn";
+        document.getElementById("pathTarget").textContent = "Chưa chọn";
+
+        document.getElementById("findPathBtn").disabled = true;
+
         btn.innerHTML = "⇄ Find Path";
     }
+
 }
 /* =========================================================
    CYTOSCAPE INIT
@@ -620,18 +633,104 @@ const cy = cytoscape({
       }
     },
     { selector: 'edge[isMember="true"]', style: { 'line-style': 'dashed', 'opacity': 0.5 } },
-    { selector: 'edge.dim', style: { 'opacity': 0.06 } }
+    { selector: 'edge.dim', style: { 'opacity': 0.06 } },
+    {
+        selector: ".path-node",
+        style: {
+            "border-width": 5,
+            "border-color": "#facc15",
+            "background-color": "#f97316"
+        }
+    },
+    {
+        selector: ".path-edge",
+        style: {
+            "width": 6,
+            "line-color": "#f97316",
+            "target-arrow-color": "#f97316",
+            "z-index": 999
+        }
+    }
   ],
   wheelSensitivity: 0.25
 });
 
-cy.on('tap', 'node', (evt) => {
-  const node = evt.target;
-  cy.nodes().unselect();
-  node.select();
-  showDetail(node.data());
-  renderActionPanel(node);
+cy.on("tap", "node", (e) => {
+
+    const node = e.target;
+    const pill = document.getElementById('modePill');
+    if (pill.textContent === 'Overview'){
+      cy.nodes().unselect();
+      node.select();
+      showDetail(node.data());
+      renderActionPanel(node);
+      return;
+    }
+    selectedNode = node.data()
+
+    showDetail(selectedNode);
+    
+    if (pathFindingMode) {
+
+      if (data.id === pathSource.id) {
+          showToast("Hãy chọn node khác làm Target.");
+          return;
+      }
+
+      pathTarget = {
+          id: data.fullLabel || data.id,
+          type: data.type
+      };
+
+      document.getElementById("pathTarget").textContent =
+          `${pathTarget.type}: ${pathTarget.id}`;
+
+      document.getElementById("findPathBtn").disabled = false;
+    }
+
 });
+
+function highlightPath(nodes, edges) {
+
+    cy.elements().removeClass("path-node path-edge");
+
+    nodes.forEach(n => {
+        cy.$id(n.id).addClass("path-node");
+    });
+
+    edges.forEach(e => {
+
+        cy.edges().forEach(edge => {
+
+            if (
+                edge.data("source") === e.source &&
+                edge.data("target") === e.target &&
+                edge.data("label") === e.type
+            ) {
+                edge.addClass("path-edge");
+            }
+
+        });
+
+    });
+
+    cy.fit(cy.$(".path-node"), 60);
+}
+
+document.getElementById("findPathBtn").onclick = async () => {
+
+    if (!pathSource || !pathTarget) return;
+    const result = await safeFetchJson(
+        apiUrl(
+            `/graphs/path/types/${encodeURIComponent(pathSource.type)}` +
+            `/values/${encodeURIComponent(pathSource.id)}` +
+            `/dest-types/${encodeURIComponent(pathTarget.type)}` +
+            `/dest-values/${encodeURIComponent(pathTarget.id)}`
+        )
+    );
+
+    highlightPath(result.nodes, result.edges);
+};
 
 cy.on('tap', (evt) => { if (evt.target === cy) cy.nodes().unselect(); });
 
@@ -807,7 +906,7 @@ async function toggleCluster(clusterId) {
         group: 'nodes',
         data: {
           id,
-          label: shorten(ent.id, 16) + (relCount ? ` (${relCount})` : ''),
+          label: type+":"+shorten(ent.id, 16) + (relCount ? ` (${relCount})` : ''),
           fullLabel: ent.value || ent.id,
           color: colorFor(type),
           size: 32,
@@ -923,7 +1022,7 @@ function renderEntityChips(list) {
   }).join('');
 
   listEl.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('dblclick', () => startInvestigation(chip.dataset.type, chip.dataset.value));
+    chip.addEventListener('click', () => startInvestigation(chip.dataset.type, chip.dataset.value));
   });
 }
 
@@ -957,7 +1056,7 @@ async function startInvestigation(type, value) {
         group: 'nodes',
         data: {
           id: n.id,
-          label: shorten(n.id, 16),
+          label: n.type+":"+shorten(n.id, 16),
           fullLabel: n.id,
           color: colorFor(n.type),
           size: isRoot ? 46 : 34,
@@ -1014,7 +1113,7 @@ async function hopExpand(type, value, hop) {
         group: 'nodes',
         data: {
           id: n.id,
-          label: shorten(n.properties?.value || n.properties?.name || n.id, 16),
+          label: n.type+":"+shorten(n.properties?.value || n.properties?.name || n.id, 16),
           fullLabel: n.properties?.value || n.id,
           color: colorFor(n.type),
           size: 30,
@@ -1135,10 +1234,15 @@ document.getElementById('exitInvestigationBtn').addEventListener('click', exitIn
 /* =========================================================
    ACTION PANEL (right)
 ========================================================= */
+let currentSelectedNode = null;
+
 function renderActionPanel(node) {
   const panel = document.getElementById('actionPanel');
   const data = node.data();
-
+  currentSelectedNode = {
+      id: data.fullLabel || data.id,
+      type: data.type
+  };
   if (data.isCluster === "true") {
     const isExp = expandedClusters.has(data.id);
     panel.innerHTML = `
@@ -1155,22 +1259,82 @@ function renderActionPanel(node) {
   if (mode === 'OVERVIEW') {
     panel.innerHTML = `
       <div class="investigate-cta">
-        <p>Bắt đầu điều tra sâu thực thể <b style="color:var(--text)">${data.fullLabel || data.id}</b></p>
-        <button id="startInvBtn" class="block">▶ Bắt đầu điều tra</button>
+        <p>Bắt đầu điều tra sâu thực thể
+          <b style="color:var(--text)">${data.fullLabel || data.id}</b>
+        </p>
+
+        <button id="startInvBtn" class="block">
+          ▶ Bắt đầu điều tra
+        </button>
+
+        <button
+          id="togglePathBtn"
+          class="block secondary"
+          style="margin-top:8px;">
+          ⇄ Find Path
+        </button>
+
       </div>
     `;
-    document.getElementById('startInvBtn').addEventListener('click', () => startInvestigation(data.type, data.fullLabel || data.id));
+
+    document.getElementById("startInvBtn")
+        .addEventListener("click", () =>
+            startInvestigation(data.type, data.fullLabel || data.id)
+        );
+
+    document.getElementById("togglePathBtn")
+        .addEventListener("click", togglePathFinding);
+
   } else {
     panel.innerHTML = `
-      <div style="font-weight:600; font-size:12.5px; color:var(--amber);">${data.fullLabel || data.id}</div>
-      <div style="font-size:11px; color:var(--muted); margin-bottom:4px;">${data.type}</div>
-      <div class="row">
-        <button id="quickHop1Btn" class="secondary sm">1-Hop</button>
-        <button id="quickHop2Btn" class="secondary sm">2-Hop</button>
+      <div style="font-weight:600;font-size:12.5px;color:var(--amber);">
+        ${data.fullLabel || data.id}
       </div>
+
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">
+        ${data.type}
+      </div>
+
+      <div class="row">
+        <button id="quickHop1Btn" class="secondary sm">
+          1-Hop
+        </button>
+
+        <button id="quickHop2Btn" class="secondary sm">
+          2-Hop
+        </button>
+      </div>
+
+      <button
+          id="togglePathBtn"
+          class="block secondary"
+          style="margin-top:8px;">
+          ⇄ Find Path
+      </button>
+      
+      <button
+        id="exportGraphBtn"
+        class="block secondary"
+        style="margin-top:8px;">
+        🖼 Export Graph
+      </button>
     `;
-    document.getElementById('quickHop1Btn').addEventListener('click', () => hopExpand(data.type, data.fullLabel || data.id, 1));
-    document.getElementById('quickHop2Btn').addEventListener('click', () => hopExpand(data.type, data.fullLabel || data.id, 2));
+    
+    document.getElementById("exportGraphBtn")
+        .addEventListener("click", exportGraphImage);
+
+    document.getElementById('quickHop1Btn')
+      .addEventListener('click', () =>
+        hopExpand(data.type, data.fullLabel || data.id, 1)
+      );
+
+    document.getElementById('quickHop2Btn')
+      .addEventListener('click', () =>
+        hopExpand(data.type, data.fullLabel || data.id, 2)
+      );
+
+    document.getElementById('togglePathBtn')
+      .addEventListener('click', togglePathFinding);
   }
 }
 
@@ -1180,7 +1344,7 @@ function renderActionPanel(node) {
 async function showDetail(node) {
   const area = document.getElementById('detailPanel');
   data = node;
-  if (Object.keys(data.properties).length === 0){
+  if (!data.properties || Object.keys(data.properties).length === 0){
       const fetch = await safeFetchJson(
         apiUrl(
           `/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}`
@@ -1381,6 +1545,22 @@ async function showDetail(node) {
   
 }
 
+function exportGraphImage() {
+
+    const png64 = cy.png({
+        full: true,          // Xuất toàn bộ graph
+        scale: 3,            // Độ phân giải cao
+        bg: "#0f172a"        // Màu nền
+    });
+
+    const link = document.createElement("a");
+    link.href = png64;
+    link.download = `graph-${new Date().toISOString().slice(0,19)}.png`;
+    link.click();
+
+    showToast("Đã xuất ảnh đồ thị.");
+}
+
 /* =========================================================
    TENANTS + INIT
 ========================================================= */
@@ -1406,6 +1586,13 @@ cy.on('add remove', () => updateStats());
 cy.on('dbltap', 'node[isCluster="true"]', (evt) =>{
                                           toggleCluster(evt.target.id());
 
+                                        });
+cy.on('dbltap', 'node[isCluster="false"]', (evt) =>{
+                                            let node = evt.target;
+                                            const pill = document.getElementById('modePill');
+                                            if (pill.textContent != 'Investigation')
+                                              startInvestigation(node.data("type"), node.id());
+                                            else hopExpand(node.data("type"), node.id(), 1);
                                         });
 
 async function initApp() {

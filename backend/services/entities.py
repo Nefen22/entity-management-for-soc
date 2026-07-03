@@ -51,4 +51,6 @@ async def get_list_entity(tenant: str,type:str, relationship:str | None = None, 
 
 async def check_existed_logs(tenant: str, type:str, value:str, merge = False):
     existed = await get_entity(tenant=tenant, type=type, value=value)
-    return existed is None
+    if existed:
+        return False
+    return True
