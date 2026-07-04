@@ -5,20 +5,7 @@
   <title>SOC Audit Logs System</title>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #07090d;
-    }
-    .font-mono {
-      font-family: 'JetBrains Mono', monospace;
-    }
-    /* Tùy chỉnh thanh cuộn siêu mảnh theo phong cách cyber punk */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #0f1420; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #334155; }
-  </style>
+  <link rel="stylesheet" href="audit_log.css">
 </head>
 <body class="text-slate-300 min-h-screen flex flex-col h-screen overflow-hidden">
 
@@ -294,5 +281,6 @@
       fetchLogs(1);
     });
   </script>
+  <script src="audit_log.js"></script>
 </body>
 </html>

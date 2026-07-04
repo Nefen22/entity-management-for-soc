@@ -1,0 +1,12 @@
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #07090d;
+}
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+/* Tùy chỉnh thanh cuộn siêu mảnh theo phong cách cyber punk */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0f1420; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #334155; }
