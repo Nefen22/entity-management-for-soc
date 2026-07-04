@@ -473,6 +473,12 @@
       disabled>
       Find Shortest Path
     </button>
+    <button
+        id="exportGraphBtn"
+        class="block secondary"
+        style="margin-top:8px;">
+        🖼 Export Graph
+      </button>
 
   </div>
 </aside>
@@ -1308,7 +1314,26 @@ function renderActionPanel(node) {
 
     document.getElementById('togglePathBtn')
       .addEventListener('click', togglePathFinding);
+
+    document.getElementById("exportGraphBtn")
+        .addEventListener("click", exportGraphImage);
   }
+}
+
+function exportGraphImage() {
+
+    const png = cy.png({
+        full: true,
+        scale: 3,
+        bg: "#0f172a"
+    });
+
+    const a = document.createElement("a");
+    a.href = png;
+    a.download = `graph-${new Date().toISOString().slice(0,19)}.png`;
+    a.click();
+
+    showToast("Đã xuất ảnh đồ thị.");
 }
 
 /* =========================================================

@@ -39,9 +39,12 @@ async def ingest(tenant: str, event: dict):
             dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],type=d_label,properties=result["dest"])
             await write_node_create_log(dest_r)
 
-async def batch_sample(tenant: str, file: str):
-    with open(f'./datasets/{file}', 'r', encoding='utf-8') as file:
-        data = json.load(file)
+async def batch_sample(tenant: str, file: str | list):
+    if isinstance(file, str):
+        with open(f'./datasets/{file}', 'r', encoding='utf-8') as file:
+            data = json.load(file)
+    else:
+        data = file
     for event in data:
         await ingest(tenant, event)
 
