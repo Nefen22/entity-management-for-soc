@@ -9,285 +9,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
-<style>
-  :root{
-    --bg: #07090d;
-    --bg-soft: #0c0f15;
-    --panel: #10141c;
-    --panel-2: #161b25;
-    --line: #232a38;
-    --line-soft: #1a2030;
-    --text: #eaeef5;
-    --muted: #7c8aa3;
-    --muted-2: #4d5872;
-    --accent: #5eead4;
-    --accent-dim: rgba(94,234,212,0.12);
-    --indigo: #818cf8;
-    --amber: #fbbf24;
-    --rose: #fb7185;
-    --radius: 10px;
-    --radius-sm: 6px;
-    --shadow: 0 8px 24px rgba(0,0,0,0.35);
-  }
-  *{box-sizing:border-box;}
-  html,body{height:100%;margin:0;overflow:hidden;}
-  body{
-    background:
-      radial-gradient(1200px 600px at 100% -10%, rgba(94,234,212,0.05), transparent 60%),
-      radial-gradient(1000px 500px at 0% 110%, rgba(129,140,248,0.06), transparent 60%),
-      var(--bg);
-    color:var(--text);
-    font-family:'Inter',sans-serif;
-    display:flex;
-    flex-direction:column;
-  }
-  ::-webkit-scrollbar{ width:8px; height:8px; }
-  ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:10px; }
-  ::-webkit-scrollbar-track{ background:transparent; }
-
-  header{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 22px; border-bottom:1px solid var(--line);
-    background:rgba(16,20,28,0.85); backdrop-filter:blur(10px);
-    z-index:20;
-  }
-  .brand{ display:flex; align-items:center; gap:11px; }
-  .brand .mark{
-    width:30px; height:30px; border-radius:9px;
-    background:linear-gradient(135deg, var(--accent), var(--indigo));
-    display:flex; align-items:center; justify-content:center;
-    font-family:'JetBrains Mono',monospace; font-weight:700; color:#06141a; font-size:14px;
-  }
-  .brand h1{ font-size:14.5px; font-weight:600; margin:0; letter-spacing:0.2px; }
-  .brand .sub{ font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
-
-  .header-right{ display:flex; align-items:center; gap:10px; }
-  .field-inline{ display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--muted); }
-  select, input[type=text], input[type=number]{
-    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
-    padding:7px 10px; border-radius:var(--radius-sm); font-family:'Inter',sans-serif; font-size:12.5px;
-    outline:none; transition:.15s border-color;
-  }
-  select:focus, input:focus{ border-color:var(--accent); }
-
-  .pill{
-    display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px;
-    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:600; letter-spacing:.4px;
-    border:1px solid var(--line); text-transform:uppercase;
-  }
-  .pill.dot::before{ content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
-  .pill.overview{ background:var(--accent-dim); color:var(--accent); border-color:rgba(94,234,212,0.35); }
-  .pill.investigation{ background:rgba(251,191,36,0.10); color:var(--amber); border-color:rgba(251,191,36,0.35); }
-
-  .layout{ flex:1; display:grid; grid-template-columns:300px 1fr 320px; min-height:0; }
-  aside{
-    background:var(--panel); border-right:1px solid var(--line);
-    overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:14px;
-  }
-  aside.right{ border-right:none; border-left:1px solid var(--line); }
-
-  .eyebrow{
-    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.6px;
-    text-transform:uppercase; color:var(--muted-2); margin:0 0 9px 2px; display:flex; align-items:center; gap:6px;
-  }
-  .card{
-    background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius);
-    padding:13px; display:flex; flex-direction:column; gap:9px;
-  }
-  .card label{ font-size:10.5px; color:var(--muted); font-family:'JetBrains Mono',monospace; }
-  .card select, .card input{ width:100%; }
-  .row{ display:flex; gap:8px; }
-  .row > *{ flex:1; min-width:0; }
-
-  button{
-    background:var(--accent); color:#05181a; border:none; font-weight:600; font-size:12.5px;
-    padding:9px 12px; border-radius:var(--radius-sm); cursor:pointer; transition:.15s; font-family:'Inter',sans-serif;
-    display:flex; align-items:center; justify-content:center; gap:6px;
-  }
-  button:hover{ filter:brightness(1.08); transform:translateY(-1px); }
-  button:active{ transform:translateY(0); }
-  button.secondary{ background:transparent; border:1px solid var(--line); color:var(--text); }
-  button.secondary:hover{ background:var(--line-soft); filter:none; }
-  button.ghost{ background:transparent; border:1px dashed var(--line); color:var(--muted); }
-  button.danger{ background:rgba(251,113,133,0.12); color:var(--rose); border:1px solid rgba(251,113,133,0.35); }
-  button.danger:hover{ background:rgba(251,113,133,0.22); filter:none; }
-  button.amber{ background:var(--amber); color:#241a02; }
-  button:disabled{ background:var(--line); color:var(--muted-2); cursor:not-allowed; transform:none; }
-  button.block{ width:100%; }
-  button.sm{ padding:6px 9px; font-size:11px; }
-
-  .chip-scroll{ max-height:280px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:2px; }
-  .chip{
-    display:flex; align-items:center; justify-content:space-between; gap:8px;
-    background:var(--bg-soft); border:1px solid var(--line-soft); border-radius:var(--radius-sm);
-    padding:8px 9px; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer; transition:.15s;
-  }
-  .chip:hover{ border-color:var(--accent); background:rgba(94,234,212,0.05); }
-  .chip .ctype{ font-size:9px; padding:1px 6px; border-radius:8px; font-weight:700; flex-shrink:0; }
-  .chip .cval{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); }
-  .chip .go{ color:var(--muted); flex-shrink:0; }
-  .chip:hover .go{ color:var(--accent); }
-
-  .checklist{ max-height:140px; overflow-y:auto; border:1px solid var(--line-soft); background:var(--bg-soft); padding:7px; border-radius:var(--radius-sm); display:flex; flex-direction:column; gap:5px; }
-  .check-item{ display:flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:11px; }
-  .check-item input{ accent-color:var(--accent); width:13px; height:13px; }
-  .empty-note{ color:var(--muted-2); font-size:11px; font-style:italic; padding:6px 2px; }
-
-  .canvas-wrap{ position:relative; min-height:0; flex:1; background:radial-gradient(800px 500px at 50% 35%, #0c1119, #05070a 75%); }
-  #cy{ width:100%; height:100%; }
-
-  .floating{
-    position:absolute; z-index:10; background:rgba(16,20,28,0.92); backdrop-filter:blur(8px);
-    border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow);
-  }
-  .canvas-hint{ top:14px; left:14px; padding:8px 12px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
-  .canvas-stats{ top:14px; right:14px; padding:8px 14px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); display:flex; gap:14px; }
-  .canvas-stats b{ color:var(--text); }
-  .canvas-empty{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px;
-    color:var(--muted); font-size:13px; pointer-events:none; text-align:center; padding:0 40px;
-  }
-  .canvas-empty .big{ font-size:34px; opacity:.35; }
-
-  .layout-switch{ bottom:14px; left:14px; display:flex; padding:4px; gap:3px; }
-  .layout-switch button{ background:transparent; color:var(--muted); padding:6px 11px; font-size:11px; }
-  .layout-switch button.active{ background:var(--accent); color:#05181a; }
-
-  .detail-empty{ color:var(--muted-2); font-size:11.5px; text-align:center; padding:30px 10px; }
-  .type-badge{
-    display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:10.5px;
-    padding:4px 10px; border-radius:20px; font-weight:700; border:1px solid; margin-bottom:10px;
-  }
-  .id-box{
-    background:var(--bg-soft); border:1px solid var(--line-soft); padding:9px 10px; font-family:'JetBrains Mono',monospace;
-    font-size:11px; border-radius:var(--radius-sm); word-break:break-all; margin-bottom:6px; color:var(--text);
-  }
-  .prop-row{ display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--line-soft); font-size:11.5px; }
-  .prop-row:last-child{ border-bottom:none; }
-  .prop-row .k{ color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:10.5px; flex-shrink:0; }
-  .prop-row .v{ color:var(--text); text-align:right; word-break:break-all; }
-
-  .enrich-bar{ display:flex; gap:8px; margin:10px 0 2px; }
-  .enrich-bar button{ flex:1; }
-
-  .investigate-cta{
-    background:linear-gradient(135deg, rgba(94,234,212,0.14), rgba(129,140,248,0.10));
-    border:1px solid rgba(94,234,212,0.3); border-radius:var(--radius); padding:12px; text-align:center;
-  }
-  .investigate-cta p{ margin:0 0 9px; font-size:11.5px; color:var(--muted); }
-
-  .hop-bar{ display:flex; gap:7px; align-items:center; }
-  .hop-bar input[type=number]{ width:58px; flex:none; text-align:center; }
-
-  .breadcrumb{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
-  .breadcrumb b{ color:var(--accent); }
-
-  .toast{
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:var(--panel-2); border:1px solid var(--line); padding:10px 18px; border-radius:var(--radius);
-    font-size:12px; box-shadow:var(--shadow); z-index:100; opacity:0; transition:.25s; pointer-events:none;
-  }
-  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
-  .relationship-row .v {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-  }
-  .relationship {
-    margin-bottom: 8px;
-  }
-
-  .rel-header {
-    cursor: pointer;
-  }
-
-  .rel-toggle {
-    border: none;
-    background: transparent;
-    color: #9ca3af;
-    cursor: pointer;
-    margin-left: 8px;
-  }
-
-  .rel-details {
-    margin-left: 14px;
-    margin-top: 6px;
-    padding-left: 10px;
-    border-left: 2px solid rgba(255,255,255,.1);
-  }
-
-  .rel-info-btn {
-    width: 18px;
-    height: 18px;
-    border: none;
-    border-radius: 50%;
-    background: transparent;
-    color: #8aa4c8;
-    cursor: pointer;
-    font-size: 12px;
-  }
-  .time-range {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-    margin-top: 5px;
-    align-items: center; /* Thêm dòng này để ép tất cả phần tử con căn vào giữa theo chiều ngang */
-  }
-
-  /* Container chứa các ô xếp theo hàng ngang */
-  .time-range-horizontal {
-    display: flex;
-    align-items: center; /* Căn giữa các phần tử theo chiều dọc */
-    gap: 10px;           /* Khoảng cách giữa ô input và mũi tên */
-    width: 100%;
-    margin-top: 5px;
-  }
-
-  /* Hai ô input ngày tháng chiếm kích thước bằng nhau */
-  .time-input-inline {
-    flex: 1;             /* Tự động chia đều 50/50 chiều rộng */
-    min-width: 0;        /* Tránh lỗi tràn layout trên một số trình duyệt */
-    background-color: #151922; 
-    border: 1px solid #2d3748; 
-    border-radius: 6px;       
-    color: #e2e8f0;           
-    padding: 10px 8px;   /* Giảm padding ngang một chút để vừa vặn hàng ngang */
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease;
-  }
-
-  /* Hiệu ứng khi focus */
-  .time-input-inline:focus {
-    border-color: #4a5568; 
-  }
-
-  /* Biến icon lịch thành màu trắng */
-  .time-input-inline::-webkit-calendar-picker-indicator {
-    filter: invert(1) grayscale(1) brightness(1.5);
-    cursor: pointer;
-  }
-
-  /* Mũi tên ở chính giữa 2 ô */
-  .time-arrow-inline {
-    color: #718096;
-    font-size: 16px;
-    flex-shrink: 0;     /* Không cho mũi tên bị ép nhỏ lại */
-  }
-  .rel-info-btn:hover {
-    background: rgba(255,255,255,.08);
-    color: white;
-  }
-  .spin{ display:inline-block; width:12px; height:12px; border:2px solid rgba(255,255,255,0.25); border-top-color:currentColor; border-radius:50%; animation:spin .6s linear infinite; }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
 <header>
   <div class="brand">
     <span class="mark">◆</span>
@@ -297,1293 +23,232 @@
     </div>
   </div>
   <div class="header-right">
+    <!-- Tab navigation -->
+    <nav class="page-tabs">
+      <button id="tabList"  class="tab-btn active" onclick="showPage('list')">⊞ Danh sách</button>
+      <button id="tabGraph" class="tab-btn"         onclick="showPage('graph')">◈ Đồ thị</button>
+    </nav>
     <span id="modePill" class="pill overview dot">Overview</span>
     <div class="field-inline">
       <span>Tenant</span>
       <select id="tenantSelect"></select>
     </div>
+    <a href="/audit_log.html" target="_blank" style="text-decoration:none;">
+      <button class="secondary sm">📋 Audit Logs</button>
+    </a>
   </div>
 </header>
 
-<div class="layout">
+<!-- ══ PAGE: LIST ══════════════════════════════════════════════════════ -->
+<div id="pagelist" class="page active">
+  <div class="list-layout">
 
-  <aside id="leftPanel">
-
-    <div id="overviewControls">
-      <p class="eyebrow">Tìm kiếm toàn cục</p>
-    <div class="card">
-      <label>Loại thực thể</label>
-      <select id="globalTypeSelect"></select>
-
-      <label>Mối quan hệ</label>
-      <select id="globalRelSelect"></select>
-
-      <label>Giá trị</label>
-      <input
-        type="text"
-        id="globalSearchInput"
-        placeholder="Tìm theo giá trị..."
-      >
-
-      <label>Thời gian</label>
-        <div class="time-range-horizontal">
-          <input
-            type="date"
-            id="globalStartTime"
-            class="time-input-inline"
-            title="Từ ngày"
-          >
-          <span class="time-arrow-inline">→</span>
-          <input
-            type="date"
-            id="globalEndTime"
-            class="time-input-inline"
-            title="Đến ngày"
-          >
-        </div>
-
-    <button id="globalSearchBtn" class="block secondary">
-      Lọc danh sách
-    </button>
-  </div>
-
-      <p class="eyebrow" style="margin-top:14px;">Kết quả (<span id="entityResultCount">0</span>)</p>
+    <!-- Filter sidebar -->
+    <aside class="filter-sidebar">
+      <p class="eyebrow">Bộ lọc</p>
       <div class="card">
+        <label>Loại thực thể</label>
+        <select id="globalTypeSelect"></select>
+        <label>Mối quan hệ</label>
+        <select id="globalRelSelect"></select>
+        <label>Giá trị</label>
+        <input type="text" id="globalSearchInput" placeholder="Tìm theo giá trị...">
+        <label>Thời gian</label>
+        <div class="time-range-horizontal">
+          <input type="date" id="globalStartTime" class="time-input-inline" title="Từ ngày">
+          <span class="time-arrow-inline">→</span>
+          <input type="date" id="globalEndTime" class="time-input-inline" title="Đến ngày">
+        </div>
+        <button id="globalSearchBtn" class="block">Tìm kiếm</button>
+        <button id="globalResetBtn" class="block secondary">Đặt lại</button>
+      </div>
+    </aside>
+
+    <!-- Entity list -->
+    <section class="list-section">
+      <div class="section-header">
+        <p class="eyebrow">Kết quả <span id="entityResultCount" class="count-badge">0</span></p>
+      </div>
+      <div class="card" style="flex:1; min-height:0;">
         <div id="entityChipList" class="chip-scroll">
           <div class="empty-note">Chọn loại thực thể hoặc nhập từ khóa để tìm kiếm.</div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div id="investigationControls" style="display:none;">
-      <p class="eyebrow">Dấu vết điều tra</p>
-      <div class="card">
-        <div id="breadcrumbBox" class="breadcrumb">—</div>
-        <button id="exitInvestigationBtn" class="block danger" style="margin-top:4px;">✕ Thoát điều tra</button>
+    <!-- Detail panel -->
+    <aside class="detail-sidebar">
+      <p class="eyebrow">Chi tiết thực thể</p>
+      <div class="card" id="listDetailPanel" style="flex:1;">
+        <div class="detail-empty">Chọn một thực thể để xem chi tiết.</div>
       </div>
+      <div style="margin-top:10px;">
+        <button id="investigateFromListBtn" class="block" style="display:none;">
+          ▶ Điều tra trên đồ thị
+        </button>
+      </div>
+    </aside>
 
-      <p class="eyebrow" style="margin-top:14px;">Mở rộng N-Hop</p>
-      <div class="card">
-        <label>Node mục tiêu (đang hiển thị)</label>
-        <select id="hopNodeSelect"></select>
-        <label>Độ sâu Hop</label>
-        <div class="hop-bar">
-          <input type="number" id="hopDepthInput" value="1" min="1" max="6">
-          <button id="hopExpandBtn" class="block">⇲ Mở rộng</button>
+  </div>
+</div>
+
+<!-- ══ PAGE: GRAPH ══════════════════════════════════════════════════════ -->
+<div id="pagegraph" class="page" style="display:none;">
+  <div class="graph-outer">
+
+    <!-- Left: investigation controls -->
+    <aside id="leftPanel" class="graph-left">
+
+      <div id="overviewControls">
+        <p class="eyebrow">Tổng quan</p>
+        <div class="card">
+          <div class="empty-note" style="font-size:11px;">
+            Click vào cụm để khám phá, click node để điều tra.
+          </div>
         </div>
       </div>
 
-      <p class="eyebrow" style="margin-top:14px;">Lọc node mới mở rộng</p>
-      <div class="card" id="investigationFilterCard">
-        <label>Loại thực thể</label>
-        <div id="nodeFilterChecklist" class="checklist"><div class="empty-note">Chưa có node mở rộng.</div></div>
-        <label style="margin-top:4px;">Mối quan hệ</label>
-        <div id="edgeFilterChecklist" class="checklist"><div class="empty-note">Chưa có quan hệ mới.</div></div>
-        <button id="applyInvFilterBtn" class="block secondary">Áp dụng bộ lọc</button>
+      <div id="investigationControls" style="display:none;">
+        <p class="eyebrow">Dấu vết điều tra</p>
+        <div class="card">
+          <div id="breadcrumbBox" class="breadcrumb">—</div>
+          <button id="exitInvestigationBtn" class="block danger" style="margin-top:6px;">✕ Thoát điều tra</button>
+        </div>
+
+        <p class="eyebrow" style="margin-top:14px;">Mở rộng N-Hop</p>
+        <div class="card">
+          <label>Node mục tiêu</label>
+          <select id="hopNodeSelect"></select>
+          <label>Độ sâu Hop</label>
+          <div class="hop-bar">
+            <input type="number" id="hopDepthInput" value="1" min="1" max="6">
+            <button id="hopExpandBtn" class="block">⇲ Mở rộng</button>
+          </div>
+        </div>
+
+        <p class="eyebrow" style="margin-top:14px;">Lọc node mở rộng</p>
+        <div class="card" id="investigationFilterCard">
+          <label>Loại thực thể</label>
+          <div id="nodeFilterChecklist" class="checklist">
+            <div class="empty-note">Chưa có node mở rộng.</div>
+          </div>
+          <label style="margin-top:6px;">Mối quan hệ</label>
+          <div id="edgeFilterChecklist" class="checklist">
+            <div class="empty-note">Chưa có quan hệ mới.</div>
+          </div>
+          <button id="applyInvFilterBtn" class="block secondary" style="margin-top:6px;">Áp dụng bộ lọc</button>
+        </div>
+      </div>
+
+      <div style="margin-top:auto; padding-top:12px; display:flex; flex-direction:column; gap:8px;">
+        <p class="eyebrow">Giải thuật</p>
+        <div class="card">
+          <select id="layoutSelect">
+            <option value="cose">Force-Directed (Cose)</option>
+            <option value="dagre">Hierarchical (Dagre)</option>
+            <option value="breadthfirst">Breadth First</option>
+            <option value="concentric">Concentric</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center: canvas -->
+    <div class="canvas-wrap">
+      <div class="floating canvas-hint" id="canvasHint">Đang tải các cụm thực thể...</div>
+      <div class="floating canvas-stats">
+        <span>Nodes <b id="nodeCountLbl">0</b></span>
+        <span>Edges <b id="edgeCountLbl">0</b></span>
+      </div>
+      <div class="floating layout-switch" id="layoutSwitch">
+        <button data-l="cose" class="active">Force</button>
+        <button data-l="dagre">Tree</button>
+        <button data-l="breadthfirst">BFS</button>
+        <button data-l="concentric">Radial</button>
+      </div>
+      <div id="cy"></div>
+      <div class="canvas-empty" id="canvasEmpty" style="display:none;">
+        <div class="big">◇</div>
+        <div>Không có dữ liệu phù hợp để hiển thị.</div>
       </div>
     </div>
 
-    <a href="/audit_log.html" target="_blank" style="text-decoration:none;">
-      <button class="block secondary" style="margin-bottom:6px;">
-        Audit Logs
-      </button>
-    </a>
- 
-    <p class="eyebrow" style="padding-top:10px;">Giải thuật hiển thị</p>
-    <div class="card">
-      <select id="layoutSelect">
-        <option value="cose">Force-Directed (Cose)</option>
-        <option value="dagre">Hierarchical (Dagre)</option>
-        <option value="breadthfirst">Breadth First</option>
-        <option value="concentric">Concentric</option>
-      </select>
-    </div>
-  </aside>
+    <!-- Right: action + detail + path -->
+    <aside class="graph-right">
 
-  <div class="canvas-wrap">
-    <div class="floating canvas-hint" id="canvasHint">Đang tải các cụm thực thể...</div>
-    <div class="floating canvas-stats">
-      <span>Nodes <b id="nodeCountLbl">0</b></span>
-      <span>Edges <b id="edgeCountLbl">0</b></span>
-    </div>
-    <div class="floating layout-switch" id="layoutSwitch">
-      <button data-l="cose" class="active">Force</button>
-      <button data-l="dagre">Tree</button>
-      <button data-l="breadthfirst">BFS</button>
-      <button data-l="concentric">Radial</button>
-    </div>
-    <div id="cy"></div>
-    <div class="canvas-empty" id="canvasEmpty" style="display:none;">
-      <div class="big">◇</div>
-      <div>Không có dữ liệu phù hợp để hiển thị.</div>
-    </div>
+      <p class="eyebrow">Hành động</p>
+      <div class="card" id="actionPanel">
+        <div class="detail-empty">Chọn một cụm hoặc thực thể trên đồ thị.</div>
+      </div>
+
+      <p class="eyebrow" style="margin-top:10px;">Chi tiết thực thể</p>
+      <div class="card" id="detailPanel">
+        <div class="detail-empty">Chưa có đối tượng nào được chọn.</div>
+      </div>
+
+      <p class="eyebrow" style="margin-top:10px;">Path Finding</p>
+      <div class="card" id="pathPanel">
+        <button id="togglePathBtn" class="block secondary" disabled>Chọn thực thể gốc</button>
+        <div class="prop-row">
+          <span class="k">Source</span>
+          <span class="v" id="pathSource">Chưa chọn</span>
+        </div>
+        <div class="prop-row">
+          <span class="k">Target</span>
+          <span class="v" id="pathTarget">Chưa chọn</span>
+        </div>
+        <div id="pathHint" class="empty-note" style="margin:8px 0;">
+          Click node để chọn source, click tiếp để chọn target.
+        </div>
+        <button id="findPathBtn" class="block secondary" disabled>⇄ Find Shortest Path</button>
+        <button id="exportGraphBtn" class="block secondary" style="margin-top:6px;">🖼 Export Graph</button>
+      </div>
+
+    </aside>
   </div>
-
-<aside class="right">
-
-  <p class="eyebrow">Bảng hành động</p>
-
-  <div class="card" id="actionPanel">
-    <div class="detail-empty">
-      Chọn một cụm hoặc một thực thể trên đồ thị để bắt đầu.
-    </div>
-  </div>
-
-  <p class="eyebrow" style="margin-top:6px;">
-    Chi tiết thực thể
-  </p>
-  
-  <div class="card" id="detailPanel">
-    <div class="detail-empty">
-      Chưa có đối tượng nào được chọn.
-    </div>
-  </div>
-   <!-- Path Finding -->
-  <div class="card" id="pathPanel" hidden style="margin-top:10px;">
-      <button
-          id="togglePathBtn"
-          class="block secondary"
-          style="margin-top:8px;">
-          ⇄ Find Path
-      </button>
-    <p class="eyebrow" style="margin-bottom:10px;">
-      Path Finding
-    </p>
-
-    <div class="prop-row">
-      <span class="k">Source</span>
-      <span class="v" id="pathSource">Chưa chọn</span>
-    </div>
-
-    <div class="prop-row">
-      <span class="k">Target</span>
-      <span class="v" id="pathTarget">Chưa chọn</span>
-    </div>
-
-    <div
-      id="pathHint"
-      class="detail-empty"
-      style="margin:12px 0;">
-      Chọn node đích trên đồ thị.
-    </div>
-
-    <button
-      id="findPathBtn"
-      class="block secondary"
-      disabled>
-      Find Shortest Path
-    </button>
-    <button
-        id="exportGraphBtn"
-        class="block secondary"
-        style="margin-top:8px;">
-        🖼 Export Graph
-      </button>
-
-  </div>
-</aside>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
+<style>
+/* ── Page tabs ─────────────────────────────────────── */
+.page-tabs{display:flex;gap:3px;background:var(--panel-2,#161b25);border:1px solid var(--line,#232a38);border-radius:8px;padding:3px;}
+.tab-btn{background:transparent;border:none;color:var(--muted,#7c8aa3);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;transition:.15s;font-family:'Inter',sans-serif;}
+.tab-btn.active{background:var(--accent,#5eead4);color:#05181a;}
+.tab-btn:hover:not(.active){background:var(--line,#232a38);color:var(--text,#eaeef5);}
+
+/* ── List page layout ──────────────────────────────── */
+.page{flex:1;min-height:0;display:flex;flex-direction:column;}
+.list-layout{flex:1;display:grid;grid-template-columns:240px 1fr 340px;gap:0;min-height:0;overflow:hidden;}
+.filter-sidebar{padding:16px;background:var(--panel,#10141c);border-right:1px solid var(--line,#232a38);overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.list-section{padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden;min-height:0;}
+.detail-sidebar{padding:16px;background:var(--panel,#10141c);border-left:1px solid var(--line,#232a38);overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.section-header{display:flex;align-items:center;justify-content:space-between;}
+.count-badge{background:var(--accent-dim,rgba(94,234,212,0.12));color:var(--accent,#5eead4);border:1px solid rgba(94,234,212,0.3);border-radius:20px;padding:1px 8px;font-size:10.5px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:6px;}
+
+/* ── Graph page layout ─────────────────────────────── */
+.graph-outer{flex:1;display:grid;grid-template-columns:260px 1fr 300px;min-height:0;overflow:hidden;}
+.graph-left{background:var(--panel,#10141c);border-right:1px solid var(--line,#232a38);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.graph-right{background:var(--panel,#10141c);border-left:1px solid var(--line,#232a38);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:0;}
+
+/* body flex fix */
+body{display:flex;flex-direction:column;}
+.page.active{flex:1;}
+</style>
+
 <script>
-/* =========================================================
-   STATE
-========================================================= */
-let currentTenant = "";
-let mode = "OVERVIEW";
-let expandedClusters = new Set();
-let snapshotGraph = null;
-let investigationRoot = null;
-let baseElementIds = new Set();
-let expandedPool = { nodes: new Map(), edges: new Map() };
-let edgeSeq = 0;
-
-function apiUrl(path) {
-  return `/api/tenants/${currentTenant}${path}`;
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(showToast._timer);
-  showToast._timer = setTimeout(() => t.classList.remove('show'), 2200);
-}
-
-function colorFor(type) {
-  const colors = {
-    User: "#60a5fa", Host: "#f59e0b", IP: "#4ade80", Domain: "#a78bfa",
-    FileHash: "#fb7185", URL: "#22d3ee", Process: "#e879f9", Email: "#facc15",
-    CloudResource: "#34d399", CVE: "#f87171", Entity: "#94a3b8"
-  };
-  return colors[type] || "#94a3b8";
-}
-
-async function safeFetchJson(url, options) {
-  const res = await fetch(url, options);
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const json = await res.json();
-  return json.data !== undefined ? json.data : json;
-}
-
-let pathFindingMode = false;
-let pathSource = null;
-let pathTarget = null;
-const btn = document.getElementById("togglePathBtn");
-function togglePathFinding() {
-
-    pathFindingMode = !pathFindingMode;
-
-    const panel = document.getElementById("pathPanel");
-    const btn = document.getElementById("togglePathBtn");
-
-    panel.hidden = !pathFindingMode;
-
-    if (pathFindingMode) {
-
-        if (!currentSelectedNode) {
-            showToast("Hãy chọn một node trước.");
-            pathFindingMode = false;
-            panel.hidden = true;
-            return;
-        }
-
-        pathSource = currentSelectedNode
-
-        pathTarget = null;
-
-        document.getElementById("pathSource").textContent =
-            `${pathSource.type}: ${pathSource.id}`;
-
-        document.getElementById("pathTarget").textContent =
-            "Chưa chọn";
-
-        document.getElementById("findPathBtn").disabled = true;
-
-        btn.innerHTML = "✕ Cancel Path";
-
-    } else {
-
-        pathSource = null;
-        pathTarget = null;
-
-        document.getElementById("pathSource").textContent = "Chưa chọn";
-        document.getElementById("pathTarget").textContent = "Chưa chọn";
-        document.getElementById("findPathBtn").disabled = true;
-
-        btn.innerHTML = "⇄ Find Path";
-    }
-}
-/* =========================================================
-   CYTOSCAPE INIT
-========================================================= */
-const cy = cytoscape({
-  container: document.getElementById('cy'),
-  style: [
-    {
-      selector: 'node',
-      style: {
-        'background-color': 'data(color)',
-        'label': 'data(label)',
-        'color': '#eaeef5',
-        'font-family': 'JetBrains Mono, monospace',
-        'font-size': 10,
-        'text-valign': 'bottom',
-        'text-margin-y': 7,
-        'width': 'data(size)',
-        'height': 'data(size)',
-        'border-width': 2,
-        'border-color': '#07090d',
-        'text-outline-width': 2,
-        'text-outline-color': '#07090d',
-        'transition-property': 'width, height, border-width, opacity',
-        'transition-duration': '0.25s'
-      }
-    },
-    {
-      selector: 'node[isCluster="true"]',
-      style: {
-        'shape': 'round-hexagon',
-        'border-width': 3,
-        'border-color': 'data(color)',
-        'font-weight': 700,
-        'font-size': 11,
-        'background-opacity': 0.85
-      }
-    },
-    {
-      selector: 'node[isCluster="true"][expanded="true"]',
-      style: { 'border-style': 'dashed', 'background-opacity': 0.55 }
-    },
-    {
-      selector: 'node:selected',
-      style: { 'border-color': '#ffffff', 'border-width': 3 }
-    },
-    { selector: 'node.dim', style: { 'opacity': 0.18 } },
-    {
-      selector: 'edge',
-      style: {
-        'curve-style': 'bezier',
-        'width': 1.6,
-        'line-color': '#2c3548',
-        'target-arrow-color': '#2c3548',
-        'target-arrow-shape': 'triangle',
-        'arrow-scale': 0.8,
-        'label': 'data(label)',
-        'font-family': 'JetBrains Mono, monospace',
-        'font-size': 8.5,
-        'color': '#6b7891',
-        'text-rotation': 'autorotate',
-        'text-outline-width': 2,
-        'text-outline-color': '#07090d',
-        'opacity': 0.9
-      }
-    },
-    { selector: 'edge[isMember="true"]', style: { 'line-style': 'dashed', 'opacity': 0.5 } },
-    { selector: 'edge.dim', style: { 'opacity': 0.06 } },
-    {
-        selector: ".path-node",
-        style: {
-            "border-width": 5,
-            "border-color": "#facc15",
-            "background-color": "#f97316"
-        }
-    },
-    {
-        selector: ".path-edge",
-        style: {
-            "width": 6,
-            "line-color": "#f97316",
-            "target-arrow-color": "#f97316",
-            "z-index": 999
-        }
-    }
-  ],
-  wheelSensitivity: 0.25
-});
-
-cy.on("tap", "node", (e) => {
-
-    const node = e.target;
-    const pill = document.getElementById('modePill');
-    if (pill.textContent === 'Overview'){
-      cy.nodes().unselect();
-      node.select();
-      showDetail(node.data());
-      renderActionPanel(node);
-      return;
-    }
-
-    selectedNode = node.data()
-    renderActionPanel(node);
-    showDetail(selectedNode);
-    
-    if (pathFindingMode) {
- 
-        pathTarget = selectedNode;
-
-        document.getElementById("pathTarget").textContent =
-            pathTarget.id;
-
-        document.getElementById("findPathBtn").disabled = false;
-    }
-    else {
-        pathSource = selectedNode
-        currentSelectedNode = selectedNode
-        document.getElementById("pathSource").textContent =
-            pathSource.id;
-    }
-
-});
-
-function highlightPath(nodes, edges) {
-
-    cy.elements().removeClass("path-node path-edge");
-
-    nodes.forEach(n => {
-        cy.$id(n.id).addClass("path-node");
-    });
-
-    edges.forEach(e => {
-
-        cy.edges().forEach(edge => {
-
-            if (
-                edge.data("source") === e.source &&
-                edge.data("target") === e.target &&
-                edge.data("label") === e.type
-            ) {
-                edge.addClass("path-edge");
-            }
-
-        });
-
-    });
-
-    cy.fit(cy.$(".path-node"), 60);
-}
-
-document.getElementById("findPathBtn").onclick = async () => {
-
-    if (!pathSource || !pathTarget) return;
-    const result = await safeFetchJson(
-        apiUrl(
-            `/graphs/path/types/${encodeURIComponent(pathSource.type)}` +
-            `/values/${encodeURIComponent(pathSource.id)}` +
-            `/dest-types/${encodeURIComponent(pathTarget.type)}` +
-            `/dest-values/${encodeURIComponent(pathTarget.id)}`
-        )
-    );
-
-    highlightPath(result.nodes, result.edges);
-};
-
-cy.on('tap', (evt) => { if (evt.target === cy) cy.nodes().unselect(); });
-
-/* =========================================================
-   LAYOUT
-========================================================= */
-const LAYOUTS = {
-  cose:         { name: 'cose', animate: true, animationDuration: 450, nodeRepulsion: 52000, idealEdgeLength: 85, componentSpacing: 60, fit: true, padding: 60 },
-  dagre:        { name: 'dagre', rankDir: 'TB', animate: true, animationDuration: 400, fit: true, padding: 60 },
-  breadthfirst: { name: 'breadthfirst', animate: true, animationDuration: 400, fit: true, padding: 60, spacingFactor: 1.3 },
-  concentric:   { name: 'concentric', animate: true, animationDuration: 400, fit: true, padding: 60, minNodeSpacing: 40 }
-};
-let currentLayout = 'cose';
-
-function runLayout(opts = {}) {
-  cy.layout({ ...LAYOUTS[currentLayout], ...opts }).run();
-  updateStats();
-}
-
-document.getElementById('layoutSelect').addEventListener('change', e => {
-  currentLayout = e.target.value;
-  syncLayoutSwitch();
-  runLayout();
-});
-
-function debounce(func, timeout = 500) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { func.apply(this, args); }, timeout);
-  };
-}
-
-const debouncedSearch = debounce(() => runGlobalSearch(), 500);
-document.getElementById('globalTypeSelect').addEventListener('input', debouncedSearch);
-document.getElementById('globalRelSelect').addEventListener('input', debouncedSearch);
-document.getElementById('globalStartTime').addEventListener('input', debouncedSearch);
-document.getElementById('globalEndTime').addEventListener('input', debouncedSearch);
-
-document.getElementById('layoutSwitch').addEventListener('click', e => {
-  const btn = e.target.closest('button[data-l]');
-  if (!btn) return;
-  currentLayout = btn.dataset.l;
-  document.getElementById('layoutSelect').value = currentLayout;
-  syncLayoutSwitch();
-  runLayout();
-});
-
-function syncLayoutSwitch() {
-  document.querySelectorAll('#layoutSwitch button').forEach(b =>
-    b.classList.toggle('active', b.dataset.l === currentLayout)
-  );
-}
-
-function updateStats() {
-  document.getElementById('nodeCountLbl').textContent = cy.nodes(':visible').length;
-  document.getElementById('edgeCountLbl').textContent = cy.edges(':visible').length;
-  document.getElementById('canvasEmpty').style.display = cy.nodes(':visible').length === 0 ? 'flex' : 'none';
-}
-
-/* =========================================================
-   MODE SWITCHING (UI)
-========================================================= */
-function setMode(next) {
-  mode = next;
-  const pill = document.getElementById('modePill');
-  if (mode === 'OVERVIEW') {
-    pill.className = 'pill overview dot';
-    pill.textContent = 'Overview';
-    document.getElementById('overviewControls').style.display = 'block';
-    document.getElementById('investigationControls').style.display = 'none';
-  } else {
-    pill.className = 'pill investigation dot';
-    pill.textContent = 'Investigation';
-    document.getElementById('overviewControls').style.display = 'none';
-    document.getElementById('investigationControls').style.display = 'block';
+function showPage(name) {
+  document.getElementById('pagelist').style.display  = name === 'list'  ? 'flex' : 'none';
+  document.getElementById('pagegraph').style.display = name === 'graph' ? 'flex' : 'none';
+  document.getElementById('tabList').classList.toggle('active',  name === 'list');
+  document.getElementById('tabGraph').classList.toggle('active', name === 'graph');
+  if (name === 'graph') {
+    // Trigger cytoscape resize khi chuyển sang tab graph
+    setTimeout(() => { if (typeof cy !== 'undefined') cy.resize(); }, 50);
   }
 }
-
-/* =========================================================
-   1. OVERVIEW — CLUSTER GRAPH
-========================================================= */
-async function loadOverviewClusterGraph() {
-  setMode('OVERVIEW');
-  expandedClusters.clear();
-  investigationRoot = null;
-  document.getElementById('canvasHint').textContent = "Chế độ tổng quan · Click vào một cụm để khám phá";
-  document.getElementById('breadcrumbBox').textContent = '—';
-
-  try {
-    const data = await safeFetchJson(apiUrl('/graphs/clusters'));
-    const nodes = data.nodes || data.clusters || [];
-    const edges = data.edges || [];
-
-    cy.elements().remove();
-    const elements = [];
-
-    nodes.forEach(c => {
-      const type = c.entity_type || c.type;
-      elements.push({
-        group: 'nodes',
-        data: {
-          id: `Cluster:${type}`,
-          fullLabel: `${type}`,
-          label: `${type} (${c.count})`,
-          color: colorFor(type),
-          size: 58,
-          isCluster: "true",
-          expanded: "false",
-          clusterType: type,
-          count: c.count,
-          properties: { "Loại": type, "Số lượng": c.count }
-        }
-      });
-    });
-
-    edges.forEach((e, idx) => {
-      const srcId = e.source.startsWith('Cluster:') ? e.source : `Cluster:${e.source}`;
-      const dstId = e.target.startsWith('Cluster:') ? e.target : `Cluster:${e.target}`;
-      elements.push({
-        group: 'edges',
-        data: {
-          id: `clusteredge_${idx}_${edgeSeq++}`,
-          source: srcId,
-          target: dstId,
-          label: e.type ? `${e.type}${e.count ? ' (' + e.count + ')' : ''}` : 'RELATED'
-        }
-      });
-    });
-
-    cy.add(elements);
-    runLayout();
-    loadGlobalFilterOptions();
-  } catch (err) {
-    console.error(err);
-    showToast('Không thể tải dữ liệu cluster: ' + err.message);
-  }
-}
-
-/* =========================================================
-   2 & 10. CLUSTER EXPAND / COLLAPSE
-========================================================= */
-async function toggleCluster(clusterId) {
-  const clusterNode = cy.getElementById(clusterId);
-
-  if (expandedClusters.has(clusterId)) {
-    cy.remove(cy.nodes().filter(n => n.data('belongsTo') === clusterId));
-    expandedClusters.delete(clusterId);
-    clusterNode.data('expanded', 'false');
-    clusterNode.data('size', 58);
-    renderActionPanel(clusterNode);
-    runLayout();
-    return;
-  }
-
-  try {
-    const type = clusterNode.data('clusterType');
-    const entities = await safeFetchJson(apiUrl(`/graphs/clusters/types/${encodeURIComponent(type)}`));
-    const list = Array.isArray(entities) ? entities : (entities.entities || []);
-
-    const center = clusterNode.position();
-    const total = list.length || 1;
-    const radius = Math.min(260, 60 + total * 10);
-
-    const elements = [];
-    list.forEach((ent, i) => {
-      const id = ent.id || `${type}:${ent.value}`;
-      if (cy.getElementById(id).length) return;
-
-      const angle = (i / total) * Math.PI * 2;
-      const relCount = ent.relationship_count;
-      elements.push({
-        group: 'nodes',
-        data: {
-          id,
-          label: type+":"+shorten(ent.id, 16) + (relCount ? ` (${relCount})` : ''),
-          fullLabel: ent.value || ent.id,
-          color: colorFor(type),
-          size: 32,
-          isCluster: "false",
-          belongsTo: clusterId,
-          type: type,
-          isNewExpanded: false,
-          properties: ent.properties || {}
-        },
-        position: { x: center.x + radius * Math.cos(angle), y: center.y + radius * Math.sin(angle) }
-      });
-
-      elements.push({
-        group: 'edges',
-        data: { id: `member_${clusterId}_${id}_${edgeSeq++}`, source: clusterId, target: id, label: 'MEMBER', isMember: "true" }
-      });
-    });
-
-    cy.add(elements);
-    clusterNode.data('expanded', 'true');
-    clusterNode.data('size', 40);
-    expandedClusters.add(clusterId);
-    renderActionPanel(clusterNode);
-    runLayout({ fit: false });
-  } catch (err) {
-    console.error(err);
-    showToast('Không thể mở rộng cụm: ' + err.message);
-  }
-}
-
-function shorten(str, max) {
-  str = String(str ?? '');
-  return str.length > max ? str.slice(0, max - 1) + '…' : str;
-}
-
-/* =========================================================
-   GLOBAL FILTER (OVERVIEW)
-========================================================= */
-async function loadGlobalFilterOptions() {
-  const typeSel = document.getElementById('globalTypeSelect');
-  const relSel  = document.getElementById('globalRelSelect');
-  try {
-    const types = await safeFetchJson(apiUrl('/graphs/get-types'));
-    const list = normalizeNames(types);
-    typeSel.innerHTML = '<option value="">— Tất cả loại —</option>' + list.map(t => `<option value="${t}">${t}</option>`).join('');
-  } catch { typeSel.innerHTML = '<option value="">— Tất cả loại —</option>'; }
-
-  relSel.innerHTML = '<option value="">— Tất cả quan hệ —</option>';
-  loadRelOptionsForType();
-  typeSel.onchange = () => loadRelOptionsForType(typeSel.value);
-}
-async function loadRelOptionsForType(type) {
-  const relSel = document.getElementById('globalRelSelect');
-  try {
-    if (!type) {
-      relSel.innerHTML = '<option value="">— Tất cả quan hệ —</option>';
-    }
-    const typehtml= type? `?type=${encodeURIComponent(type)}` : ``;
-    const rels = await safeFetchJson(apiUrl(`/graphs/filter-relationships${typehtml}`));
-    const list = normalizeNames(rels);
-    relSel.innerHTML = '<option value="">— Tất cả quan hệ —</option>' + list.map(r => `<option value="${r}">${r}</option>`).join('');
-  } catch { /* keep default */ }
-}
-
-function normalizeNames(raw) {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw.map(x => (typeof x === 'string' ? x : (x.name || x.type || x.value))).filter(Boolean);
-  return [];
-}
-
-async function runGlobalSearch() {
-  const params = new URLSearchParams();
-  const type = document.getElementById('globalTypeSelect').value;
-  const rels = document.getElementById('globalRelSelect').value;
-  const start = document.getElementById('globalStartTime').value;
-  const end = document.getElementById('globalEndTime').value;
-  const keyword = document.getElementById('globalSearchInput').value.trim().toLowerCase();
-  const listEl = document.getElementById('entityChipList');
-
-  listEl.innerHTML = '<div class="empty-note">Đang tìm kiếm...</div>';
-  try {
-    if (type) params.append('type', type);
-    if (rels) params.append('relationship', rels);
-    if (start) params.append('start', `${start}T00:00:00Z`);
-    if (end) params.append('end', `${end}T23:59:59Z`)
-
-    const path = `/entities/lists?${params.toString()}`;
-    const data = await safeFetchJson(apiUrl(path));
-    let list = Array.isArray(data) ? data : (data.entities || data.nodes || []);
-
-    if (keyword) list = list.filter(e => String(e.value || e.id || '').toLowerCase().includes(keyword));
-
-    document.getElementById('entityResultCount').textContent = list.length;
-    renderEntityChips(list);
-  } catch (err) {
-    listEl.innerHTML = `<div class="empty-note">Lỗi truy vấn: ${err.message}</div>`;
-  }
-}
-
-function renderEntityChips(list) {
-  const listEl = document.getElementById('entityChipList');
-  if (!list.length) { listEl.innerHTML = '<div class="empty-note">Không tìm thấy thực thể phù hợp.</div>'; return; }
-
-  listEl.innerHTML = list.slice(0, 200).map(e => {
-    const type = e.type || document.getElementById('globalTypeSelect').value || 'Entity';
-    const value = e.value || e.id;
-    return `
-      <div class="chip" data-type="${type}" data-value="${value}">
-        <span class="ctype" style="background:${colorFor(type)}22; color:${colorFor(type)};">${type}</span>
-        <span class="cval">${value}</span>
-        <span class="go">⤴</span>
-      </div>`;
-  }).join('');
-
-  listEl.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => startInvestigation(chip.dataset.type, chip.dataset.value));
-  });
-}
-
-document.getElementById('globalSearchBtn').addEventListener('click', runGlobalSearch);
-document.getElementById('globalSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') runGlobalSearch(); });
-
-/* =========================================================
-   3. START INVESTIGATION — default hop = 1
-========================================================= */
-async function startInvestigation(type, value) {
-  snapshotGraph = cy.elements().clone();
-  setMode('INVESTIGATION');
-  investigationRoot = { type, value };
-  baseElementIds = new Set();
-  expandedPool = { nodes: new Map(), edges: new Map() };
-
-  document.getElementById('canvasHint').textContent = `Đang điều tra: ${value}`;
-  document.getElementById('breadcrumbBox').innerHTML = `Gốc điều tra: <b>${value}</b> <span style="color:var(--muted-2)">(${type})</span>`;
-
-  try {
-    const data = await safeFetchJson(apiUrl(`/graphs/entities/types/${encodeURIComponent(type)}/values/${encodeURIComponent(value)}?hop=1`));
-    cy.elements().remove();
-
-    const nodes = data.nodes || [];
-    const edges = data.edges || [];
-
-    nodes.forEach(n => {
-      baseElementIds.add(n.id);
-      const isRoot = (n.properties?.value === value) || n.id === `${type}:${value}`;
-      cy.add({
-        group: 'nodes',
-        data: {
-          id: n.id,
-          label: n.type+":"+shorten(n.id, 16),
-          fullLabel: n.id,
-          color: colorFor(n.type),
-          size: isRoot ? 46 : 34,
-          isCluster: "false",
-          type: n.type,
-          isNewExpanded: false,
-          properties: n.properties || {}
-        },
-        classes: isRoot ? 'root' : ''
-      });
-    });
-
-    edges.forEach((e, idx) => {
-      const id = `base_${idx}_${edgeSeq++}`;
-      baseElementIds.add(id);
-      cy.add({ group: 'edges', data: { id, source: e.source || e.start, target: e.target || e.end, label: e.type, isNewExpanded: false } });
-    });
-
-    runLayout();
-    refreshHopNodeSelect();
-    syncLayoutSwitch();
-    renderInvestigationFilters();
-
-    const rootNode = cy.nodes('.root').length ? cy.nodes('.root') : cy.nodes().first();
-    if (rootNode.length) { rootNode.select(); showDetail(rootNode.data()); renderActionPanel(rootNode); }
-  } catch (err) {
-    console.error(err);
-    showToast('Không thể bắt đầu điều tra: ' + err.message);
-  }
-}
-
-/* =========================================================
-   4 & 5. HOP EXPAND + MERGE (preserve existing positions)
-========================================================= */
-async function hopExpand(type, value, hop) {
-  const targetNode = cy.getElementById(`${value}`).length
-    ? cy.getElementById(`${value}`)
-    : cy.nodes().filter(n => n.data('fullLabel') === value);
-
-  const origin = targetNode.length ? targetNode.position() : { x: 0, y: 0 };
-
-  try {
-    const data = await safeFetchJson(apiUrl(`/graphs/entities/types/${encodeURIComponent(type)}/values/${encodeURIComponent(value)}?hop=${hop}`));
-    const nodes = data.nodes || [];
-    const edges = data.edges || [];
-
-    cy.nodes().forEach(n => n.lock());
-
-    let addedAny = false;
-    nodes.forEach(n => {
-      if (cy.getElementById(n.id).length) return;
-      addedAny = true;
-      expandedPool.nodes.set(n.id, n.type);
-      cy.add({
-        group: 'nodes',
-        data: {
-          id: n.id,
-          label: n.type+":"+shorten(n.properties?.value || n.properties?.name || n.id, 16),
-          fullLabel: n.properties?.value || n.id,
-          color: colorFor(n.type),
-          size: 30,
-          isCluster: "false",
-          type: n.type,
-          isNewExpanded: true,
-          properties: n.properties || {}
-        },
-        position: { x: origin.x + (Math.random() - 0.5) * 120, y: origin.y + (Math.random() - 0.5) * 120 }
-      });
-      cy.getElementById(n.id).unlock();
-    });
-    
-    edges.forEach((e, idx) => {
-      const src = e.source || e.start, dst = e.target || e.end, label = e.type;
-      const exists = cy.edges().some(ex => ex.data('source') === src && ex.data('target') === dst && ex.data('label') === label);
-      if (exists) return;
-      const id = `hop_${Date.now()}_${idx}_${edgeSeq++}`;
-      expandedPool.edges.set(id, label);
-      cy.add({ group: 'edges', data: { id, source: src, target: dst, label, isNewExpanded: true } });
-    });
-
-    cy.layout({ name: 'cose', animate: true, animationDuration: 350, fit: false, nodeRepulsion: 28000, idealEdgeLength: 70 }).run();
-    setTimeout(() => cy.nodes().unlock(), 400);
-
-    refreshHopNodeSelect();
-    renderInvestigationFilters();
-    updateStats();
-    showToast(addedAny ? 'Đã mở rộng thêm thực thể mới' : 'Không có thực thể mới ngoài graph hiện tại');
-  } catch (err) {
-    console.error(err);
-    showToast('Lỗi mở rộng hop: ' + err.message);
-    cy.nodes().unlock();
-  }
-}
-
-function refreshHopNodeSelect() {
-  const sel = document.getElementById('hopNodeSelect');
-  const current = sel.value;
-
-  const items = [];
-  cy.nodes(':visible').forEach(n => {
-    if (n.data('isCluster') === 'true') return;
-    const label = n.data('fullLabel') || n.data('id');
-    items.push({ type: n.data('type'), value: label });
-  });
-
-  sel.innerHTML = items.map(i => `<option value="${i.type}::${i.value}">${shorten(i.value, 26)} (${i.type})</option>`).join('');
-  if ([...sel.options].some(o => o.value === current)) sel.value = current;
-}
-
-document.getElementById('hopExpandBtn').addEventListener('click', () => {
-  const sel = document.getElementById('hopNodeSelect');
-  if (!sel.value) { showToast('Chưa có node nào để mở rộng'); return; }
-  const [type, value] = sel.value.split('::');
-  const hop = parseInt(document.getElementById('hopDepthInput').value || '1', 10);
-  hopExpand(type, value, hop);
-});
-
-/* =========================================================
-   6. FILTER — only affects elements added via hop expand
-========================================================= */
-function renderInvestigationFilters() {
-  const nodeBox = document.getElementById('nodeFilterChecklist');
-  const edgeBox = document.getElementById('edgeFilterChecklist');
-
-  const types = [...new Set(expandedPool.nodes.values())];
-  const rels  = [...new Set(expandedPool.edges.values())];
-
-  nodeBox.innerHTML = types.length ? types.map(t => `
-    <label class="check-item"><input type="checkbox" class="node-filter-chk" value="${t}" checked> ${t}</label>`).join('')
-    : '<div class="empty-note">Chưa có node mở rộng.</div>';
-
-  edgeBox.innerHTML = rels.length ? rels.map(r => `
-    <label class="check-item"><input type="checkbox" class="edge-filter-chk" value="${r}" checked> ${r}</label>`).join('')
-    : '<div class="empty-note">Chưa có quan hệ mới.</div>';
-}
-
-document.getElementById('applyInvFilterBtn').addEventListener('click', () => {
-  const checkedTypes = [...document.querySelectorAll('.node-filter-chk:checked')].map(c => c.value);
-  const checkedRels  = [...document.querySelectorAll('.edge-filter-chk:checked')].map(c => c.value);
-
-  cy.batch(() => {
-    cy.nodes().forEach(n => {
-      if (!n.data('isNewExpanded')) return;
-      n.style('display', checkedTypes.includes(n.data('type')) ? 'element' : 'none');
-    });
-    cy.edges().forEach(e => {
-      if (!e.data('isNewExpanded')) return;
-      const visible = checkedRels.includes(e.data('label')) && e.source().style('display') === 'element' && e.target().style('display') === 'element';
-      e.style('display', visible ? 'element' : 'none');
-    });
-  });
-  updateStats();
-});
-
-/* =========================================================
-   7. EXIT INVESTIGATION
-========================================================= */
-function exitInvestigation() {
-  if (snapshotGraph) {
-    cy.elements().remove();
-    cy.add(snapshotGraph);
-    snapshotGraph = null;
-    setMode('OVERVIEW');
-    document.getElementById('canvasHint').textContent = "Chế độ tổng quan · Click vào một cụm để khám phá";
-    runLayout({ fit: false });
-  } else {
-    loadOverviewClusterGraph();
-  }
-  document.getElementById('actionPanel').innerHTML = '<div class="detail-empty">Chọn một cụm hoặc một thực thể trên đồ thị để bắt đầu.</div>';
-  document.getElementById('detailPanel').innerHTML = '<div class="detail-empty">Chưa có đối tượng nào được chọn.</div>';
-}
-document.getElementById('exitInvestigationBtn').addEventListener('click', exitInvestigation);
-
-/* =========================================================
-   ACTION PANEL (right)
-========================================================= */
-let currentSelectedNode = null;
-
-function renderActionPanel(node) {
-  const panel = document.getElementById('actionPanel');
-  const data = node.data();
-  currentSelectedNode = data
-  if (data.isCluster === "true") {
-    const isExp = expandedClusters.has(data.id);
-    panel.innerHTML = `
-      <div style="font-weight:600; font-size:12.5px; color:var(--accent);">Cụm: ${data.clusterType}</div>
-      <div style="font-size:11px; color:var(--muted);">${data.count} thực thể trong cụm này</div>
-      <button id="clusterToggleBtn" class="${isExp ? 'danger' : ''}" style="margin-top:6px;">
-        ${isExp ? '⊟ Thu gọn cụm' : '⊞ Mở rộng cụm'}
-      </button>
-    `;
-    document.getElementById('clusterToggleBtn').addEventListener('click', () => { toggleCluster(data.id)});
-    return;
-  }
-
-  if (mode === 'OVERVIEW') {
-    panel.innerHTML = `
-      <div class="investigate-cta">
-        <p>Bắt đầu điều tra sâu thực thể
-          <b style="color:var(--text)">${data.fullLabel || data.id}</b>
-        </p>
-
-        <button id="startInvBtn" class="block">
-          ▶ Bắt đầu điều tra
-        </button>
-    `;
-
-    document.getElementById('startInvBtn')
-      .addEventListener('click', () =>
-        startInvestigation(data.type, data.fullLabel || data.id)
-      );
-
-    document.getElementById('togglePathBtn')
-      .addEventListener('click', togglePathFinding);
-    document.getElementById('startInvBtn').addEventListener('click', () => startInvestigation(data.type, data.fullLabel || data.id));
-  } else {
-    panel.innerHTML = `
-      <div style="font-weight:600;font-size:12.5px;color:var(--amber);">
-        ${data.fullLabel || data.id}
-      </div>
-
-      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">
-        ${data.type}
-      </div>
-
-      <div class="row">
-        <button id="quickHop1Btn" class="secondary sm">
-          1-Hop
-        </button>
-
-        <button id="quickHop2Btn" class="secondary sm">
-          2-Hop
-        </button>
-      </div>
-
-    `;
-
-    document.getElementById('quickHop1Btn')
-      .addEventListener('click', () =>
-        hopExpand(data.type, data.id, 1)
-      );
-
-    document.getElementById('quickHop2Btn')
-      .addEventListener('click', () =>
-        hopExpand(data.type, data.id, 2)
-      );
-
-    document.getElementById('togglePathBtn')
-      .addEventListener('click', togglePathFinding);
-
-    document.getElementById("exportGraphBtn")
-        .addEventListener("click", exportGraphImage);
-  }
-}
-
-function exportGraphImage() {
-
-    const png = cy.png({
-        full: true,
-        scale: 3,
-        bg: "#0f172a"
-    });
-
-    const a = document.createElement("a");
-    a.href = png;
-    a.download = `graph-${new Date().toISOString().slice(0,19)}.png`;
-    a.click();
-
-    showToast("Đã xuất ảnh đồ thị.");
-}
-
-/* =========================================================
-   DETAIL PANEL + ENRICHMENT
-========================================================= */
-async function showDetail(node) {
-  const area = document.getElementById('detailPanel');
-  data = node;
-  if (!data.properties || Object.keys(data.properties).length === 0){
-      const fetch = await safeFetchJson(
-        apiUrl(
-          `/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}`
-        )
-      );
-      data = fetch
-  }
-  props=data.properties;
-  const type = data.isCluster === "true"
-    ? "CLUSTER"
-    : data.type;
-  const propsHtml = Object.entries(props)
-    .map(([k, v]) => `
-      <div class="prop-row">
-        <span class="k">${k}</span>
-        <span class="v">${v}</span>
-      </div>
-    `)
-    .join('') ||
-    '<div class="empty-note">Không có thuộc tính.</div>';
-
-  let relationships = [];
-  let relsHtml;
-  if (data.isCluster !== "true") {
-    try {
-      const result = await safeFetchJson(
-        apiUrl(
-          `/graphs/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}?hop=1`
-        )
-      );
-
-      relationships = result.edges || [];
-    } catch (err) {
-      console.error(err);
-    }
-    relsHtml = relationships.length
-      ? relationships
-          .map((rel, index) => {
-            const isSource = rel.source === data.id;
-
-            const otherNode = isSource
-              ? rel.target
-              : rel.source;
-
-            const arrow = isSource ? "→" : "←";
-
-            return `
-              <div class="relationship">
-
-                <div class="prop-row rel-header" data-index="${index}">
-                  <span class="k">${rel.type}</span>
-
-                  <span class="v">${arrow} ${otherNode}</span>
-
-                  <button class="rel-toggle" type="button">▶</button>
-                </div>
-
-                <div class="rel-details" id="rel-${index}" hidden>
-                  ${Object.entries(rel.rel_properties || {})
-                    .map(([k, v]) => `
-                      <div class="prop-row">
-                        <span class="k">${k}</span>
-                        <span class="v">
-                          ${
-                            Array.isArray(v)
-                              ? v.map(x => `<div>• ${x}</div>`).join("")
-                              : v
-                          }
-                        </span>
-                      </div>
-                    `)
-                    .join("")}
-                </div>
-
-              </div>
-            `;
-          })
-          .join("")
-      : '<div class="empty-note">Không có mối quan hệ.</div>';
-  }else{
-    try {
-      const result = await safeFetchJson(
-        apiUrl(
-          `/graphs/clusters/types/${encodeURIComponent(data.clusterType)}`
-        )
-      );
-
-      relationships = result || [];
-    } catch (err) {
-      console.error(err);
-    }
-    relsHtml = relationships.length
-    ? relationships.map(rel => `
-        <div class="prop-row">
-          <span class="k">${shorten(rel.id, 16)}</span>
-          <span class="v">(${rel.relationship_count}) relationships</span>
-        </div>
-      `).join("")
-    : '<div class="empty-note">Cluster chưa được mở hoặc không có entity.</div>';
-  }
- 
-
-  let enrichHtml = "";
-
-  if (type === "IP" || type === "FileHash") {
-    enrichHtml = `
-      <div class="enrich-bar">
-        <button id="enrichBtn" class="secondary sm">
-          ⚡ Enrich ${type}
-        </button>
-      </div>
-    `;
-  }
-  rels = data.isCluster !== "true"?
-      `<div class="eyebrow" style="margin-top:12px;">
-      Relationships (${relationships.length})
-      </div>`: 
-      `<div class="eyebrow" style="margin-top:12px;">
-        Entities (${relationships.length})
-      </div>`;
-
-  area.innerHTML = `
-    <span class="type-badge"
-      style="border-color:${colorFor(type)};
-      color:${colorFor(type)};">
-      ${type}
-    </span>
-
-    <div class="id-box">
-    ${type}:${data.fullLabel || data.id}
-    </div>
-
-    ${enrichHtml}
-
-    <div style="margin-top:8px;">
-      ${propsHtml}
-    </div>
-
-    ${rels}
-
-    <div>
-      ${relsHtml}
-    </div>
-  `;
-  document.querySelectorAll(".rel-toggle").forEach(btn => {
-    btn.onclick = () => {
-      const details =
-        btn.closest(".relationship").querySelector(".rel-details");
-
-      details.hidden = !details.hidden;
-      btn.textContent = details.hidden ? "▶" : "▼";
-    };
-  });
-  const btn = document.getElementById("enrichBtn");
-
-  if (btn) {
-    btn.addEventListener("click", async () => {
-      btn.disabled = true;
-      btn.innerHTML =
-        '<span class="spin"></span> Đang enrich...';
-
-      try {
-        const path =
-          type === "IP"
-            ? `/enrichments/types/ips/values/${encodeURIComponent(data.id
-              )}`
-            : `/enrichments/types/file-hashes/values/${encodeURIComponent(data.id
-              )}`;
-
-        const result = await safeFetchJson(
-          apiUrl(path),
-          { method: "POST" }
-        );
-        const nodeId = data.id;
-        const cyNode = cy.getElementById(nodeId);
-        if (cyNode.length) {
-          const merged = {
-            ...cyNode.data("properties"),
-            ...(result.properties)
-          };
-
-          cyNode.data("properties", merged);
-          showDetail(cyNode.data());
-        }
-
-        showToast("Enrichment hoàn tất");
-      } catch (err) {
-        showToast(
-          "Enrichment thất bại: " + err.message
-        );
-
-        btn.disabled = false;
-        btn.innerHTML = "⚡ Thử lại";
-      }
-    });
-  }
-  
-}
-
-/* =========================================================
-   TENANTS + INIT
-========================================================= */
-async function loadTenants() {
-  const select = document.getElementById('tenantSelect');
-  try {
-    const tenants = await safeFetchJson('/api/tenants');
-    const list = Array.isArray(tenants) ? tenants : [];
-    select.innerHTML = list.map(t => `<option value="${t}">${t}</option>`).join('') || '<option value="default">default</option>';
-  } catch {
-    select.innerHTML = '<option value="default">default</option>';
-  }
-  currentTenant = select.value;
-}
-
-document.getElementById('tenantSelect').addEventListener('change', function () {
-  currentTenant = this.value;
-  loadOverviewClusterGraph();
-  runGlobalSearch();
-});
-
-cy.on('add remove', () => updateStats());
-cy.on('dbltap', 'node[isCluster="true"]', (evt) =>{
-                                          toggleCluster(evt.target.id());
-                                        });
-cy.on('dbltap', 'node[isCluster="false"]', (evt) =>{
-                                            let node = evt.target;
-                                            const pill = document.getElementById('modePill');
-                                            if (pill.textContent != 'Investigation')
-                                              startInvestigation(node.data("type"), node.id());
-                                            else hopExpand(node.data("type"), node.id(), 1);
-                                        });
-
-async function initApp() {
-  await loadTenants();
-  await loadGlobalFilterOptions();
-  await runGlobalSearch();
-  await loadOverviewClusterGraph();
-}
-
-initApp();
-window.addEventListener('resize', () => cy.resize());
 </script>
+
+<script src="app.js"></script>
 </body>
 </html>

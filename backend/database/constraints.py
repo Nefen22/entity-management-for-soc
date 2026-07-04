@@ -173,7 +173,7 @@ EDR_INCLUDE = {
         ("parent_process",   "process_name"),     # (Process, Process) -> SPAWNED
         ("process_name",     "destination_host"), # (Process, Host) -> RUNS_ON
         ("process_name",     "user"),             # (Process, User) -> EXECUTED_BY
-        ("process_name",     "file_hash"),        # (Process, FileHash) -> LOADED (Quan trọng!)
+        ("process_name",     "file_hash"),        # (Process, FileHash) -> LOADED 
         ("process_name",     "destination_ip"),   # (Process, IP) -> CONNECTED_TO
         ("process_name",     "destination_domain"),# (Process, Domain) -> CONNECTED_TO
 
