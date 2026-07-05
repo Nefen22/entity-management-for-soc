@@ -297,55 +297,55 @@ CANONICAL_SCHEMA = {
 
 TENANT_DATABASE = {}
 
-# # ── IP ───────────────────────────────────────────────────────────────────────
-# IPV4 = re.compile(
-#     r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
-#     r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b"
-# )
+# ── IP ───────────────────────────────────────────────────────────────────────
+IPV4 = re.compile(
+    r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
+    r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b"
+)
 
-# # ── URL ──────────────────────────────────────────────────────────────────────
-# URL = re.compile(
-#     r"https?://"
-#     r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}"
-#     r"(?::\d{1,5})?"
-#     r"(?:/[^\s\"'<>]*)?"
-# )
+# ── URL ──────────────────────────────────────────────────────────────────────
+URL = re.compile(
+    r"https?://"
+    r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}"
+    r"(?::\d{1,5})?"
+    r"(?:/[^\s\"'<>]*)?"
+)
 
-# # ── File Hash ────────────────────────────────────────────────────────────────
-# MD5    = re.compile(r"\b[a-fA-F0-9]{32}\b")
-# SHA1   = re.compile(r"\b[a-fA-F0-9]{40}\b")
-# SHA256 = re.compile(r"\b[a-fA-F0-9]{64}\b")
-# HASH   = [MD5, SHA1, SHA256]
+# ── File Hash ────────────────────────────────────────────────────────────────
+MD5    = re.compile(r"\b[a-fA-F0-9]{32}\b")
+SHA1   = re.compile(r"\b[a-fA-F0-9]{40}\b")
+SHA256 = re.compile(r"\b[a-fA-F0-9]{64}\b")
+HASH   = [MD5, SHA1, SHA256]
 
-# # ── Email ────────────────────────────────────────────────────────────────────
-# EMAIL = re.compile(
-#     r"\b[a-zA-Z0-9._%+\-]+@"
-#     r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b"
-# )
+# ── Email ────────────────────────────────────────────────────────────────────
+EMAIL = re.compile(
+    r"\b[a-zA-Z0-9._%+\-]+@"
+    r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b"
+)
 
-# # ── CVE ──────────────────────────────────────────────────────────────────────
-# CVE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
+# ── CVE ──────────────────────────────────────────────────────────────────────
+CVE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
 
-# # ── Cloud Resource (chỉ các định dạng chuẩn) ─────────────────────────────────
-# AWS_ARN      = re.compile(r"\barn:[a-z0-9\-]+:[a-z0-9\-]+:[a-z0-9\-]*:\d{12}:[^\s\"']+")
-# AWS_S3       = re.compile(r"\bs3://[a-z0-9.\-]+(?:/[^\s\"']*)?\b")
-# AWS_INSTANCE = re.compile(r"\bi-[0-9a-f]{8,17}\b")
-# CLOUD_RESOURCE = [AWS_ARN, AWS_S3, AWS_INSTANCE]
+# ── Cloud Resource (chỉ các định dạng chuẩn) ─────────────────────────────────
+AWS_ARN      = re.compile(r"\barn:[a-z0-9\-]+:[a-z0-9\-]+:[a-z0-9\-]*:\d{12}:[^\s\"']+")
+AWS_S3       = re.compile(r"\bs3://[a-z0-9.\-]+(?:/[^\s\"']*)?\b")
+AWS_INSTANCE = re.compile(r"\bi-[0-9a-f]{8,17}\b")
+CLOUD_RESOURCE = [AWS_ARN, AWS_S3, AWS_INSTANCE]
 
-# DOMAIN = re.compile(
-#     r"\b(?!(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"  # Loại trừ IP để không bị trùng lặp thực thể
-#     r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+"
-#     r"[a-zA-Z]{2,6}\b"
-# )
+DOMAIN = re.compile(
+    r"\b(?!(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"  # Loại trừ IP để không bị trùng lặp thực thể
+    r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+"
+    r"[a-zA-Z]{2,6}\b"
+)
 
 
-# # ── Gom tất cả theo entity type ──────────────────────────────────────────────
-# ALL_PATTERNS: dict[str, list[re.Pattern]] = {
-#     "ips":            [IPV4],
-#     "domains":         [DOMAIN],
-#     "urls":           [URL],
-#     "file_hashes":      HASH,
-#     "emails":         [EMAIL],
-#     "cves":           [CVE],
-#     "cloud_resources": CLOUD_RESOURCE,
-# }
+# ── Gom tất cả theo entity type ──────────────────────────────────────────────
+ALL_PATTERNS: dict[str, list[re.Pattern]] = {
+    "ips":            [IPV4],
+    "domains":         [DOMAIN],
+    "urls":           [URL],
+    "file_hashes":      HASH,
+    "emails":         [EMAIL],
+    "cves":           [CVE],
+    "cloud_resources": CLOUD_RESOURCE,
+}

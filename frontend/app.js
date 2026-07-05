@@ -397,7 +397,7 @@ function renderEntityChips(list) {
     row.addEventListener('click', () => {
       document.querySelectorAll('.entity-row').forEach(r => r.classList.remove('selected'));
       row.classList.add('selected');
-      showDetail({ type: entity.type || document.getElementById('globalTypeSelect').value || 'Entity', id: entity.id || entity.value, properties: entity.properties || {}, fullLabel: entity.value || entity.id }, 'listDetailPanel');
+      showDetail(entity.id, entity.type, 'listDetailPanel');
     });
     row.addEventListener('dblclick', () => {
       const type = entity.type || document.getElementById('globalTypeSelect').value || 'Entity';
@@ -452,7 +452,7 @@ cy.on("tap", "node", (e) => {
   const nodeData = node.data();
   cy.nodes().unselect();
   node.select();
-  showDetail(nodeData);
+  showDetail(nodeData.id, nodeData.type, 'detailPanel');
   renderActionPanel(node);
   if (pill.textContent === 'Overview') {
     return;
@@ -543,7 +543,7 @@ async function startInvestigation(type, value) {
     syncLayoutSwitch();
     renderInvestigationFilters();
     const rootNode = cy.nodes('.root').length ? cy.nodes('.root') : cy.nodes().first();
-    if (rootNode.length) { rootNode.select(); showDetail(rootNode.data()); renderActionPanel(rootNode); }
+    if (rootNode.length) { rootNode.select(); showDetail(rootNode.data().id, rootNode.data().type); renderActionPanel(rootNode); }
   } catch (err) {
     console.error(err);
     showToast('Không thể bắt đầu điều tra: ' + err.message);
@@ -729,21 +729,41 @@ function exportGraphImage() {
   showToast("Đã xuất ảnh đồ thị.");
 }
 
-async function showDetail(node, panelId = 'detailPanel') {
+async function showDetail(data_id, data_type, panelId = 'detailPanel') {
   const area = document.getElementById(panelId);
-  let data = node;
-  if (!data.properties || Object.keys(data.properties).length === 0){
-    const fetch = await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}`));
-    data = fetch;
-  }
+  const data = await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data_type)}/values/${encodeURIComponent(data_id)}`));
   const props = data.properties || {};
   const type = data.isCluster === "true" ? "CLUSTER" : data.type;
-  const propsHtml = Object.entries(props).map(([k, v]) => `
-      <div class="prop-row">
-        <span class="k">${k}</span>
-        <span class="v">${v}</span>
-      </div>
-    `).join('') || '<div class="empty-note">Không có thuộc tính.</div>';
+  const baseIdentities = [
+    "value", "username", "hostname", "name", "hash_value", 
+    "url", "process_name", "resource_id", "address", "cve_id"
+  ];
+
+  const baseProfileKeys = new Set([...baseIdentities, "first_seen", "last_seen", "count"]);
+
+  const baseProps = {};
+  const enrichmentProps = {};
+
+  Object.entries(props).forEach(([k, v]) => {
+    if (baseProfileKeys.has(k)) {
+      baseProps[k] = v;
+    } else {
+      enrichmentProps[k] = v;
+    }
+  });
+
+  const renderPropsHtml = (propsObj, emptyMessage) => {
+    const propsHtml = Object.entries(propsObj)
+      .map(([k, v]) => `
+        <div class="prop-row">
+          <span class="k">${k}</span>
+          <span class="v">${v}</span>
+        </div>
+      `).join('') || `<div class="empty-note">${emptyMessage}</div>`;
+    return propsHtml;
+  };
+  const baseProfileHtml = renderPropsHtml(baseProps, "Không có thông tin cơ bản.");
+  const enrichmentProfileHtml = renderPropsHtml(enrichmentProps, "Không có thông tin bổ sung.");
   let relationships = [];
   let relsHtml;
   if (data.isCluster !== "true") {
@@ -814,9 +834,10 @@ async function showDetail(node, panelId = 'detailPanel') {
       ${type}:${data.fullLabel || data.id}
     </div>
     ${enrichHtml}
-    <div style="margin-top:8px;">
-      ${propsHtml}
-    </div>
+    <div class="eyebrow" style="margin-top:12px;">Thông tin cơ bản (Base Profile)</div>
+      ${baseProfileHtml}
+    <div class="eyebrow" style="margin-top:12px;">Thông tin làm giàu (Enrichment Profile)</div>
+      ${enrichmentProfileHtml}
     ${relsTitle}
     <div>
       ${relsHtml}
@@ -839,7 +860,7 @@ async function showDetail(node, panelId = 'detailPanel') {
           ? `/enrichments/types/ips/values/${encodeURIComponent(data.id)}`
           : `/enrichments/types/file-hashes/values/${encodeURIComponent(data.id)}`;
         const result = await safeFetchJson(apiUrl(path), { method: "POST" });        
-        showDetail(result, panelId);
+        showDetail(result.id, result.type, panelId);
       } catch (err) {
         showToast("Enrichment thất bại: " + err.message);
         enrichBtn.disabled = false;

@@ -35,10 +35,14 @@ async def get_entity(tenant: str, type:str, value: str):
         return None
     record = result.data()
     labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
+    properties = format_neo4j_data(record["entity"])
+    properties["first_seen"] = format_neo4j_data(record["first_seen"])
+    properties["last_seen"] = format_neo4j_data(record["last_seen"])
+    properties["count"] = record["count"]
     return Node(
         id= record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
         type= labels[0],
-        properties= format_neo4j_data(record["entity"])
+        properties= properties
     )
 
 async def get_list_entity(tenant: str,type:str, relationship:str | None = None, start:str | None = None, end:str | None = None):

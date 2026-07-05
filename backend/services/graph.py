@@ -17,15 +17,18 @@ async def ingest(tenant: str, event: dict):
     try:
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
-        canonical = AlertParser.normalize_data(event)
-        print(f"Canonical: {canonical}")
-        sub_event = JsonParser(nodes=[], edges=[], source_type=event.get("source_type"), evidence=event.get("event_id", ""))
-        for ele in canonical:
-            ele["source_type"] = event["source_type"]
-            ele["timestamp"] = event["timestamp"]
-            event_get = JsonParser.from_event(ele, "canonical")
-            sub_event.nodes += event_get.nodes
-            sub_event.edges += event_get.edges
+        try:
+            canonical = AlertParser.normalize_data(event)
+            print(f"Canonical: {canonical}")
+            sub_event = JsonParser(nodes=[], edges=[], source_type=event.get("source_type"), evidence=event.get("event_id", ""))
+            for ele in canonical:
+                ele["source_type"] = event["source_type"]
+                ele["timestamp"] = event["timestamp"]
+                event_get = JsonParser.from_event(ele, "canonical")
+                sub_event.nodes += event_get.nodes
+                sub_event.edges += event_get.edges
+        except:
+            sub_event = JsonParser.from_event(event, "alert")
     rel = sub_event.get_relationship()
     for type, value in sub_event.get_nodes():
         if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:
