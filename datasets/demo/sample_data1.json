@@ -100,28 +100,28 @@
   {
     "event_id": "evt-012",
     "timestamp": "2024-06-01T09:00:00Z",
-    "source_type": "alert",
+    "source_type": "siem",
     "event_type": "free_text_alert",
     "message": "User john.doe executed file 44d88612fea8a8f36de82e1278abb02f and connected to malicious.ru from 192.168.1.100"
   },
   {
     "event_id": "evt-013",
     "timestamp": "2024-06-01T09:05:00Z",
-    "source_type": "alert",
+    "source_type": "siem",
     "event_type": "free_text_alert",
     "message": "Host DESKTOP-002 contacted suspicious domain evil-c2.net using IP 45.76.12.99"
   },
   {
     "event_id": "evt-014",
     "timestamp": "2024-06-01T09:10:00Z",
-    "source_type": "alert",
+    "source_type": "siem",
     "event_type": "free_text_alert",
     "message": "Detected malware hash 5d41402abc4b2a76b9719d911017c592 on FILE-SERVER-01"
   },
   {
     "event_id": "evt-015",
     "timestamp": "2024-06-01T09:15:00Z",
-    "source_type": "alert",
+    "source_type": "siem",
     "event_type": "free_text_alert",
     "message": "CVE-2024-12345 exploited from 185.220.101.45 against host WEB-SERVER-01"
   },
@@ -215,20 +215,20 @@
   },
   {
     "timestamp": "2024-06-01T09:45:00Z",
-    "event_id": "alert-001",
-    "source_type": "alert",
+    "event_id": "siem-001",
+    "source_type": "siem",
     "message": "Detected outbound connection to 185.220.101.45 and domain malicious.ru. Related hash: 44d88612fea8a8f36de82e1278abb02f"
   },
   {
     "timestamp": "2024-06-01T09:45:00Z",
-    "event_id": "alert-002",
-    "source_type": "alert",
+    "event_id": "siem-002",
+    "source_type": "siem",
     "message": "Threat intelligence feed reports evil-download.com communicating with 45.33.32.156. MD5: 11111111111111111111111111111111"
   },
   {
     "timestamp": "2024-06-01T09:45:00Z",
-    "event_id": "alert-003",
-    "source_type": "alert",
+    "event_id": "siem-003",
+    "source_type": "siem",
     "message": "Suspicious activity detected from IP 8.8.8.8 contacting google.com"
   }
 ]

@@ -95,9 +95,16 @@ MAPPING_RELATIONSHIPS = {
     ("FileHash", "Host"): "EXECUTED_ON",
 
     # ===== Network =====
+    ("Host", "IP"):       "CONNECTED_TO",
+    ("IP", "Host"):       "CONNECTED_TO",
+    ("IP", "IP"):         "CONNECTED_TO",
+
     ("Host", "Domain"):   "RESOLVED",
+    ("IP", "Domain"):     "RESOLVED",
     ("Domain", "IP"):     "RESOLVES_TO",
+
     ("Host", "URL"):      "REQUESTED",
+    ("IP", "URL"):        "REQUESTED",
 
     # ===== Process =====
     ("Process", "Host"):     "RUNS_ON",
@@ -130,7 +137,7 @@ MAPPING_RELATIONSHIPS = {
 }
 
 # ── SIEM ──────────────────────────────────────────────────────────────────────
-SIEM_INCLUDE = {
+SIEM_SCHEMA = {
     "nodes": {
         "users":            ["user"],
         "ips":              ["source_ip"],          
@@ -151,7 +158,7 @@ SIEM_INCLUDE = {
 }
 
 # ── EDR ───────────────────────────────────────────────────────────────────────
-EDR_INCLUDE = {
+EDR_SCHEMA = {
     "nodes": {
         "users":            ["user"],
         "hosts":            ["destination_host"],
@@ -183,7 +190,7 @@ EDR_INCLUDE = {
 }
 
 # ── Cloud ─────────────────────────────────────────────────────────────────────
-CLOUD_INCLUDE = {
+CLOUD_SCHEMA = {
     "nodes": {
         "users":           ["user"],               
         "hosts":           ["source_host"],
@@ -207,57 +214,138 @@ CLOUD_INCLUDE = {
     ]
 }
 
+CANONICAL_SCHEMA = {
+    "nodes": {
+        # Identity
+        "users":              ["user"],
+
+        # Network
+        "ips":                ["source_ip", "destination_ip"],
+        "hosts":              ["source_host", "destination_host"],
+        "domains":            ["source_domain", "destination_domain"],
+        "urls":               ["url"],
+
+        # Email
+        "sender_emails":      ["sender_email"],
+        "recipient_emails":   ["recipient_email"],
+
+        # Endpoint
+        "processes":          ["process_name"],
+        "parent_processes":   ["parent_process"],
+        "file_hashes":        ["file_hash"],
+
+        # Cloud
+        "cloud_resources":    ["resource_id"],
+
+        # Vulnerability
+        "cves":               ["cve_id"]
+    },
+
+    "edges": [
+
+        # ---------- Network ----------
+
+        ("source_ip", "destination_ip"),
+        ("source_ip", "destination_domain"),
+        ("source_ip", "url"),
+        ("source_ip", "destination_host"),
+
+        ("source_host", "destination_host"),
+        ("source_host", "destination_ip"),
+        ("source_host", "destination_domain"),
+        ("source_host", "url"),
+
+        ("destination_domain", "destination_ip"),
+
+        # ---------- User ----------
+        ("user",                "destination_host"),
+        ("user",                "source_host"),
+        ("user",                "sender_email"),
+        ("user",                "resource_id"),
+
+        # ---------- Email ----------
+        ("sender_email",        "recipient_email"),
+        ("sender_email",        "url"),
+        ("sender_email",        "file_hash"),
+
+        # ---------- Endpoint ----------
+        ("parent_process",      "process_name"),
+        ("process_name",        "destination_host"),
+        ("process_name",        "user"),
+        ("process_name",        "file_hash"),
+        ("process_name",        "destination_ip"),
+        ("process_name",        "destination_domain"),
+
+        # ---------- File ----------
+        ("file_hash",           "destination_host"),
+
+        # ---------- Host ----------
+        ("destination_host",    "destination_ip"),
+        ("destination_host",    "destination_domain"),
+        ("destination_host",    "url"),
+
+        # ---------- Cloud ----------
+        ("resource_id",         "destination_ip"),
+        ("resource_id",         "source_host"),
+
+        # ---------- Vulnerability ----------
+        ("cve_id",              "destination_host"),
+        ("cve_id",              "process_name"),
+        ("cve_id",              "resource_id")
+    ]
+}
+
 TENANT_DATABASE = {}
 
-# ── IP ───────────────────────────────────────────────────────────────────────
-IPV4 = re.compile(
-    r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
-    r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b"
-)
+# # ── IP ───────────────────────────────────────────────────────────────────────
+# IPV4 = re.compile(
+#     r"\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}"
+#     r"(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b"
+# )
 
-# ── URL ──────────────────────────────────────────────────────────────────────
-URL = re.compile(
-    r"https?://"
-    r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}"
-    r"(?::\d{1,5})?"
-    r"(?:/[^\s\"'<>]*)?"
-)
+# # ── URL ──────────────────────────────────────────────────────────────────────
+# URL = re.compile(
+#     r"https?://"
+#     r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}"
+#     r"(?::\d{1,5})?"
+#     r"(?:/[^\s\"'<>]*)?"
+# )
 
-# ── File Hash ────────────────────────────────────────────────────────────────
-MD5    = re.compile(r"\b[a-fA-F0-9]{32}\b")
-SHA1   = re.compile(r"\b[a-fA-F0-9]{40}\b")
-SHA256 = re.compile(r"\b[a-fA-F0-9]{64}\b")
-HASH   = [MD5, SHA1, SHA256]
+# # ── File Hash ────────────────────────────────────────────────────────────────
+# MD5    = re.compile(r"\b[a-fA-F0-9]{32}\b")
+# SHA1   = re.compile(r"\b[a-fA-F0-9]{40}\b")
+# SHA256 = re.compile(r"\b[a-fA-F0-9]{64}\b")
+# HASH   = [MD5, SHA1, SHA256]
 
-# ── Email ────────────────────────────────────────────────────────────────────
-EMAIL = re.compile(
-    r"\b[a-zA-Z0-9._%+\-]+@"
-    r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b"
-)
+# # ── Email ────────────────────────────────────────────────────────────────────
+# EMAIL = re.compile(
+#     r"\b[a-zA-Z0-9._%+\-]+@"
+#     r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b"
+# )
 
-# ── CVE ──────────────────────────────────────────────────────────────────────
-CVE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
+# # ── CVE ──────────────────────────────────────────────────────────────────────
+# CVE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
 
-# ── Cloud Resource (chỉ các định dạng chuẩn) ─────────────────────────────────
-AWS_ARN      = re.compile(r"\barn:[a-z0-9\-]+:[a-z0-9\-]+:[a-z0-9\-]*:\d{12}:[^\s\"']+")
-AWS_S3       = re.compile(r"\bs3://[a-z0-9.\-]+(?:/[^\s\"']*)?\b")
-AWS_INSTANCE = re.compile(r"\bi-[0-9a-f]{8,17}\b")
-CLOUD_RESOURCE = [AWS_ARN, AWS_S3, AWS_INSTANCE]
+# # ── Cloud Resource (chỉ các định dạng chuẩn) ─────────────────────────────────
+# AWS_ARN      = re.compile(r"\barn:[a-z0-9\-]+:[a-z0-9\-]+:[a-z0-9\-]*:\d{12}:[^\s\"']+")
+# AWS_S3       = re.compile(r"\bs3://[a-z0-9.\-]+(?:/[^\s\"']*)?\b")
+# AWS_INSTANCE = re.compile(r"\bi-[0-9a-f]{8,17}\b")
+# CLOUD_RESOURCE = [AWS_ARN, AWS_S3, AWS_INSTANCE]
 
-DOMAIN = re.compile(
-    r"\b(?!(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"  # Loại trừ IP để không bị trùng lặp thực thể
-    r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+"
-    r"[a-zA-Z]{2,6}\b"
-)
+# DOMAIN = re.compile(
+#     r"\b(?!(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"  # Loại trừ IP để không bị trùng lặp thực thể
+#     r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+"
+#     r"[a-zA-Z]{2,6}\b"
+# )
 
 
-# ── Gom tất cả theo entity type ──────────────────────────────────────────────
-ALL_PATTERNS: dict[str, list[re.Pattern]] = {
-    "ips":            [IPV4],
-    "domains":         [DOMAIN],
-    "urls":           [URL],
-    "file_hashes":      HASH,
-    "emails":         [EMAIL],
-    "cves":           [CVE],
-    "cloud_resources": CLOUD_RESOURCE,
-}
+# # ── Gom tất cả theo entity type ──────────────────────────────────────────────
+# ALL_PATTERNS: dict[str, list[re.Pattern]] = {
+#     "ips":            [IPV4],
+#     "domains":         [DOMAIN],
+#     "urls":           [URL],
+#     "file_hashes":      HASH,
+#     "emails":         [EMAIL],
+#     "cves":           [CVE],
+#     "cloud_resources": CLOUD_RESOURCE,
+# }

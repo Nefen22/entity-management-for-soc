@@ -1,6 +1,6 @@
 DEMO_DATASETS  = {
     "acme": "demo/sample_data.json",
-    "google": "demo/sample_data1.json",
+    "google": "test/ransomware.json",
     "internal": "demo/sample_data2.json"
 }
 
