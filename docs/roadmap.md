@@ -9,11 +9,11 @@ MVP
 ✓ Path finding between arbitrary entities
 ✓ Export graph to PNG
 ✓ Time-range graph investigation
+✓ LLM-assisted investigation
 
 Future
 □ Kubernetes deployment
 □ Real VirusTotal API integration
 □ Graph report generation (PDF)
-□ LLM-assisted investigation
 □ Kafka ingestion
 □ Prometheus monitoring

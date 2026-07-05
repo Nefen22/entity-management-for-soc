@@ -29,10 +29,10 @@ class AlertParser(BaseParser):
     @classmethod
     def normalize_data(cls, event: dict):
         if "message" in event.keys():
-            message = event["message"]
+            message = {"message": event["message"]}
         else:
-            message = json.dumps(event, ensure_ascii=False, indent=2)
-        encoded_event, entity_search = encode_entity(message)
+            message = event
+        encoded_event, entity_search = encode_entity(json.dumps(message, ensure_ascii=False, indent=2))
         print(f"Encoded event: {encoded_event}")
         LLM_result = LLM_Client.parse(encoded_event, entity_search)
         return LLM_result
