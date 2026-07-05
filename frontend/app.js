@@ -148,6 +148,7 @@ function togglePathFinding() {
     document.getElementById("pathTarget").textContent = "Chưa chọn";
     document.getElementById("findPathBtn").disabled = true;
     btn.innerHTML = "⇄ Find Path";
+    dehighlightPath();
   }
 }
 
@@ -896,6 +897,13 @@ function highlightPath(nodes, edges) {
 
     cy.fit(cy.$(".path-node"), 60);
 }
+
+function dehighlightPath() {
+    cy.elements().removeClass("path-node path-edge");
+
+    cy.fit(60); 
+}
+
 
 document.getElementById("findPathBtn").onclick = async () => {
 
