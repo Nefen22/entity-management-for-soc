@@ -14,12 +14,18 @@ from models.node import Node
 
 #Services
 async def ingest(tenant: str, event: dict):
-    if event.get("source_type") == "alert":
-        sub_event = AlertParser.from_event(event)
-        if sub_event is None:
-            pass
-    else:
+    try:
         sub_event = JsonParser.from_event(event, event.get("source_type"))
+    except ValueError:
+        canonical = AlertParser.normalize_data(event)
+        print(f"Canonical: {canonical}")
+        sub_event = JsonParser(nodes=[], edges=[], source_type=event.get("source_type"), evidence=event.get("event_id", ""))
+        for ele in canonical:
+            ele["source_type"] = event["source_type"]
+            ele["timestamp"] = event["timestamp"]
+            event_get = JsonParser.from_event(ele, "canonical")
+            sub_event.nodes += event_get.nodes
+            sub_event.edges += event_get.edges
     rel = sub_event.get_relationship()
     for type, value in sub_event.get_nodes():
         if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:
@@ -38,6 +44,7 @@ async def ingest(tenant: str, event: dict):
             d_label = [label for label in result["dest_label"] if label not in TENANT_DATABASE.values()][0]
             dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],type=d_label,properties=result["dest"])
             await write_node_create_log(dest_r)
+    return sub_event
 
 async def batch_sample(tenant: str, file: str | list):
     if isinstance(file, str):
@@ -45,8 +52,16 @@ async def batch_sample(tenant: str, file: str | list):
             data = json.load(file)
     else:
         data = file
+    nodes, relationships = [], []
     for event in data:
-        await ingest(tenant, event)
+        record = await ingest(tenant, event)
+        event_nodes, event_relationships = record.get_nodes(), record.get_relationship()
+        nodes.extend(event_nodes)
+        relationships.extend(event_relationships)
+    return {
+        "nodes": nodes,
+        "relationships": relationships
+    }
 
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(tenant=tenant,type=type, value=value, hop=hop)

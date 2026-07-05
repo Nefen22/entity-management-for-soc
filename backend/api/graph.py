@@ -7,13 +7,13 @@ router = APIRouter()
 
 @router.post("/ingest")
 async def ingest(tenant: str,events: dict):
-    await services.ingest(tenant, events)
-    return APIResponse(message="Ingest completed")
+    result = await services.ingest(tenant, events)
+    return APIResponse(message="Ingest completed", data=result)
 
 @router.post("/ingest/batch")
 async def batch_sample(tenant: str, file:str):
-    await services.batch_sample(tenant, file)
-    return APIResponse(message="Batch data ingested!")
+    result = await services.batch_sample(tenant, file)
+    return APIResponse(message="Batch data ingested!", data=result)
 
 @router.get("/get-types")
 async def get_types(tenant: str, relationship:str | None = None):

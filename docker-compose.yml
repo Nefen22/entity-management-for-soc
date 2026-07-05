@@ -43,6 +43,7 @@ services:
       - NEO4J_PASSWORD=password123
       - RESET_DB=true
       - SEED_NAME=DEMO
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     ports:
       - "8000:8000"
     depends_on:
@@ -66,6 +67,7 @@ services:
     networks:
       - app
 volumes:
+  ollama_data:
   neo4j_data:
 
 networks:

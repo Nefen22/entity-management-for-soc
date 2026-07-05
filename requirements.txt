@@ -12,3 +12,6 @@ pytest-asyncio
 httpx2
 pytest-cov
 aiofiles==24.1.0
+iocsearcher
+google-genai
+google
