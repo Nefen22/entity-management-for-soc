@@ -472,8 +472,10 @@ cy.on("tap", "node", (e) => {
   const nodeData = node.data();
   cy.nodes().unselect();
   node.select();
-  showDetail(nodeData.id, nodeData.type, 'detailPanel');
   renderActionPanel(node);
+  if (node.isCluster)
+    return;
+  showDetail(nodeData.id, nodeData.type, 'detailPanel');
   if (pill.textContent === 'Overview') {
     return;
   }
