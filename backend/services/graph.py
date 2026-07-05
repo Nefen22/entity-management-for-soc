@@ -55,16 +55,10 @@ async def batch_sample(tenant: str, file: str | list):
             data = json.load(file)
     else:
         data = file
-    nodes, relationships = [], []
+    sub_data = []
     for event in data:
-        record = await ingest(tenant, event)
-        event_nodes, event_relationships = record.get_nodes(), record.get_relationship()
-        nodes.extend(event_nodes)
-        relationships.extend(event_relationships)
-    return {
-        "nodes": nodes,
-        "relationships": relationships
-    }
+        sub_data.extend(await ingest(tenant, event))
+    return sub_data
 
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(tenant=tenant,type=type, value=value, hop=hop)

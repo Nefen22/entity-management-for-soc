@@ -9,10 +9,10 @@ def clean(lst):
     return [lst] if lst else []
 
 class BaseParser(BaseModel):
-    nodes: list[Vertex]
-    edges: list[dict]
-    source_type: str  
-    evidence: str
+    nodes: list[Vertex] | None = None
+    edges: list[dict] | None = None
+    source_type: str  | None = None
+    evidence: str | None = None
     
     def split_nodes_edges(self, event: dict, include:dict):
         type_n_nodes = {}

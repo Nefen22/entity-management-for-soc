@@ -8,7 +8,6 @@ const entityColors = {
   CloudResource: "#34d399", CVE: "#f87171", Entity: "#94a3b8"
 };
 
-// Hàm gọi API lấy dữ liệu phân trang thực tế từ Backend
 async function fetchLogs(page) {
   try {
     logCurrentPage = page;

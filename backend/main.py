@@ -2,18 +2,20 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from api.tenants import router as tenants_router
 from api.logs import router as logs_router
+from api.auth import router as auth_router
 from contextlib import asynccontextmanager
 from pathlib import Path
 from database.neo4j import init_db, driver
 from api.graph import batch_sample
 from datasets.seed import SEED
 from database.constraints import TENANT_DATABASE
-import asyncio
+from api.auth import login
 import os
 
 RESET_DB = os.getenv("RESET_DB", "true").lower() == "true"
 SEED_NAME = os.getenv("SEED_NAME", "")
-
+ADMIN_NAME = "admin"
+ADMIN_PASS = "admin123"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     seed = SEED[SEED_NAME]
@@ -35,13 +37,13 @@ async def load_tenant(tenant: str):
 async def seed_db(seed:dict):
     for tenant, file in seed.items():
         await load_tenant(tenant)
-        await batch_sample(tenant=tenant, file=file)
+        await batch_sample(tenant=tenant, file=file, current_user={"role":"admin"})
 
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost", "http://localhost:80"],
+    allow_origins=["http://localhost", "http://localhost:80", "http://localhost/login.html"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
@@ -49,6 +51,7 @@ app.add_middleware(
 
 app.include_router(tenants_router)
 app.include_router(logs_router)
+app.include_router(auth_router)
 
 @app.get("/")
 async def root():

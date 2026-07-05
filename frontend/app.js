@@ -116,10 +116,23 @@ function colorFor(type) {
   return colors[type] || "#94a3b8";
 }
 
-async function safeFetchJson(url, options) {
-  const res = await fetch(url, options);
+async function safeFetchJson(url, options = {}) {
+  const token = sessionStorage.getItem("soc_token");
+  console.log(token)
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) throw new Error('HTTP ' + res.status);
+  
   const json = await res.json();
+  console.log(json)
   return json.data !== undefined ? json.data : json;
 }
 
@@ -437,6 +450,12 @@ document.getElementById('tenantSelect').addEventListener('change', function () {
   runGlobalSearch();
 });
 
+document.getElementById('globalResetBtn').addEventListener('click', function () {
+  document.getElementById('globalTypeSelect').value = "";
+  document.getElementById('globalRelSelect').value = "";
+  loadGlobalFilterOptions();
+});
+
 cy.on('add remove', () => updateStats());
 cy.on('dbltap', 'node[isCluster="true"]', (evt) => toggleCluster(evt.target.id()));
 cy.on('dbltap', 'node[isCluster="false"]', (evt) => {
@@ -495,7 +514,7 @@ async function loadTenants() {
   try {
     const tenants = await safeFetchJson('/api/tenants');
     const list = Array.isArray(tenants) ? tenants : [];
-    select.innerHTML = list.map(t => `<option value="${t}">${t}</option>`).join('') || '<option value="default">default</option>';
+    select.innerHTML = list.map(t => `<option value="${t}">${t}</option>`).join('');
   } catch {
     select.innerHTML = '<option value="default">default</option>';
   }

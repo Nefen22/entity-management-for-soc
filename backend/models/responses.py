@@ -3,4 +3,4 @@ from datetime import datetime
 
 class APIResponse(BaseModel):
     message: str
-    data: dict | list | None = None
+    data: dict | list | str | None = None

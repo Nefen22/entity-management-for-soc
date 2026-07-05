@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập · SOC Investigation Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #07090d;
+    --bg-soft:   #0c0f15;
+    --panel:     #10141c;
+    --panel-2:   #161b25;
+    --line:      #232a38;
+    --line-soft: #1a2030;
+    --text:      #eaeef5;
+    --muted:     #7c8aa3;
+    --muted-2:   #4d5872;
+    --accent:    #5eead4;
+    --indigo:    #818cf8;
+    --rose:      #fb7185;
+    --radius:    10px;
+    --radius-sm: 6px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background:
+      radial-gradient(900px 500px at 80% -5%,  rgba(94,234,212,0.07), transparent 60%),
+      radial-gradient(700px 400px at 10% 110%,  rgba(129,140,248,0.07), transparent 60%),
+      var(--bg);
+  }
+
+  /* ── grid background overlay ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(35,42,56,0.55) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(35,42,56,0.55) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(16,20,28,0.80);
+    backdrop-filter: blur(10px);
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .mark {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--indigo));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; color: #06141a; font-size: 15px;
+  }
+  .brand h1 { font-size: 14.5px; font-weight: 600; letter-spacing: 0.2px; }
+  .brand .sub { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── Main ── */
+  main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  .login-wrap {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── Intro ── */
+  .intro {
+    text-align: center;
+  }
+  .intro .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(94,234,212,0.10);
+    border: 1px solid rgba(94,234,212,0.30);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .intro .badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.85); }
+  }
+  .intro h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+  }
+  .intro p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .field label {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+  .input-wrap .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-2);
+    font-size: 14px;
+    pointer-events: none;
+    line-height: 1;
+  }
+  .input-wrap input {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 11px 12px 11px 38px;
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(94,234,212,0.12);
+  }
+  .input-wrap input::placeholder { color: var(--muted-2); }
+
+  /* tenant select */
+  .tenant-select-wrap {
+    position: relative;
+  }
+  .tenant-select-wrap .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-2);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .tenant-select-wrap select {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 11px 12px 11px 38px;
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .tenant-select-wrap select:focus { border-color: var(--accent); }
+  .tenant-select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-2);
+    pointer-events: none;
+    font-size: 12px;
+  }
+
+  /* divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted-2);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* error */
+  .error-msg {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: rgba(251,113,133,0.10);
+    border: 1px solid rgba(251,113,133,0.30);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 12.5px;
+    color: var(--rose);
+  }
+  .error-msg.show { display: flex; }
+
+  /* submit button */
+  .btn-login {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #05181a;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: filter .15s, transform .1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.2px;
+  }
+  .btn-login:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .btn-login:active { transform: translateY(0); }
+  .btn-login:disabled {
+    background: var(--line);
+    color: var(--muted-2);
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+  }
+
+  .spin {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(5,24,26,0.3);
+    border-top-color: #05181a;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Footer note ── */
+  .login-footer {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--muted-2);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.7;
+  }
+  .login-footer span {
+    color: var(--muted);
+  }
+
+  /* ── Security notice ── */
+  .security-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(129,140,248,0.07);
+    border: 1px solid rgba(129,140,248,0.20);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 11.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .security-notice .icon { color: var(--indigo); flex-shrink: 0; margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark">◆</span>
+    <div>
+      <h1>Entity Graph Explorer</h1>
+      <div class="sub">SOC Investigation Console</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="login-wrap">
+
+    <div class="intro">
+      <div class="badge">Secure Access</div>
+      <h2>Đăng nhập hệ thống</h2>
+      <p>Xác thực danh tính để truy cập dữ liệu điều tra.</p>
+    </div>
+
+    <div class="card">
+
+      <div id="errorMsg" class="error-msg">
+        <span>⚠</span>
+        <span id="errorText">Thông tin đăng nhập không hợp lệ.</span>
+      </div>
+
+      <div class="field">
+        <label>Tên đăng nhập</label>
+        <div class="input-wrap">
+          <span class="icon">◈</span>
+          <input
+            type="text"
+            id="username"
+            placeholder="username"
+            autocomplete="username"
+            autofocus
+          >
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Mật khẩu</label>
+        <div class="input-wrap">
+          <span class="icon">◉</span>
+          <input
+            type="password"
+            id="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          >
+        </div>
+      </div>
+
+      <div class="divider">Workspace</div>
+
+      <button id="loginBtn" class="btn-login" onclick="handleLogin()">
+        Đăng nhập
+      </button>
+
+      <div class="security-notice">
+        <span class="icon">🔒</span>
+        <span>Phiên đăng nhập được mã hóa. Mọi hành động truy cập dữ liệu đều được ghi lại trong Audit Log.</span>
+      </div>
+
+    </div>
+
+    <div class="login-footer">
+      <span>Entity Management for SOC</span><br>
+      Hệ thống giám sát an toàn thông tin nội bộ
+    </div>
+
+  </div>
+</main>
+
+<script>
+/* ── Login handler ── */
+async function handleLogin(e) {
+  const btn      = document.getElementById('loginBtn');
+  const errBox   = document.getElementById('errorMsg');
+  const errText  = document.getElementById('errorText');
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  errBox.classList.remove('show');
+
+  if (!username || !password) {
+    errText.textContent = 'Vui lòng nhập tên đăng nhập và mật khẩu.';
+    errBox.classList.add('show');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Đang xác thực...';
+
+  try {
+    const res = await fetch('api/auth/login', {
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ "username":username, "password":password }) 
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      errText.textContent = err.detail || 'Thông tin đăng nhập không hợp lệ.';
+      errBox.classList.add('show');
+      return;
+    }
+
+    const resData = await res.json();
+    if (resData) {
+      sessionStorage.setItem('soc_token', resData.data.token);
+    }
+    console.log("After set");
+    window.location.href = '/index.html';
+
+  } catch {
+    errText.textContent = 'Không thể kết nối đến máy chủ. Vui lòng thử lại.';
+    errBox.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Đăng nhập';
+  }
+}
+
+/* ── Enter key submit ── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+</script>
+</body>
+</html>
