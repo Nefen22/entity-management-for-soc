@@ -105,26 +105,50 @@ I[Testing] --> F
 ## Data Model
 
 ### Entity Types
-- **User** - System users
-- **Host** - Computers/servers
-- **IP** - IP addresses
-- **Domain** - Domain names
-- **FileHash** - File hashes (MD5/SHA256)
+
+* **User** - System users
+* **Host** - Computers/servers
+* **IP** - IP addresses
+* **Domain** - Domain names
+* **FileHash** - File hashes (MD5/SHA1/SHA256)
+* **URL** - Uniform Resource Locators / Web links
+* **Process** - System processes and parent processes
+* **CloudResource** - Cloud infrastructure components (AWS ARN, S3, Instances)
+* **Email** - Electronic mail addresses (Senders and Recipients)
+* **CVE** - Common Vulnerabilities and Exposures identifiers
 
 ### Entity Properties
-- type - Entity classification
-- value - Entity identifier
-- metadata - Additional context
-- first_seen - Initial observation timestamp
-- last_seen - Most recent observation
-- source - Origin of data
+
+* type - Entity classification
+* value - Entity identifier
+* metadata - Additional context
+* first_seen - Initial observation timestamp
+* last_seen - Most recent observation
+* source - Origin of data
 
 ### Relationships
-- **related_to** - Generic connection
-- **accessed_by** - Access relationship
-- **contains** - Containment relationship
-- **executed_by** - Execution relationship
-- **resolved_to** - DNS resolution
+
+* **related_to** - Generic connection
+* **accessed_by** - Access relationship
+* **contains** - Containment relationship
+* **executed_by** - Execution relationship
+* **resolved_to** - DNS resolution
+* **LOGGED_IN** - User authentication session on a host
+* **CONNECTED_TO** - Network traffic establishment between hosts, IPs, domains, or processes
+* **EXECUTED_ON** - File hash execution on a specific endpoint
+* **RESOLVED** - DNS lookup initiated by a host or IP
+* **RESOLVES_TO** - Domain mapping to a specific IP address
+* **REQUESTED** - HTTP/HTTPS request sent to a URL by a host, IP, or process
+* **RUNS_ON** - Process or cloud resource operating on a specific host
+* **LOADED** - Process loading a library or file hash into memory
+* **SPAWNED** - Parent process creating a child process
+* **BELONGS_TO** - URL path associated with a specific domain
+* **OWNS** - User account linked to an email address
+* **HOSTED_BY** - Email service managed by a domain
+* **SENT_TO** - Email transmission between communication endpoints
+* **ACCESSED** - User interacting with a cloud resource
+* **ASSIGNED_TO** - Cloud resource bound to an IP address
+* **AFFECTS** - Security vulnerability impacting a host, process, or cloud resource
 
 ### Relationship Metadata
 - count - Frequency of relationship
