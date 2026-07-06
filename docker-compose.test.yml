@@ -42,7 +42,7 @@ services:
       - NEO4J_PASSWORD=password123
       - RESET_DB=true
       - SEED_NAME=TEST
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_API_KEY=None
     volumes:
       - .:/app
     networks:

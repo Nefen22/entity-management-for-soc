@@ -2,6 +2,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from mocks import constraints
+from database.constraints import TENANT_DATABASE
 
 class TestClusters:
 
@@ -137,6 +138,7 @@ class TestIngestRouting:
                 patch("services.graph.JsonParser") as mock_json,
             ):
             mock_parser = MagicMock()
+            mock_json.from_event.side_effect = ValueError()
             mock_parser.get_relationship.return_value = []
             mock_parser.get_nodes.return_value = []
             mock_alert.from_event.return_value = mock_parser
@@ -145,7 +147,7 @@ class TestIngestRouting:
             await ingest("acme", event)
 
         mock_alert.from_event.assert_called_once_with(event)
-        mock_json.from_event.assert_not_called()
+        mock_json.from_event.assert_called_once_with(event, "alert")
 
     @pytest.mark.asyncio
     async def test_ingest_siem_uses_json_parser(self):

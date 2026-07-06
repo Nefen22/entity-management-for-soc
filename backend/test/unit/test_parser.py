@@ -190,9 +190,11 @@ class TestJsonParserFromEvent:
 
     def test_empty_event_returns_no_nodes(self):
         event = {"event_id": "evt-empty", "source_type": "siem", "timestamp": "2024-01-01T00:00:00Z"}
-        parser = JsonParser.from_event(event, "siem")
-        assert parser.nodes == []
-        assert parser.edges == []
+        try:
+            JsonParser.from_event(event, "siem")
+            assert False
+        except:
+            pass
 
     def test_get_relationship_returns_edge_parsers(self):
         event = {

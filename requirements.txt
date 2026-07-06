@@ -12,7 +12,7 @@ pytest-asyncio
 httpx2
 pytest-cov
 aiofiles==24.1.0
-iocsearcher
+iocextract
 google-genai
 google
 PyJWT==2.10.1

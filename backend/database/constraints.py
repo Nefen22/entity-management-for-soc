@@ -71,7 +71,6 @@ MAPPING_ENTITIES_KEY_CLEAN={
     "CVE": "cve_id",
 }
 
-
 MAPPING_ENTITY = {
     # existing
     "ips": "ip",
@@ -333,9 +332,10 @@ AWS_INSTANCE = re.compile(r"\bi-[0-9a-f]{8,17}\b")
 CLOUD_RESOURCE = [AWS_ARN, AWS_S3, AWS_INSTANCE]
 
 DOMAIN = re.compile(
-    r"\b(?!(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"  # Loại trừ IP để không bị trùng lặp thực thể
+    r"\b(?!(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b)"
     r"(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+"
-    r"[a-zA-Z]{2,6}\b"
+    r"(?:com|net|org|edu|gov|mil|int|io|co|biz|info|vn|xyz|me|online|live|tech)\b",
+    re.IGNORECASE
 )
 
 

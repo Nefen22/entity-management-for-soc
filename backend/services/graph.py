@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from parsers.edge_parser import EdgePaser
-from parsers.base_parser import BaseParser
 from parsers.alert_parser import AlertParser
+from parsers.llm_parser import LLMParser
 from parsers.json_parser import JsonParser
 import json
 from models.responses import APIResponse
@@ -18,7 +17,9 @@ async def ingest(tenant: str, event: dict):
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
         try:
-            canonical = AlertParser.normalize_data(event)
+            canonical = LLMParser.normalize_data({k:v for k, v in event
+                                                  if k not in
+                                                  ["source_type", "timestampp", "event_id", "event_type"]})
             print(f"Canonical: {canonical}")
             sub_event = JsonParser(nodes=[], edges=[], source_type=event.get("source_type"), evidence=event.get("event_id", ""))
             for ele in canonical:
@@ -28,7 +29,7 @@ async def ingest(tenant: str, event: dict):
                 sub_event.nodes += event_get.nodes
                 sub_event.edges += event_get.edges
         except:
-            sub_event = JsonParser.from_event(event, "alert")
+            sub_event = AlertParser.from_event(event)
     rel = sub_event.get_relationship()
     for type, value in sub_event.get_nodes():
         if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:

@@ -14,10 +14,10 @@ async def write_node_create_log(node: Node, action = 'CREATE', before_node: Node
         entity_type=label,
         entity_id=node.id,
         change={"before": {},
-                "after": node.json()}
+                "after": node.model_dump_json()}
                 if not before_node else
-                {"before": before_node.json(),
-                 "after": node.json()},
+                {"before": before_node.model_dump_json(),
+                 "after": node.model_dump_json()},
         time= str(datetime.now())
     )
 

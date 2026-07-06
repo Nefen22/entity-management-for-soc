@@ -17,7 +17,7 @@ async def enrichment_ip(tenant: str, value:str):
             entity_type="IP",
             entity_id=value,
             change = {
-                "before": node_before.json(),
+                "before": node_before.model_dump_json(),
                 "after": record
             },
             time= str(datetime.now())
@@ -40,7 +40,7 @@ async def enrichment_file_hash(tenant: str, value:str):
             entity_type="FileHash",
             entity_id=value,
             change = {
-                "before": node_before.json(),
+                "before": node_before.model_dump_json(),
                 "after": record
             },
             time= str(datetime.now())
