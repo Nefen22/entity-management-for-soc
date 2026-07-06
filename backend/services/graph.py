@@ -17,9 +17,9 @@ async def ingest(tenant: str, event: dict):
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
         try:
-            canonical = LLMParser.normalize_data({k:v for k, v in event
-                                                  if k not in
-                                                  ["source_type", "timestampp", "event_id", "event_type"]})
+            canonical = LLMParser.normalize_data({k:v for k, v in event.items()
+                                                    if k not in
+                                                    ["source_type", "timestampp", "event_id", "event_type"]})
             print(f"Canonical: {canonical}")
             sub_event = JsonParser(nodes=[], edges=[], source_type=event.get("source_type"), evidence=event.get("event_id", ""))
             for ele in canonical:

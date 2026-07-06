@@ -4,7 +4,14 @@ A lightweight SOC investigation platform that extracts entities from security ev
 
 ---
 
-## Getting Started
+## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- Python 3.12+ (for local development)
+- Neo4j 5.18+
+
+### Getting Started
 
 ```bash
 git clone https://github.com/Nefen22/entity-management-for-soc
@@ -27,6 +34,35 @@ POST /api/tenants/{tenant}/graphs/ingest/batch
 # Query entity graph (4-hop)
 GET /api/tenants/{tenant}/graphs/entities/types/ip/values/8.8.8.8/graph/4
 ```
+
+---
+
+## Testing
+
+The project includes comprehensive unit and integration tests with high code coverage.
+
+### Running Tests
+
+```bash
+# Run all tests in Docker
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+
+# Run specific test file
+pytest backend/test/unit/test_auth.py -v
+```
+
+### Test Coverage
+
+Current coverage: **89%** (58 tests passing)
+
+Key modules with >95% coverage:
+- `backend/auth/jwt.py` - 95%
+- `backend/api/entities.py` - 100%
+- `backend/database/` - 100%
+- `backend/models/` - 100%
+- `backend/parsers/edge_parser.py` - 100%
+
+See [Testing Documentation](docs/TESTING.md) for detailed test information.
 
 ---
 
@@ -239,6 +275,10 @@ See [architecture.md](architecture.md)
 ---
 
 ## Screenshots
+
+### List & Detail Entities
+
+![List & Detail](docs/images/list.png)
 
 ### Graph Explorer
 
