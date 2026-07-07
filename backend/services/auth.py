@@ -33,7 +33,8 @@ async def authenticate_user(request: Request):
             "tenants": "all",
             "permissions": [
                 "graph:view",
-                "graph:ingest"
+                "graph:ingest",
+                "graph:enrichment"
             ]
         }
     
