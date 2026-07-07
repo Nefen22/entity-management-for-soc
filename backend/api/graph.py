@@ -2,27 +2,22 @@ from fastapi import APIRouter, HTTPException, Depends
 import json
 from models.responses import APIResponse
 import services.graph as services
-from services.auth import authenticate_user
+from services.auth import authenticate_user, require_permission
 
 router = APIRouter()
 
 @router.post("/ingest")
-async def ingest(tenant: str,events: dict, current_user = Depends(authenticate_user)):
-    print(current_user)
-    if current_user["role"] != "admin":
-        return HTTPException(403, "Forbidden tenant")
+async def ingest(tenant: str,events: dict, current_user = Depends(require_permission("graph:ingest"))):
     result = await services.ingest(tenant, events)
     return APIResponse(message="Ingest completed", data=result)
 
 @router.post("/ingest/batch")
-async def batch_sample(tenant: str, file:str | list[dict], current_user = Depends(authenticate_user)):
-    if current_user["role"] != "admin":
-        return HTTPException(403, "Forbidden tenant")
+async def batch_sample(tenant: str, file:str | list[dict], current_user = Depends(require_permission("graph:ingest"))):
     result = await services.batch_sample(tenant, file)
     return APIResponse(message="Batch data ingested!", data=result)
 
 @router.get("/get-types")
-async def get_types(tenant: str, relationship:str | None = None):
+async def get_types(tenant: str, relationship:str | None = None, ):
     result = await services.get_types(tenant, relationship)
     return APIResponse(message=f"Get all types: Completed", data=result)
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 import services.enrichment as services
 from models.responses import APIResponse
 import services.auth as services
@@ -16,3 +16,7 @@ async def login(data: LoginRequest):
     if data:
         return APIResponse(message="Login successful!", data={"token":data})
     raise HTTPException(401, "Invalid username or password")
+
+@router.get("/me")
+async def me(current_user = Depends(services.authenticate_user)):
+    return current_user

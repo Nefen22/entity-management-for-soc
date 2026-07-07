@@ -276,6 +276,10 @@ See [architecture.md](architecture.md)
 
 ## Screenshots
 
+### Ingest Events
+
+![Ingest Events](docs/images/ingest.png)
+
 ### List & Detail Entities
 
 ![List & Detail](docs/images/list.png)

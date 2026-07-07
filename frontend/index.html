@@ -25,8 +25,22 @@
   <div class="header-right">
     <!-- Tab navigation -->
     <nav class="page-tabs">
-      <button id="tabList"  class="tab-btn active" onclick="showPage('list')">⊞ Danh sách</button>
-      <button id="tabGraph" class="tab-btn"         onclick="showPage('graph')">◈ Đồ thị</button>
+      <button id="tabList" class="tab-btn active" onclick="showPage('list')">
+        ⊞ Danh sách
+      </button>
+
+      <button id="tabGraph" class="tab-btn" onclick="showPage('graph')">
+        ◈ Đồ thị
+      </button>
+
+      <button
+        id="tabIngest"
+        class="tab-btn"
+        onclick="showPage('ingest')"
+        style="display:none;"
+      >
+        ◈ Ingest
+      </button>
     </nav>
     <span id="modePill" class="pill overview dot">Overview</span>
     <div class="field-inline">
@@ -208,45 +222,101 @@
   </div>
 </div>
 
+<!-- ══ PAGE: INGEST ════════════════════════════════════════════════════ -->
+<div id="pageingest" class="page" style="display:none; flex-direction:column;">
+  <div class="ingest-layout">
+ 
+    <!-- Left: input form -->
+    <aside class="ingest-sidebar">
+      <p class="eyebrow">Nguồn dữ liệu</p>
+      <div class="card">
+        <label>Chế độ</label>
+        <div class="mode-toggle" id="ingestModeToggle">
+          <button id="modeSingle" class="mode-btn active" data-mode="single">Single Event</button>
+          <button id="modeBatch"  class="mode-btn"        data-mode="batch">Batch</button>
+        </div>
+
+        <label style="margin-top:4px;">JSON Input</label>
+        <textarea
+          id="ingestInput"
+          placeholder='{"event_id": "evt-001", "source_type": "siem", ...}'
+          spellcheck="false"
+        ></textarea>
+
+        <div class="ingest-actions">
+          <button id="ingestBtn" class="block">⊕ Ingest</button>
+          <button id="loadSampleBtn" class="block secondary">Tải sample</button>
+          <button id="clearIngestBtn" class="block secondary">Xoá</button>
+        </div>
+
+        <div id="ingestStatus" class="ingest-status" style="display:none;"></div>
+      </div>
+    </aside>
+
+    <div class="ingest-result">
+      <div class="ingest-result-header">
+        <p class="eyebrow">Kết quả bóc tách <span id="ingestEventCount" class="count-badge" style="display:none;">0 events</span></p>
+        <button id="clearResultBtn" class="secondary sm" style="display:none;">Xoá kết quả</button>
+      </div>
+
+      <div id="ingestResultArea">
+        <div class="ingest-empty">
+          <div style="font-size:28px; opacity:.3; margin-bottom:8px;">◈</div>
+          <div>Kết quả bóc tách entity và relationship sẽ hiển thị ở đây.</div>
+        </div>
+      </div>
+    </div>
+ 
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
-
-<style>
-/* ── Page tabs ─────────────────────────────────────── */
-.page-tabs{display:flex;gap:3px;background:var(--panel-2,#161b25);border:1px solid var(--line,#232a38);border-radius:8px;padding:3px;}
-.tab-btn{background:transparent;border:none;color:var(--muted,#7c8aa3);font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer;transition:.15s;font-family:'Inter',sans-serif;}
-.tab-btn.active{background:var(--accent,#5eead4);color:#05181a;}
-.tab-btn:hover:not(.active){background:var(--line,#232a38);color:var(--text,#eaeef5);}
-
-/* ── List page layout ──────────────────────────────── */
-.page{flex:1;min-height:0;display:flex;flex-direction:column;}
-.list-layout{flex:1;display:grid;grid-template-columns:240px 1fr 340px;gap:0;min-height:0;overflow:hidden;}
-.filter-sidebar{padding:16px;background:var(--panel,#10141c);border-right:1px solid var(--line,#232a38);overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
-.list-section{padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden;min-height:0;}
-.detail-sidebar{padding:16px;background:var(--panel,#10141c);border-left:1px solid var(--line,#232a38);overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
-.section-header{display:flex;align-items:center;justify-content:space-between;}
-.count-badge{background:var(--accent-dim,rgba(94,234,212,0.12));color:var(--accent,#5eead4);border:1px solid rgba(94,234,212,0.3);border-radius:20px;padding:1px 8px;font-size:10.5px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-left:6px;}
-
-/* ── Graph page layout ─────────────────────────────── */
-.graph-outer{flex:1;display:grid;grid-template-columns:260px 1fr 300px;min-height:0;overflow:hidden;}
-.graph-left{background:var(--panel,#10141c);border-right:1px solid var(--line,#232a38);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
-.graph-right{background:var(--panel,#10141c);border-left:1px solid var(--line,#232a38);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:0;}
-
-/* body flex fix */
-body{display:flex;flex-direction:column;}
-.page.active{flex:1;}
-</style>
 
 <script>
 function showPage(name) {
-  document.getElementById('pagelist').style.display  = name === 'list'  ? 'flex' : 'none';
-  document.getElementById('pagegraph').style.display = name === 'graph' ? 'flex' : 'none';
-  document.getElementById('tabList').classList.toggle('active',  name === 'list');
+
+  if (
+    name === "ingest" &&
+    document.getElementById("tabIngest").hidden
+  ) {
+    return;
+  }
+
+  document.getElementById('pagelist').style.display =
+      name === 'list' ? 'flex' : 'none';
+
+  document.getElementById('pagegraph').style.display =
+      name === 'graph' ? 'flex' : 'none';
+
+  document.getElementById('pageingest').style.display =
+      name === 'ingest' ? 'flex' : 'none';
+
+  document.getElementById('tabList').classList.toggle('active', name === 'list');
   document.getElementById('tabGraph').classList.toggle('active', name === 'graph');
+  document.getElementById('tabIngest').classList.toggle('active', name === 'ingest');
+
   if (name === 'graph') {
-    // Trigger cytoscape resize khi chuyển sang tab graph
-    setTimeout(() => { if (typeof cy !== 'undefined') cy.resize(); }, 50);
+    setTimeout(() => {
+      if (typeof cy !== 'undefined') cy.resize();
+    }, 50);
   }
 }
+async function loadUser() {
+    const res = await fetch("/api/auth/me", {
+        headers: {
+            Authorization: "Bearer " + sessionStorage.getItem("soc_token")
+        }
+    });
+    const user = await res.json();
+
+    const tab = document.getElementById("tabIngest");
+    if (user.permissions.includes("graph:ingest")) {
+        tab.style.display = "";
+    } else {
+        tab.style.display = "none";
+    }
+}
+
 </script>
 
 <script src="app.js"></script>

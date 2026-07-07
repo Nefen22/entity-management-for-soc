@@ -21,16 +21,20 @@ async def login(username:str, password:str):
     return create_access_token({
         "sub": username,
         "role": user["role"],
-        "tenant": user["tenants"]
+        "tenant": user["tenants"],
+        "pemissions": user["permissions"]
     })
 
 async def authenticate_user(request: Request):
-    # Allow test mode to bypass authentication
     if os.getenv("TESTING_IN_DOCKER") == "true":
         return {
             "username": "test_user",
             "role": "admin",
-            "tenants": "all"
+            "tenants": "all",
+            "permissions": [
+                "graph:view",
+                "graph:ingest"
+            ]
         }
     
     auth_header = request.headers.get("Authorization")
@@ -47,7 +51,21 @@ async def authenticate_user(request: Request):
         return {
             "username": payload["sub"],
             "role": user["role"],
-            "tenants": user["tenants"]
+            "tenants": user["tenants"],
+            "permissions": user["permissions"]
         }
     except:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    
+def require_permission(permission: str):
+    async def checker(request: Request):
+        user = await authenticate_user(request=request)
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+        if permission not in user.get("permissions", []):
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+        return user
+
+    return checker

@@ -118,7 +118,6 @@ function colorFor(type) {
 
 async function safeFetchJson(url, options = {}) {
   const token = sessionStorage.getItem("soc_token");
-  console.log(token)
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers
@@ -132,7 +131,6 @@ async function safeFetchJson(url, options = {}) {
   if (!res.ok) throw new Error('HTTP ' + res.status);
   
   const json = await res.json();
-  console.log(json)
   return json.data !== undefined ? json.data : json;
 }
 
@@ -753,7 +751,12 @@ function exportGraphImage() {
 
 async function showDetail(data_id, data_type, panelId = 'detailPanel') {
   const area = document.getElementById(panelId);
-  const data = await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data_type)}/values/${encodeURIComponent(data_id)}`));
+  data = null;
+  if (!data_type){
+    data = cy.getElementById(data_id).data()
+  }else{
+    data = await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data_type)}/values/${encodeURIComponent(data_id)}`));
+  }
   const props = data.properties || {};
   const type = data.isCluster === "true" ? "CLUSTER" : data.type;
   const baseIdentities = [
@@ -940,3 +943,523 @@ document.getElementById("findPathBtn").onclick = async () => {
 
     highlightPath(result.nodes, result.edges);
 };
+// ============================
+// Ingest
+// ============================
+
+let ingestMode = "single";
+
+// ============================
+// Color
+// ============================
+
+const TYPE_COLORS = {
+  User: "#60a5fa",
+  Host: "#94a3b8",
+  IP: "#4ade80",
+  Domain: "#a78bfa",
+  FileHash: "#fb7185",
+  URL: "#22d3ee",
+  Process: "#e879f9",
+  Email: "#facc15",
+  CloudResource: "#34d399",
+  CVE: "#f87171"
+};
+
+function colorFor(type) {
+  return TYPE_COLORS[type] || "#94a3b8";
+}
+
+// ============================
+// Init
+// ============================
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadUser();
+  setIngestMode("single");
+
+  document
+    .querySelectorAll("#ingestModeToggle .mode-btn")
+    .forEach(btn => {
+      btn.addEventListener("click", () => {
+        setIngestMode(btn.dataset.mode);
+      });
+    });
+
+  document
+    .getElementById("ingestBtn")
+    ?.addEventListener("click", runIngest);
+
+  document
+    .getElementById("loadSampleBtn")
+    ?.addEventListener("click", loadSample);
+
+  document
+    .getElementById("clearIngestBtn")
+    ?.addEventListener("click", clearIngest);
+
+  document
+    .getElementById("clearResultBtn")
+    ?.addEventListener("click", clearResult);
+});
+
+// ============================
+// Mode
+// ============================
+
+function setIngestMode(mode) {
+
+  ingestMode = mode;
+
+  document
+    .querySelectorAll("#ingestModeToggle .mode-btn")
+    .forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.mode === mode);
+    });
+
+  document.getElementById("ingestInput").placeholder =
+    mode === "batch"
+      ? `[
+  {
+    "event_id":"evt-001",
+    "source_type":"siem"
+  },
+  {
+    "event_id":"evt-002",
+    "source_type":"edr"
+  }
+]`
+      : `{
+  "event_id":"evt-001",
+  "source_type":"siem"
+}`;
+}
+
+// ============================
+// Input
+// ============================
+
+function clearIngest() {
+
+  document.getElementById("ingestInput").value = "";
+
+  const status = document.getElementById("ingestStatus");
+
+  status.style.display = "none";
+  status.className = "ingest-status";
+}
+
+function clearResult() {
+
+  document.getElementById("ingestResultArea").innerHTML = `
+    <div class="ingest-empty">
+      <div style="font-size:28px;opacity:.3;margin-bottom:8px;">◈</div>
+      <div>Kết quả bóc tách entity và relationship sẽ hiển thị ở đây.</div>
+    </div>
+  `;
+
+  document.getElementById("ingestEventCount").style.display = "none";
+  document.getElementById("clearResultBtn").style.display = "none";
+}
+
+function loadSample() {
+
+  const single = {
+    event_id: "evt-sample-001",
+    source_type: "edr",
+    timestamp: "2026-06-03T10:00:00Z",
+    user: "john.doe",
+    destination_host: "DESKTOP-001",
+    destination_ip: "185.220.101.45",
+    destination_domain: "malicious.ru",
+    file_hash: "44d88612fea8a8f36de82e1278abb02f",
+    process_name: "powershell.exe",
+    parent_process: "explorer.exe"
+  };
+
+  const batch = [
+    {
+      event_id: "batch-001",
+      source_type: "siem",
+      timestamp: "2026-06-03T09:00:00Z",
+      user: "alice",
+      source_ip: "10.0.0.1",
+      destination_host: "FILE-SERVER-01"
+    },
+    {
+      event_id: "batch-002",
+      source_type: "edr",
+      timestamp: "2026-06-03T09:05:00Z",
+      user: "bob",
+      destination_host: "DESKTOP-002",
+      destination_ip: "45.33.32.156",
+      process_name: "cmd.exe",
+      parent_process: "services.exe"
+    }
+  ];
+
+  document.getElementById("ingestInput").value =
+    JSON.stringify(
+      ingestMode === "batch"
+        ? batch
+        : single,
+      null,
+      2
+    );
+}
+
+// ============================
+// Helpers
+// ============================
+
+function shorten(str, max) {
+
+  str = String(str || "");
+
+  return str.length > max
+    ? str.slice(0, max - 1) + "…"
+    : str;
+}
+
+function showStatus(type, msg) {
+
+  const el = document.getElementById("ingestStatus");
+
+  el.className = "ingest-status " + type;
+  el.textContent = msg;
+  el.style.display = "block";
+}
+
+// ============================
+// Parse API
+// ============================
+
+function parseIngestData(dataArr) {
+
+  const events = [];
+
+  let current = null;
+
+  for (const [key, value] of dataArr) {
+
+    if (key === "nodes") {
+
+      if (current)
+        events.push(current);
+
+      current = {
+        nodes: value
+      };
+
+      continue;
+    }
+
+    if (!current)
+      current = {};
+
+    switch (key) {
+
+      case "edges":
+        current.edges = value;
+        break;
+
+      case "source_type":
+        current.source_type = value;
+        break;
+
+      case "evidence":
+        current.evidence = value;
+        events.push(current);
+        current = null;
+        break;
+    }
+  }
+
+  if (current)
+    events.push(current);
+
+  return events;
+}
+
+// ============================
+// Render
+// ============================
+
+function renderEventCard(event, index) {
+
+  const nodes = event.nodes || [];
+  const edges = event.edges || [];
+
+  const src = event.source_type || "—";
+  const evidence = event.evidence || "—";
+
+  const srcColors = {
+    siem: "#5eead4",
+    edr: "#fbbf24",
+    cloud: "#818cf8",
+    alert: "#fb7185"
+  };
+
+  const srcColor = srcColors[src] || "#94a3b8";
+
+  const nodeHtml = nodes.map(node => {
+
+    const c = colorFor(node.type);
+
+    return `
+      <span class="node-chip"
+        style="color:${c};border-color:${c}33;background:${c}12;">
+        <span class="chip-type">${node.type}</span>
+        ${shorten(node.value,28)}
+      </span>
+    `;
+
+  }).join("");
+
+  const edgeHtml = edges.map(edge => {
+
+    const sc = colorFor(edge.source.type);
+    const tc = colorFor(edge.target.type);
+
+    const time = edge.time
+      ? edge.time.replace("T"," ").substring(0,16)
+      : "";
+
+    return `
+      <div class="edge-row">
+
+        <span class="e-node"
+          style="color:${sc};border-color:${sc}33;background:${sc}12;">
+          ${shorten(edge.source.value,20)}
+        </span>
+
+        <span class="e-arrow">→</span>
+
+        <span class="e-type">${edge.type}</span>
+
+        <span class="e-arrow">→</span>
+
+        <span class="e-node"
+          style="color:${tc};border-color:${tc}33;background:${tc}12;">
+          ${shorten(edge.target.value,20)}
+        </span>
+
+        ${
+          time
+            ? `<span class="e-time">${time}</span>`
+            : ""
+        }
+
+      </div>
+    `;
+
+  }).join("");
+
+  return `
+    <div class="event-card">
+
+      <div class="event-card-header">
+
+        <span
+          class="ev-badge"
+          style="color:${srcColor};border-color:${srcColor}44;"
+        >
+          ${src.toUpperCase()}
+        </span>
+
+        <span class="ev-source">
+          Event ${index + 1}
+        </span>
+
+        <span class="ev-evidence">
+          ${evidence}
+        </span>
+
+      </div>
+
+      <div class="event-card-body">
+
+        ${
+          nodes.length
+            ? `
+            <div>
+              <div class="entity-group-label">
+                Thực thể (${nodes.length})
+              </div>
+
+              <div class="node-chips">
+                ${nodeHtml}
+              </div>
+            </div>
+          `
+            : ""
+        }
+
+        ${
+          edges.length
+            ? `
+            <div>
+              <div class="entity-group-label">
+                Mối quan hệ (${edges.length})
+              </div>
+
+              <div class="edge-list">
+                ${edgeHtml}
+              </div>
+            </div>
+          `
+            : ""
+        }
+
+      </div>
+
+    </div>
+  `;
+}
+
+function renderResults(events) {
+
+  const area = document.getElementById("ingestResultArea");
+
+  if (!events.length) {
+
+    area.innerHTML =
+      `<div class="ingest-empty">
+        Không có entity nào được bóc tách.
+      </div>`;
+
+    return;
+  }
+
+  area.innerHTML =
+    events.map(renderEventCard).join("");
+
+  const badge =
+    document.getElementById("ingestEventCount");
+
+  badge.textContent =
+    `${events.length} event${events.length > 1 ? "s" : ""}`;
+
+  badge.style.display = "inline-flex";
+
+  document.getElementById("clearResultBtn")
+    .style.display = "inline-flex";
+}
+
+// ============================
+// API
+// ============================
+
+async function runIngest() {
+
+  const btn = document.getElementById("ingestBtn");
+  const input = document.getElementById("ingestInput");
+  const status = document.getElementById("ingestStatus");
+
+  const raw = input.value.trim();
+
+  if (!raw) {
+
+    showStatus("err","Vui lòng nhập JSON.");
+
+    return;
+  }
+
+  let payload;
+
+  try {
+
+    payload = JSON.parse(raw);
+
+  } catch {
+
+    showStatus("err","JSON không hợp lệ.");
+
+    return;
+  }
+
+  const isBatch = ingestMode === "batch";
+
+  if (isBatch && !Array.isArray(payload)) {
+
+    showStatus("err","Batch mode yêu cầu JSON Array.");
+
+    return;
+  }
+
+  if (!isBatch && Array.isArray(payload)) {
+
+    showStatus("err","Single mode yêu cầu JSON Object.");
+
+    return;
+  }
+
+  const tenant =
+    document.getElementById("tenantSelect")?.value ||
+    "default";
+
+  const url = isBatch
+    ? `/api/tenants/${tenant}/graphs/ingest/batch`
+    : `/api/tenants/${tenant}/graphs/ingest`;
+
+  btn.disabled = true;
+  btn.innerHTML =
+    '<span class="spin"></span> Đang xử lý...';
+
+  status.style.display = "none";
+
+  try {
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + sessionStorage.getItem("soc_token")
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+
+      showStatus(
+        "err",
+        json.detail ||
+        json.message ||
+        "Ingest thất bại."
+      );
+
+      return;
+    }
+
+    showStatus(
+      "ok",
+      json.message || "Ingest thành công."
+    );
+
+    if (Array.isArray(json.data)) {
+
+      renderResults(
+        parseIngestData(json.data)
+      );
+
+    }
+
+  }
+  catch(err){
+
+    showStatus(
+      "err",
+      "Không thể kết nối máy chủ: " + err.message
+    );
+
+  }
+  finally{
+
+    btn.disabled = false;
+    btn.innerHTML = "⊕ Ingest";
+
+  }
+
+}

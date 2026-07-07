@@ -85,131 +85,192 @@ MAPPING_ENTITY = {
     "emails": "email",
     "cves": "cve",
 }
-
 MAPPING_RELATIONSHIPS = {
     # ===== Core =====
-    ("User", "Host"):     "LOGGED_IN",
-    ("Host", "IP"):       "CONNECTED_TO",
-    ("IP", "Host"):       "CONNECTED_TO",
-    ("FileHash", "Host"): "EXECUTED_ON",
+    ("User", "Host"):          "LOGGED_IN",
+    ("User", "IP"):            "LOGGED_IN_FROM",
+
+    ("Host", "IP"):            "CONNECTED_TO",
+    ("IP", "Host"):            "CONNECTED_TO",
+    ("IP", "IP"):              "CONNECTED_TO",
+
+    ("FileHash", "Host"):      "EXECUTED_ON",
 
     # ===== Network =====
-    ("Host", "IP"):       "CONNECTED_TO",
-    ("IP", "Host"):       "CONNECTED_TO",
-    ("IP", "IP"):         "CONNECTED_TO",
+    ("Host", "Domain"):        "RESOLVED",
+    ("IP", "Domain"):          "RESOLVED",
+    ("Domain", "IP"):          "RESOLVES_TO",
 
-    ("Host", "Domain"):   "RESOLVED",
-    ("IP", "Domain"):     "RESOLVED",
-    ("Domain", "IP"):     "RESOLVES_TO",
+    ("Host", "URL"):           "REQUESTED",
+    ("IP", "URL"):             "REQUESTED",
+    ("Process", "URL"):        "REQUESTED",
 
-    ("Host", "URL"):      "REQUESTED",
-    ("IP", "URL"):        "REQUESTED",
+    ("URL", "Domain"):         "BELONGS_TO",
+    ("URL", "IP"):             "RESOLVES_TO",
+    ("URL", "FileHash"):       "DOWNLOADS",
 
     # ===== Process =====
-    ("Process", "Host"):     "RUNS_ON",
-    ("Process", "User"):     "EXECUTED_BY",
-    ("Process", "FileHash"): "LOADED",
-    ("Process", "IP"):       "CONNECTED_TO",
-    ("Process", "URL"):      "REQUESTED",
-    ("Process", "Process"):  "SPAWNED",     
-    ("Process", "Domain"):   "CONNECTED_TO",
-
-    # ===== URL / Domain =====
-    ("URL", "Domain"): "BELONGS_TO",
+    ("Process", "Host"):       "RUNS_ON",
+    ("Process", "User"):       "EXECUTED_BY",
+    ("Process", "Process"):    "SPAWNED",
+    ("Process", "FileHash"):   "LOADED",
+    ("Process", "IP"):         "CONNECTED_TO",
+    ("Process", "Domain"):     "CONNECTED_TO",
 
     # ===== Email =====
-    ("User", "Email"):     "OWNS",
-    ("Email", "Domain"):  "HOSTED_BY",
-    ("Email", "URL"):     "CONTAINS",
-    ("Email", "FileHash"): "ATTACHED",
-    ("Email", "Email"):   "SENT_TO",         
+    ("User", "Email"):         "OWNS",
+    ("Email", "Domain"):       "HOSTED_BY",
+    ("Email", "URL"):          "CONTAINS",
+    ("Email", "FileHash"):     "ATTACHED",
+    ("Email", "Email"):        "SENT_TO",
 
     # ===== Cloud =====
-    ("User", "CloudResource"): "ACCESSED",
-    ("CloudResource", "IP"):   "ASSIGNED_TO",
-    ("CloudResource", "Host"): "RUNS_ON",
+    ("User", "CloudResource"):     "ACCESSED",
+    ("CloudResource", "Host"):     "RUNS_ON",
+    ("CloudResource", "IP"):       "ASSIGNED_TO",
+    ("CloudResource", "Domain"):   "CONNECTED_TO",
 
     # ===== Vulnerability =====
-    ("CVE", "Host"):          "AFFECTS",
-    ("CVE", "Process"):       "AFFECTS",
-    ("CVE", "CloudResource"): "AFFECTS",
-}
+    ("CVE", "Host"):               "AFFECTS",
+    ("CVE", "Process"):            "AFFECTS",
+    ("CVE", "CloudResource"):      "AFFECTS",
 
+    # ===== Threat Intelligence =====
+    ("Domain", "FileHash"):        "HOSTS",
+    ("IP", "FileHash"):            "HOSTS",
+    ("URL", "CVE"):                "EXPLOITS",
+    ("Process", "CVE"):            "EXPLOITS",
+
+    # ===== Malware =====
+    ("FileHash", "Process"):       "LOADED_BY",
+    ("FileHash", "URL"):           "DOWNLOADED_FROM",
+    ("FileHash", "Domain"):        "DOWNLOADED_FROM",
+    ("FileHash", "IP"):            "DOWNLOADED_FROM",
+
+    # ===== Lateral Movement =====
+    ("Host", "Host"):              "CONNECTED_TO",
+    ("User", "CloudResource"):     "AUTHENTICATED_TO",
+
+    # ===== IOC =====
+    ("Domain", "Domain"):          "RELATED_TO",
+    ("IP", "Domain"):              "CONNECTED_TO",
+    ("Domain", "URL"):             "HOSTS",
+}
 # ── SIEM ──────────────────────────────────────────────────────────────────────
 SIEM_SCHEMA = {
     "nodes": {
-        "users":            ["user"],
-        "ips":              ["source_ip"],          
-        "hosts":            ["destination_host"],   
-        "urls":             ["url"], 
-        "sender_emails":    ["sender_email"],       
-        "recipient_emails": ["recipient_email"],
-        "file_hashes":      ["file_hash"] 
+        "users": [
+            "user"
+        ],
+        "ips": [
+            "source_ip",
+            "destination_ip"
+        ],
+        "hosts": [
+            "destination_host"
+        ],
+        "domains": [
+            "destination_domain"
+        ],
+        "urls": [
+            "url"
+        ],
+        "sender_emails": [
+            "sender_email"
+        ],
+        "recipient_emails": [
+            "recipient_email"
+        ],
+        "file_hashes": [
+            "file_hash"
+        ]
     },
+
     "edges": [
-        ("source_ip",        "destination_host"),   
-        ("user",            "destination_host"),   
-        ("sender_email",    "recipient_email"),    
-        ("sender_email",    "url"),
-        ("sender_email",    "file_hash"),
-        ("user",            "sender_email") 
+        # Network
+        ("source_ip", "destination_ip"),
+        ("source_ip", "destination_host"),
+        ("destination_host", "destination_ip"),
+        ("destination_host", "destination_domain"),
+        ("source_ip", "url"),
+        ("destination_host", "url"),
+
+        # User
+        ("user", "destination_host"),
+        ("user", "sender_email"),
+
+        # Email
+        ("sender_email", "recipient_email"),
+        ("sender_email", "url"),
+        ("sender_email", "file_hash"),
     ]
 }
+
 
 # ── EDR ───────────────────────────────────────────────────────────────────────
 EDR_SCHEMA = {
     "nodes": {
-        "users":            ["user"],
-        "hosts":            ["destination_host"],
-        "ips":              ["destination_ip"],
-        "domains":          ["destination_domain"],
-        "file_hashes":      ["file_hash"],
-        "processes":        ["process_name"],
+        "users": ["user"],
+        "hosts": ["destination_host"],
+        "ips": ["destination_ip"],
+        "domains": ["destination_domain"],
+        "urls": ["url"],
+        "file_hashes": ["file_hash"],
+        "processes": ["process_name"],
         "parent_processes": ["parent_process"],
-        "cves":             ["cve_id"],
-        "urls":             ["url"]
+        "cves": ["cve_id"],
     },
+
     "edges": [
-        ("user",             "destination_host"), 
-        ("file_hash",        "destination_host"), 
+        # Core
+        ("user", "destination_host"),
+        ("file_hash", "destination_host"),
         ("destination_host", "destination_ip"),
         ("destination_host", "destination_domain"),
         ("destination_host", "url"),
-        
-        ("parent_process",   "process_name"),     # (Process, Process) -> SPAWNED
-        ("process_name",     "destination_host"), # (Process, Host) -> RUNS_ON
-        ("process_name",     "user"),             # (Process, User) -> EXECUTED_BY
-        ("process_name",     "file_hash"),        # (Process, FileHash) -> LOADED 
-        ("process_name",     "destination_ip"),   # (Process, IP) -> CONNECTED_TO
-        ("process_name",     "destination_domain"),# (Process, Domain) -> CONNECTED_TO
 
-        ("cve_id",           "destination_host"), 
-        ("cve_id",           "process_name"),     
+        # Process
+        ("parent_process", "process_name"),
+        ("process_name", "destination_host"),
+        ("process_name", "user"),
+        ("process_name", "file_hash"),
+        ("process_name", "destination_ip"),
+        ("process_name", "destination_domain"),
+        ("process_name", "url"),
+
+        # Vulnerability
+        ("cve_id", "destination_host"),
+        ("cve_id", "process_name"),
     ]
 }
 
-# ── Cloud ─────────────────────────────────────────────────────────────────────
+
+# ── CLOUD ─────────────────────────────────────────────────────────────────────
 CLOUD_SCHEMA = {
     "nodes": {
-        "users":           ["user"],               
-        "hosts":           ["source_host"],
-        "ips":             ["destination_ip"],
-        "domains":         ["destination_domain"],
-        "urls":            ["url"],
-        "cloud_resources": ["resource_id"],        
-        "cves":            ["cve_id"],             
+        "users": ["user"],
+        "hosts": ["source_host"],
+        "ips": ["destination_ip"],
+        "domains": ["destination_domain"],
+        "urls": ["url"],
+        "cloud_resources": ["resource_id"],
+        "cves": ["cve_id"],
     },
+
     "edges": [
-        ("source_host",       "destination_ip"),     
-        ("source_host",       "destination_domain"), 
-        ("destination_domain", "destination_ip"),     
-        ("source_host",       "url"),
-        
-        ("user",              "resource_id"),    
-        ("resource_id",       "destination_ip"), 
-        ("resource_id",       "source_host"),    
-        # Lỗ hổng Cloud
-        ("cve_id",            "resource_id"),   
+        # Network
+        ("source_host", "destination_ip"),
+        ("source_host", "destination_domain"),
+        ("destination_domain", "destination_ip"),
+        ("source_host", "url"),
+
+        # Cloud
+        ("user", "resource_id"),
+        ("resource_id", "destination_ip"),
+        ("resource_id", "source_host"),
+
+        # Vulnerability
+        ("cve_id", "resource_id"),
     ]
 }
 

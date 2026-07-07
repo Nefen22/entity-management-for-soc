@@ -2,12 +2,19 @@ USERS = {
     "admin": {
         "password": "admin123",
         "role": "admin",
-        "tenants": "all"
+        "tenants": "all",
+        "permissions": [
+            "graph:view",
+            "graph:ingest"
+        ]
     },
     "user":{
         "password": "user123",
         "role": "user",
-        "tenants": ["google","internal"]
+        "tenants": ["google","internal"],
+        "permissions": [
+            "graph:view"
+        ]
     }
 }
 
