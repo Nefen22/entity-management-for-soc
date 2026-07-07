@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 import services.entities as services
 from models.responses import APIResponse
+from services.auth import require_permission
 
 router = APIRouter()
 
@@ -10,6 +11,6 @@ async def get_list_entity(tenant: str,type:str | None=None, relationship: str | 
     return APIResponse(message=f"Get {type}: Completed", data=result)
 
 @router.get("/types/{type}/values/{value:path}")
-async def get_entity(tenant: str,type:str, value):
+async def get_entity(tenant: str,type:str, value, permission = Depends(require_permission("graph:view"))):
     result = await services.get_entity(tenant=tenant, type=type, value=value)
     return APIResponse(message=f"Get {value}: Completed", data=dict(result))

@@ -5,7 +5,8 @@ USERS = {
         "tenants": "all",
         "permissions": [
             "graph:view",
-            "graph:ingest"
+            "graph:ingest",
+            "graph:enrichment"
         ]
     },
     "user":{
@@ -13,7 +14,8 @@ USERS = {
         "role": "user",
         "tenants": ["google","internal"],
         "permissions": [
-            "graph:view"
+            "graph:view",
+            "graph:enrichment"
         ]
     }
 }
