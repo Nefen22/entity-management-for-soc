@@ -751,12 +751,10 @@ function exportGraphImage() {
 
 async function showDetail(data_id, data_type, panelId = 'detailPanel') {
   const area = document.getElementById(panelId);
-  data = null;
-  if (!data_type){
-    data = cy.getElementById(data_id).data()
-  }else{
-    data = await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data_type)}/values/${encodeURIComponent(data_id)}`));
-  }
+  const data = !data_type
+  ? cy.getElementById(data_id).data()
+  : await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data_type)}/values/${encodeURIComponent(data_id)}`));
+
   const props = data.properties || {};
   const type = data.isCluster === "true" ? "CLUSTER" : data.type;
   const baseIdentities = [
