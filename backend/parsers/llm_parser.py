@@ -5,7 +5,8 @@ from database.constraints import MAPPING_ENTITIES_TYPE
 from .llm_client import LLM_Client
 import json
 from .alert_parser import extract_enitty
-
+from .json_parser import JsonParser
+from fastapi import HTTPException, status
 
 def encode_entity(message: str):
     entity_search = {}
@@ -36,3 +37,26 @@ class LLMParser(BaseParser):
             raise RuntimeError(f"Không thể phân tích dữ liệu do dịch vụ AI không hoạt động: {e}")
 
         return LLM_result
+    
+    @classmethod
+    def from_event(cls, event: dict):
+        nodes = []
+        edges = []
+        canonical = LLMParser.normalize_data({k:v for k, v in event.items()
+                                                if k not in
+                                                ["source_type", "timestampp", "event_id", "event_type"]})
+        print(f"Canonical: {canonical}")
+        for ele in canonical:
+            ele["source_type"] = event["source_type"]
+            ele["timestamp"] = event["timestamp"]
+            event_get = JsonParser.from_event(ele, "canonical")
+            nodes += event_get.nodes
+            edges += event_get.edges
+        if nodes == []:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Can not extract any entity") 
+        return cls(
+            source_type=event.get("source_type"),
+            nodes=nodes,
+            edges=edges,
+            evidence=event.get("event_id", "")
+        )

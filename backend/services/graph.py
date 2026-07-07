@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from parsers.alert_parser import AlertParser
 from parsers.llm_parser import LLMParser
 from parsers.json_parser import JsonParser
@@ -17,19 +17,12 @@ async def ingest(tenant: str, event: dict):
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
         try:
-            canonical = LLMParser.normalize_data({k:v for k, v in event.items()
-                                                    if k not in
-                                                    ["source_type", "timestampp", "event_id", "event_type"]})
-            print(f"Canonical: {canonical}")
-            sub_event = JsonParser(nodes=[], edges=[], source_type=event.get("source_type"), evidence=event.get("event_id", ""))
-            for ele in canonical:
-                ele["source_type"] = event["source_type"]
-                ele["timestamp"] = event["timestamp"]
-                event_get = JsonParser.from_event(ele, "canonical")
-                sub_event.nodes += event_get.nodes
-                sub_event.edges += event_get.edges
+            sub_event = LLMParser.from_event(event)
         except:
             sub_event = AlertParser.from_event(event)
+
+        if sub_event.nodes == []:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Can not extract any entity")
     rel = sub_event.get_relationship()
     for type, value in sub_event.get_nodes():
         if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:
