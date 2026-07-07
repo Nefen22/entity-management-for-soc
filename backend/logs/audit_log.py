@@ -3,7 +3,7 @@ from pathlib import Path
 import aiofiles
 from fastapi import HTTPException
 CURRENT_DIR = Path(__file__).resolve().parent
-LOG_DIR = CURRENT_DIR / "logs"
+LOG_DIR = CURRENT_DIR
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 def write_audit_log(action: str, entity_type: str, entity_id: str,time:str, change: dict | None = None):

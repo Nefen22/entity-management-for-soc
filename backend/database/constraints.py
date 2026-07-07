@@ -206,28 +206,34 @@ SIEM_SCHEMA = {
     ]
 }
 
-
 # ── EDR ───────────────────────────────────────────────────────────────────────
 EDR_SCHEMA = {
     "nodes": {
-        "users": ["user"],
-        "hosts": ["destination_host"],
-        "ips": ["destination_ip"],
-        "domains": ["destination_domain"],
-        "urls": ["url"],
-        "file_hashes": ["file_hash"],
-        "processes": ["process_name"],
+        "users":            ["user"],
+        "hosts":            ["destination_host", "source_host"],
+        "ips":              ["destination_ip"],
+        "domains":          ["destination_domain"],
+        "urls":             ["url"],
+        "file_hashes":      ["file_hash"],
+        "processes":        ["process_name"],
         "parent_processes": ["parent_process"],
-        "cves": ["cve_id"],
+        "cves":             ["cve_id"],
     },
 
     "edges": [
-        # Core
+        # Core & Network
         ("user", "destination_host"),
+        ("user", "source_host"),                   # THÊM TỪ CANONICAL
         ("file_hash", "destination_host"),
         ("destination_host", "destination_ip"),
         ("destination_host", "destination_domain"),
         ("destination_host", "url"),
+        
+        # Mối quan hệ bổ sung từ Network Canonical (do EDR có chứa source_host)
+        ("source_host", "destination_host"),       # THÊM TỪ CANONICAL
+        ("source_host", "destination_ip"),         # THÊM TỪ CANONICAL
+        ("source_host", "destination_domain"),     # THÊM TỪ CANONICAL
+        ("source_host", "url"),                    # THÊM TỪ CANONICAL
 
         # Process
         ("parent_process", "process_name"),
@@ -236,7 +242,7 @@ EDR_SCHEMA = {
         ("process_name", "file_hash"),
         ("process_name", "destination_ip"),
         ("process_name", "destination_domain"),
-        ("process_name", "url"),
+        ("process_name", "url"),                   # GIỮ NGUYÊN (Không có trong Canonical)
 
         # Vulnerability
         ("cve_id", "destination_host"),
@@ -248,13 +254,13 @@ EDR_SCHEMA = {
 # ── CLOUD ─────────────────────────────────────────────────────────────────────
 CLOUD_SCHEMA = {
     "nodes": {
-        "users": ["user"],
-        "hosts": ["source_host"],
-        "ips": ["destination_ip"],
-        "domains": ["destination_domain"],
-        "urls": ["url"],
-        "cloud_resources": ["resource_id"],
-        "cves": ["cve_id"],
+        "users":            ["user"],
+        "hosts":            ["source_host"],
+        "ips":              ["destination_ip"],
+        "domains":          ["destination_domain"],
+        "urls":             ["url"],
+        "cloud_resources":  ["resource_id"],
+        "cves":             ["cve_id"],
     },
 
     "edges": [
@@ -266,6 +272,7 @@ CLOUD_SCHEMA = {
 
         # Cloud
         ("user", "resource_id"),
+        ("user", "source_host"),                   # THÊM TỪ CANONICAL
         ("resource_id", "destination_ip"),
         ("resource_id", "source_host"),
 
