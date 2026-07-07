@@ -1,7 +1,7 @@
 import re 
 from .base_parser import BaseParser
 from .edge_parser import Vertex
-from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_RELATIONSHIPS, DOMAIN
+from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_RELATIONSHIPS, DOMAIN, CVE
 import iocextract
 import json
 
@@ -26,6 +26,11 @@ def extract_enitty(message:str):
     domains = DOMAIN.findall(message)
     if domains:
         result["domains"] = domains
+
+    cves = CVE.findall(message)
+    if cves:
+        result["cves"] = cves
+
     return result
 
 def list_vertex(type:  str, lst:list):

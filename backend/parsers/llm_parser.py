@@ -42,7 +42,7 @@ class LLMParser(BaseParser):
     def from_event(cls, event: dict):
         nodes = []
         edges = []
-        canonical = LLMParser.normalize_data({k:v for k, v in event.items()
+        canonical = cls.normalize_data({k:v for k, v in event.items()
                                                 if k not in
                                                 ["source_type", "timestampp", "event_id", "event_type"]})
         print(f"Canonical: {canonical}")

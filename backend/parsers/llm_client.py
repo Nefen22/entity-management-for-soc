@@ -26,6 +26,7 @@ class LLM_Client:
         )
         
         events = response.text
+        print(f"LLM respone: {json.loads(events)}")
         for key, value in encode_entity.items():
             events = events.replace(value, key)
         
