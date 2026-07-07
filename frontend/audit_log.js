@@ -59,31 +59,56 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
     const color = entityColors[log.entity_type] || "#94a3b8";
     let propertiesString = "";
     try {
+      const IGNORE_FIELDS = new Set([
+        "first_seen",
+        "last_seen",
+        "count"
+      ]);
+
       const before = typeof log.change.before === "string"
         ? (log.change.before ? JSON.parse(log.change.before) : {})
         : (log.change.before || {});
+
       const after = typeof log.change.after === "string"
         ? (log.change.after ? JSON.parse(log.change.after) : {})
         : (log.change.after || {});
+
       const beforeProps = before.properties || before.entity || before;
       const afterProps = after.properties || after.entity || after;
+
+      // bỏ các field không cần hiển thị
+      for (const k of IGNORE_FIELDS) {
+        delete beforeProps[k];
+        delete afterProps[k];
+      }
       if (log.action === "CREATE") {
         propertiesString = `
           <div class="space-y-1">
-            ${Object.entries(afterProps).map(([k,v]) => `
-              <div>
-                <span class="text-slate-500">${k}</span>
-                :
-                <span class="text-emerald-400">${JSON.stringify(v)}</span>
-              </div>
-            `).join("")}
+            ${Object.entries(afterProps)
+              .filter(([k]) => !IGNORE_FIELDS.has(k))
+              .map(([k,v]) => `
+                <div>
+                  <span class="text-slate-500">${k}</span>
+                  :
+                  <span class="text-emerald-400">${JSON.stringify(v)}</span>
+                </div>
+              `).join("")}
           </div>
         `;
       } else {
-        const keys = [...new Set([ ...Object.keys(beforeProps), ...Object.keys(afterProps) ])];
+        const keys = [...new Set([
+          ...Object.keys(beforeProps),
+          ...Object.keys(afterProps)
+        ])];
+
+        // chỉ hiển thị field thực sự thay đổi
+        const changedKeys = keys.filter(k =>
+          JSON.stringify(beforeProps[k]) !== JSON.stringify(afterProps[k])
+        );
+
         propertiesString = `
           <div class="space-y-1">
-            ${keys.map(k => `
+            ${changedKeys.map(k => `
               <div>
                 <span class="text-slate-500">${k}</span>
                 <span class="text-red-400 line-through">${JSON.stringify(beforeProps[k])}</span>
