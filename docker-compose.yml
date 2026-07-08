@@ -59,6 +59,8 @@ services:
       - SEED_NAME=DEMO
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - TESTING_IN_DOCKER=false
+      - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY}
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY}
     ports:
       - "8000:8000"
     depends_on:

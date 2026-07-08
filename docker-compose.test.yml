@@ -39,7 +39,7 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      - app
+      - app-test
 
 
   api-test:
@@ -65,6 +65,7 @@ services:
       neo4j-test:
         condition: service_healthy
       redis:
+        condition: service_healthy
     command: ["pytest", "-vs", "--cov=backend", "--cov-report=term-missing"]
 
 networks:
