@@ -1,35 +1,45 @@
 import sys
 import pytest
-from unittest.mock import patch
-
+import fakeredis.aioredis
+from unittest.mock import patch, AsyncMock
 
 @pytest.mark.asyncio
 async def test_valid_ip_returns_geo_data(geoip_reader):
+    sys.modules.pop("enrichment.enrich", None)
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    await fake_redis.flushdb()
+    with patch("enrichment.enrich.redis_client" ,fake_redis):
+        from enrichment.enrich import ips_enrich
 
-    sys.modules.pop("enrichment.geoip", None)
+        await fake_redis.flushdb()
 
-    from enrichment.geoip import enrichment_ip_func, geoip2_cache
+        result = await ips_enrich("8.8.8.8")
 
-    geoip2_cache.clear()
-
-    result = await enrichment_ip_func("8.8.8.8")
-
-    assert result["country"] == "US"
-    assert result["asn"] == 15169
+        assert result["country"] == "US"
+        assert result["asn"] == 15169
 
 @pytest.mark.asyncio
 async def test_cache(geoip_reader):
+    sys.modules.pop("enrichment.enrich", None)
+    
+    fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+    await fake_redis.flushdb()
+    
+    mock_geoip_func = AsyncMock(return_value={"country": "US", "city": "Local"})
+    
+    with patch("enrichment.enrich.redis_client", fake_redis), \
+         patch("enrichment.enrich.enrichment_ip_func", mock_geoip_func):
+         
+        from enrichment.enrich import ips_enrich
+        
+        await fake_redis.flushdb()
+        
+        await ips_enrich("1.1.1.1")
+        
+        await ips_enrich("1.1.1.1")
+        
+        assert mock_geoip_func.call_count == 1
 
-    sys.modules.pop("enrichment.geoip", None)
-
-    from enrichment.geoip import enrichment_ip_func, geoip2_cache
-
-    geoip2_cache.clear()
-
-    await enrichment_ip_func("1.1.1.1")
-    await enrichment_ip_func("1.1.1.1")
-
-    assert geoip_reader.city.call_count == 1
 
 @pytest.mark.asyncio
 async def test_known_hash(vt_dataset):
