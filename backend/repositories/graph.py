@@ -15,14 +15,9 @@ async def post_relationship(tenant: str, edge: EdgePaser):
                 ON CREATE SET r.first_seen = datetime($time),
                                 r.last_seen = datetime($time),
                                 r.count = 1,
-                                r.evidences = [$evidence]
+                                r.evidences = $evidence
                 ON MATCH SET r.last_seen = datetime($time),
-                                r.count = r.count + 1,
-                                r.evidences =   CASE
-                                                    WHEN $evidence IN r.evidences
-                                                    THEN r.evidences
-                                                    ELSE r.evidences + $evidence
-                                                END
+                                r.count = r.count + 1
                 RETURN  src, labels(src) AS src_label,
                         dest, labels(dest) AS dest_label
                 """.format(from_label=src.type, f_key=MAPPING_ENTITIES_KEY[src.type], 
