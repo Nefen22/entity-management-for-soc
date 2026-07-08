@@ -33,6 +33,20 @@ services:
     networks:
       - app
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app
+
+      
   api:
     build: .
     restart: unless-stopped
@@ -49,6 +63,8 @@ services:
       - "8000:8000"
     depends_on:
       neo4j:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - .:/app

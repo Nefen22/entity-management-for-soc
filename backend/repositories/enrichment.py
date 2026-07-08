@@ -1,10 +1,9 @@
-from enrichment.geoip import enrichment_ip_func
-from enrichment.virustotal_mock import enrichment_file_hash_func
+from enrichment.enrich import ips_enrich, hash_enrich
 from database.neo4j import driver
 from database.constraints import TENANT_DATABASE
 
 async def enrichment_ip(tenant: str,value:str):
-    sub_dict = await enrichment_ip_func(value)
+    sub_dict = await ips_enrich(value)
     check =  "SET entity += $props \n" if sub_dict else ""
     query = """MATCH (entity:{tenant}:IP {{value: $value}})
         {enrich}
@@ -15,7 +14,7 @@ async def enrichment_ip(tenant: str,value:str):
         return await result.single()
 
 async def enrichment_file_hash(tenant: str, hash_value:str):
-    enrich_element = await enrichment_file_hash_func(hash_value)
+    enrich_element = await hash_enrich(hash_value)
     check = "SET entity += $props \n" if enrich_element else ""
     query = """MATCH (entity: {tenant}:FileHash {{hash_value: $hash_value}})
             {enrich}

@@ -3,10 +3,6 @@ from database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY, TE
 from neo4j.time import DateTime
 from datetime import datetime
 import time
-from cachetools import TTLCache
-
-graph_cache = TTLCache(maxsize=1000, ttl=3600)
-
 #Funtion 
 
 def check_n_add_nodes(check_list,node):
