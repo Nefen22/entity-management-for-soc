@@ -111,9 +111,9 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
             ${changedKeys.map(k => `
               <div>
                 <span class="text-slate-500">${k}</span>
-                <span class="text-red-400 line-through">${JSON.stringify(beforeProps[k])}</span>
+                <span class="text-red-400 line-through">${beforeProps[k] !== undefined ? JSON.stringify(beforeProps[k]) : "null"}</span>
                 <span class="text-slate-500 mx-1">→</span>
-                <span class="text-emerald-400">${JSON.stringify(afterProps[k])}</span>
+                <span class="text-emerald-400">${afterProps[k] !== undefined ? JSON.stringify(afterProps[k]) : "null"}</span>
               </div>
             `).join("")}
           </div>

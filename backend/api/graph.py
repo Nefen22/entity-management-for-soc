@@ -7,13 +7,13 @@ from services.auth import require_permission
 router = APIRouter()
 
 @router.post("/ingest")
-async def ingest(tenant: str,events: dict | str, current_user = Depends(require_permission("graph:ingest"))):
-    result = await services.ingest(tenant, events)
+async def ingest(tenant: str,events: dict | str, auto_ingest = False, current_user = Depends(require_permission("graph:ingest"))):
+    result = await services.ingest(tenant, events, auto_ingest=auto_ingest)
     return APIResponse(message="Ingest completed", data=result)
 
 @router.post("/ingest/batch")
-async def batch_sample(tenant: str, file:str | list[dict], current_user = Depends(require_permission("graph:ingest"))):
-    result = await services.batch_sample(tenant, file)
+async def batch_sample(tenant: str, file:str | list[dict], auto_ingest = False, current_user = Depends(require_permission("graph:ingest"))):
+    result = await services.batch_sample(tenant, file, auto_ingest=auto_ingest)
     return APIResponse(message="Batch data ingested!", data=result)
 
 @router.get("/get-types")

@@ -225,7 +225,6 @@
 <!-- ══ PAGE: INGEST ════════════════════════════════════════════════════ -->
 <div id="pageingest" class="page" style="display:none; flex-direction:column;">
   <div class="ingest-layout">
- 
     <!-- Left: input form -->
     <aside class="ingest-sidebar">
       <p class="eyebrow">Nguồn dữ liệu</p>
@@ -235,6 +234,11 @@
           <button id="modeSingle" class="mode-btn active" data-mode="single">Single Event</button>
           <button id="modeBatch"  class="mode-btn"        data-mode="batch">Batch</button>
         </div>
+
+        <label class="check-item">
+          <input type="checkbox" id="autoEnrichCheckbox">
+          <span>Auto Enrichment khi ingest</span>
+        </label>
 
         <label style="margin-top:4px;">JSON Input</label>
         <textarea

@@ -6,6 +6,12 @@ from .entities import get_entity
 from models.node import Node
 from datetime import datetime
 
+async def enrich(tenant:str, type:str, value:str):
+    if type in ["IP", "ips"]:
+        await enrichment_ip(tenant=tenant, value=value)
+    elif type in ["FileHash", "file_hash"]:
+        await enrichment_file_hash(tenant=tenant, value=value)
+
 async def enrichment_ip(tenant: str, value:str):
     node_before = await get_entity(tenant=tenant, type='ips', value=value)
     if node_before == None:

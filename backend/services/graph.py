@@ -8,12 +8,13 @@ import repositories.graph as repo
 from .entities import post_entity, check_existed_logs, write_node_create_log
 from database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
 from .function import format_drawing
+from .enrichment import enrich
 from models.node import Node
 from datetime import datetime, timezone
 
 
 #Services
-async def ingest(tenant: str, event: dict | str):
+async def ingest(tenant: str, event: dict | str, auto_ingest : bool):
     try:
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
@@ -31,6 +32,8 @@ async def ingest(tenant: str, event: dict | str):
         for node in value:
             await post_entity(tenant=tenant, type=type, value=node,
                               time=event.get("timestamp") if event.get("timestamp") else str(datetime.now(timezone.utc).isoformat()))
+            if auto_ingest:
+                await enrich(tenant=tenant, type=type, value=node)
     for ele_rel in rel:
         src_check = await check_existed_logs(tenant, ele_rel.src.type, ele_rel.src.value, True)
         dest_check = await check_existed_logs(tenant, ele_rel.dest.type, ele_rel.dest.value, True)
@@ -39,13 +42,17 @@ async def ingest(tenant: str, event: dict | str):
             s_label = [label for label in result["src_label"] if label not in TENANT_DATABASE.values()][0]
             src_r = Node(id=result["src"][MAPPING_ENTITIES_KEY[s_label]],type=s_label,properties=result["src"])
             await write_node_create_log(src_r)
+            if auto_ingest:
+                await enrich(tenant=tenant, type=src_r.type, value=src_r.id)
         if dest_check:
             d_label = [label for label in result["dest_label"] if label not in TENANT_DATABASE.values()][0]
             dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],type=d_label,properties=result["dest"])
             await write_node_create_log(dest_r)
+            if auto_ingest:
+                await enrich(tenant=tenant, type=dest_r.type, value=dest_r.id)
     return sub_event
 
-async def batch_sample(tenant: str, file: str | list):
+async def batch_sample(tenant: str, file: str | list, auto_ingest: bool):
     if isinstance(file, str):
         with open(f'./datasets/{file}', 'r', encoding='utf-8') as file:
             data = json.load(file)
@@ -53,7 +60,7 @@ async def batch_sample(tenant: str, file: str | list):
         data = file
     sub_data = []
     for event in data:
-        sub_data.extend(await ingest(tenant, event))
+        sub_data.extend(await ingest(tenant, event, auto_ingest))
     return sub_data
 
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):

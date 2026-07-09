@@ -1351,6 +1351,7 @@ async function runIngest() {
   const btn = document.getElementById("ingestBtn");
   const input = document.getElementById("ingestInput");
   const status = document.getElementById("ingestStatus");
+  const autoEnrich = document.getElementById("autoEnrichCheckbox");
 
   const raw = input.value.trim();
 
@@ -1385,10 +1386,10 @@ async function runIngest() {
   }
 
   const tenant = document.getElementById("tenantSelect")?.value || "default";
-
+  const enrich = autoEnrich? `?auto_ingest=${true}`: ``
   const url = isBatch
-    ? `/api/tenants/${tenant}/graphs/ingest/batch`
-    : `/api/tenants/${tenant}/graphs/ingest`;
+    ? `/api/tenants/${tenant}/graphs/ingest/batch${enrich}`
+    : `/api/tenants/${tenant}/graphs/ingest${enrich}`;
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> Đang xử lý...';
