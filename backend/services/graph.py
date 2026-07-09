@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 
 
 #Services
-async def ingest(tenant: str, event: dict | str, auto_ingest : bool):
+async def ingest(tenant: str, event: dict | str, auto_ingest : bool | None = False):
     try:
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
@@ -52,7 +52,7 @@ async def ingest(tenant: str, event: dict | str, auto_ingest : bool):
                 await enrich(tenant=tenant, type=dest_r.type, value=dest_r.id)
     return sub_event
 
-async def batch_sample(tenant: str, file: str | list, auto_ingest: bool):
+async def batch_sample(tenant: str, file: str | list, auto_ingest: bool | None = False):
     if isinstance(file, str):
         with open(f'./datasets/{file}', 'r', encoding='utf-8') as file:
             data = json.load(file)

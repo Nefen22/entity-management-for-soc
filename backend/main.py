@@ -10,6 +10,7 @@ from api.graph import batch_sample
 from datasets.seed import SEED
 from database.constraints import TENANT_DATABASE
 from api.auth import login
+from database.mongodb import MongoDB
 import os
 
 RESET_DB = os.getenv("RESET_DB", "true").lower() == "true"
@@ -18,6 +19,7 @@ ADMIN_NAME = "admin"
 ADMIN_PASS = "admin123"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    MongoDB.connect()
     seed = SEED[SEED_NAME]
     for tenant in seed.keys():
         TENANT_DATABASE[tenant] = f"Tenant_{tenant}"
@@ -37,7 +39,8 @@ async def load_tenant(tenant: str):
 async def seed_db(seed:dict):
     for tenant, file in seed.items():
         await load_tenant(tenant)
-        await batch_sample(tenant=tenant, file=file, current_user={"role":"admin"})
+        await batch_sample(tenant=tenant, file=file, current_user={"role":"admin",
+                                                                   "permission":["grap:ingest", "graph:view"]})
 
 app = FastAPI(lifespan=lifespan)
 
