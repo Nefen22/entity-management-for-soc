@@ -358,7 +358,12 @@ CANONICAL_SCHEMA = {
         # ---------- Vulnerability ----------
         ("cve_id",              "destination_host"),
         ("cve_id",              "process_name"),
-        ("cve_id",              "resource_id")
+        ("cve_id",              "resource_id"),
+        
+        ("source_ip",           "file_hash"), # IP tải/chứa file hash
+        ("destination_domain",  "file_hash"), # Domain phân phối file hash
+        ("process_name",        "file_hash"),
+        ("file_hash",           "destination_host"),
     ]
 }
 

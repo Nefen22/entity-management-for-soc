@@ -9,10 +9,11 @@ from .entities import post_entity, check_existed_logs, write_node_create_log
 from database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
 from .function import format_drawing
 from models.node import Node
+from datetime import datetime, timezone
 
 
 #Services
-async def ingest(tenant: str, event: dict):
+async def ingest(tenant: str, event: dict | str):
     try:
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
@@ -28,7 +29,8 @@ async def ingest(tenant: str, event: dict):
         if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:
             continue 
         for node in value:
-            await post_entity(tenant=tenant, type=type, value=node, time=event["timestamp"])
+            await post_entity(tenant=tenant, type=type, value=node,
+                              time=event.get("timestamp") if event.get("timestamp") else str(datetime.now(timezone.utc).isoformat()))
     for ele_rel in rel:
         src_check = await check_existed_logs(tenant, ele_rel.src.type, ele_rel.src.value, True)
         dest_check = await check_existed_logs(tenant, ele_rel.dest.type, ele_rel.dest.value, True)

@@ -5,9 +5,7 @@ DEMO_DATASETS  = {
 }
 
 TEST_DATASETS = {
-    "phishing": "test/phishing.json",
-    "ransomware": "test/ransomware.json",
-    "insider_threat": "test/insider_threat.json",
+    "phishing": "test/phishing.json"
 }
 
 SEED={

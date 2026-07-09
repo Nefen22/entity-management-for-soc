@@ -39,7 +39,7 @@ def list_vertex(type:  str, lst:list):
 class AlertParser(BaseParser):
     @classmethod
     def from_event(cls, event: dict):
-        message = event.get("message")
+        message = event.get("message") if event.get("message") else json.dumps(event)
         lst = []
         time = str(event.get("timestamp"))
         nodes= []

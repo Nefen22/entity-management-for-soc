@@ -7,6 +7,7 @@ import json
 from .alert_parser import extract_enitty
 from .json_parser import JsonParser
 from fastapi import HTTPException, status
+from datetime import datetime, timezone
 
 def encode_entity(message: str):
     entity_search = {}
@@ -24,8 +25,8 @@ def encode_entity(message: str):
 
 class LLMParser(BaseParser):
     @classmethod
-    def normalize_data(cls, event: dict):
-        if "message" in event.keys():
+    def normalize_data(cls, event: dict | str):
+        if isinstance(event, dict) and "message" in event.keys():
             message = {"message": event["message"]}
         else:
             message = event
@@ -39,16 +40,17 @@ class LLMParser(BaseParser):
         return LLM_result
     
     @classmethod
-    def from_event(cls, event: dict):
+    def from_event(cls, event: dict | str):
         nodes = []
         edges = []
         canonical = cls.normalize_data({k:v for k, v in event.items()
                                                 if k not in
-                                                ["source_type", "timestampp", "event_id", "event_type"]})
+                                                ["source_type", "timestamp", "event_id", "event_type"]}
+                                                | event)
         print(f"Canonical: {canonical}")
         for ele in canonical:
-            ele["source_type"] = event["source_type"]
-            ele["timestamp"] = event["timestamp"]
+            ele["source_type"] = event.get("source_type") if event.get("source_type") else "canonical"
+            ele["timestamp"] = event.get("timestamp") if event.get("timestamp") else str(datetime.now(timezone.utc).isoformat())
             event_get = JsonParser.from_event(ele, "canonical")
             nodes += event_get.nodes
             edges += event_get.edges

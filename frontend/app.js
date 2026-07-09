@@ -1347,9 +1347,7 @@ function renderResults(events) {
 // ============================
 // API
 // ============================
-
 async function runIngest() {
-
   const btn = document.getElementById("ingestBtn");
   const input = document.getElementById("ingestInput");
   const status = document.getElementById("ingestStatus");
@@ -1357,62 +1355,51 @@ async function runIngest() {
   const raw = input.value.trim();
 
   if (!raw) {
-
-    showStatus("err","Vui lòng nhập JSON.");
-
+    showStatus("err", "Vui lòng nhập nội dung cần Ingest.");
     return;
   }
 
+  // 1. Tự động xử lý Payload (Ưu tiên thử Parse JSON, nếu thất bại thì lấy làm String/Text thô)
   let payload;
-
   try {
-
     payload = JSON.parse(raw);
-
   } catch {
-
-    showStatus("err","JSON không hợp lệ.");
-
-    return;
+    // Nếu không phải JSON hợp lệ, coi như chuỗi văn bản thô
+    payload = { text: raw }; 
   }
 
-  const isBatch = ingestMode === "batch";
+  const isBatch = typeof ingestMode !== "undefined" && ingestMode === "batch";
 
-  if (isBatch && !Array.isArray(payload)) {
-
-    showStatus("err","Batch mode yêu cầu JSON Array.");
-
-    return;
+  // 2. Kiểm tra điều kiện chế độ Batch/Single
+  if (isBatch) {
+    // Nếu ở chế độ Batch mà payload không phải Array, chuyển nó thành Array 1 phần tử
+    if (!Array.isArray(payload)) {
+      payload = [payload];
+    }
+  } else {
+    // Nếu ở chế độ Single mà người dùng lỡ dán một JSON Array
+    if (Array.isArray(payload)) {
+      showStatus("err", "Chế độ Single chỉ nhận dữ liệu đơn (Text hoặc JSON Object).");
+      return;
+    }
   }
 
-  if (!isBatch && Array.isArray(payload)) {
-
-    showStatus("err","Single mode yêu cầu JSON Object.");
-
-    return;
-  }
-
-  const tenant =
-    document.getElementById("tenantSelect")?.value ||
-    "default";
+  const tenant = document.getElementById("tenantSelect")?.value || "default";
 
   const url = isBatch
     ? `/api/tenants/${tenant}/graphs/ingest/batch`
     : `/api/tenants/${tenant}/graphs/ingest`;
 
   btn.disabled = true;
-  btn.innerHTML =
-    '<span class="spin"></span> Đang xử lý...';
-
+  btn.innerHTML = '<span class="spin"></span> Đang xử lý...';
   status.style.display = "none";
 
   try {
-
     const response = await fetch(url, {
       method: "POST",
       headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + sessionStorage.getItem("soc_token")
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + sessionStorage.getItem("soc_token")
       },
       body: JSON.stringify(payload)
     });
@@ -1420,44 +1407,26 @@ async function runIngest() {
     const json = await response.json();
 
     if (!response.ok) {
-
       showStatus(
         "err",
-        json.detail ||
-        json.message ||
-        "Ingest thất bại."
+        json.detail || json.message || "Ingest thất bại."
       );
-
       return;
     }
 
-    showStatus(
-      "ok",
-      json.message || "Ingest thành công."
-    );
+    showStatus("ok", json.message || "Ingest thành công.");
 
     if (Array.isArray(json.data)) {
-
-      renderResults(
-        parseIngestData(json.data)
-      );
-
+      renderResults(parseIngestData(json.data));
     }
 
-  }
-  catch(err){
-
+  } catch (err) {
     showStatus(
       "err",
       "Không thể kết nối máy chủ: " + err.message
     );
-
-  }
-  finally{
-
+  } finally {
     btn.disabled = false;
     btn.innerHTML = "⊕ Ingest";
-
   }
-
 }

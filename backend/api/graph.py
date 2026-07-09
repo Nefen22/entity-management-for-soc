@@ -7,7 +7,7 @@ from services.auth import require_permission
 router = APIRouter()
 
 @router.post("/ingest")
-async def ingest(tenant: str,events: dict, current_user = Depends(require_permission("graph:ingest"))):
+async def ingest(tenant: str,events: dict | str, current_user = Depends(require_permission("graph:ingest"))):
     result = await services.ingest(tenant, events)
     return APIResponse(message="Ingest completed", data=result)
 
