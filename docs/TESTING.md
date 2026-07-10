@@ -2,263 +2,77 @@
 
 ## Overview
 
-Entity Management for SOC includes comprehensive unit and integration tests with pytest framework and Docker-based test environment.
-
-**Current Status:**
-- ✅ 58 passing tests
-- 📊 89% code coverage
-- 🚀 Automated test execution via Docker Compose
+The project uses pytest for unit and integration tests and runs them in Docker with MongoDB, Neo4j, Redis, and the FastAPI service.
 
 ---
 
 ## Test Structure
 
-```
+```text
 backend/test/
-├── conftest.py                 # Global test fixtures
+├── conftest.py
 ├── integration/
-│   ├── conftest.py            # Integration test fixtures
-│   └── test_api.py            # API endpoint tests (12 tests)
+│   ├── conftest.py
+│   └── test_api.py
 └── unit/
-    ├── conftest.py            # Unit test fixtures & mocks
-    ├── mocks/                 # Mock implementations
-    │   ├── neo4j.py
-    │   ├── constraints.py
-    │   ├── datasets.py
-    │   ├── enrichment.py
-    │   └── audit_log.py
-    ├── test_auth.py           # Authentication tests (8 tests)
-    ├── test_enrichment.py      # Enrichment service tests (3 tests)
-    ├── test_entities_repo.py   # Entity repository tests (3 tests)
-    ├── test_graph_service.py   # Graph service tests (13 tests)
-    ├── test_parser.py          # Parser tests (18 tests)
-    └── test_audit_logs.py      # Audit logging tests (3 tests)
+    ├── conftest.py
+    ├── mocks/
+    ├── test_auth.py
+    ├── test_enrichment.py
+    ├── test_entities_repo.py
+    ├── test_graph_service.py
+    ├── test_parser.py
+    └── test_audit_logs.py
 ```
 
 ---
 
 ## Running Tests
 
-### Docker (Recommended)
-
-Run all tests in isolated Docker environment:
+### Docker (recommended)
 
 ```bash
-docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
-This will:
-1. Build the test image
-2. Start Neo4j test database
-3. Run pytest with coverage reporting
-4. Display test results and coverage report
+This starts an isolated test environment with:
+- `mongodb-test`
+- `neo4j-test`
+- `redis-test`
+- `api-test`
 
-**Environment Variables:**
-- `TESTING_IN_DOCKER=true` - Enables test authentication bypass
-- `NEO4J_URI=bolt://neo4j-test:7687` - Test database connection
-- `RESET_DB=true` - Clear database before tests
-- `SEED_NAME=TEST` - Load test dataset
+The API container runs pytest with coverage output and uses `TESTING_IN_DOCKER=true` to bypass normal authentication for integration scenarios.
 
-### Local Development
+### Local development
 
 ```bash
-# Install dependencies
 pip install -r requirements.txt
-
-# Run all tests
 pytest backend/test/ -v
-
-# Run specific test file
-pytest backend/test/unit/test_auth.py -v
-
-# Run with coverage report
-pytest backend/test/ --cov=backend --cov-report=html
 ```
 
 ---
 
-## Test Coverage by Module
+## What the tests cover
 
-### ✅ Excellent Coverage (>95%)
-
-| Module | Coverage | Tests |
-|--------|----------|-------|
-| `backend/auth/jwt.py` | 95% | 4 |
-| `backend/api/entities.py` | 100% | - |
-| `backend/database/` | 100% | - |
-| `backend/enrichment/` | 83-92% | 3 |
-| `backend/models/` | 100% | - |
-| `backend/parsers/edge_parser.py` | 100% | 5 |
-| `backend/parsers/json_parser.py` | 100% | 9 |
-| `backend/repositories/user.py` | 100% | - |
-
-### 🎯 Good Coverage (80-94%)
-
-| Module | Coverage | Key Tests |
-|--------|----------|-----------|
-| `backend/api/enrichment.py` | 88% | Entity enrichment |
-| `backend/api/graph.py` | 81% | Graph queries |
-| `backend/parsers/alert_parser.py` | 92% | Alert parsing |
-| `backend/parsers/base_parser.py` | 92% | Base parser logic |
-| `backend/repositories/entities.py` | 81% | Entity CRUD ops |
-| `backend/repositories/graph.py` | 91% | Graph operations |
-| `backend/services/enrichment.py` | 92% | Enrichment service |
-| `backend/services/entities.py` | 86% | Entity service |
-| `backend/services/graph.py` | 84% | Graph service |
-
-### ⚠️ Moderate Coverage (60-79%)
-
-| Module | Coverage | Notes |
-|--------|----------|-------|
-| `backend/api/auth.py` | 73% | API auth endpoints |
-| `backend/api/tenants.py` | 78% | Tenant routing |
-| `backend/parsers/llm_client.py` | 61% | LLM integration |
-| `backend/services/auth.py` | 40% | Auth service logic |
+- Authentication and JWT handling
+- MongoDB-backed user and role loading
+- Entity creation and graph repository logic
+- Parser extraction for structured and free-text events
+- Enrichment fallback handling
+- Audit log persistence and filtering
 
 ---
 
-## Authentication & Test Mode
+## Important test environment variables
 
-### Test Authentication
+- `TESTING_IN_DOCKER=true` - bypasses normal auth checks in the test container
+- `NEO4J_URI=bolt://neo4j-test:7687`
+- `MONGODB_URI=mongodb://root:secret_password123@mongodb-test:27017/?authSource=admin`
+- `MONGODB_DATABASE=test_db`
+- `RESET_DB=true`
+- `INIT_DB=true`
+- `SEED_NAME=TEST`
 
-The authentication system supports test mode for integration testing:
-
-**Feature:** When `TESTING_IN_DOCKER=true` environment variable is set:
-- All authentication is bypassed
-- Test requests receive admin user with "all" tenant access
-- No JWT token required for test API calls
-
-**Implementation:** [backend/services/auth.py](../backend/services/auth.py)
-
-```python
-async def authenticate_user(request: Request):
-    # Allow test mode to bypass authentication
-    if os.getenv("TESTING_IN_DOCKER") == "true":
-        return {
-            "username": "test_user",
-            "role": "admin",
-            "tenants": "all"
-        }
-    # ... normal JWT validation
-```
-
-**Test Cases:**
-- `test_decode_expired_token` - Expired JWT handling
-- `test_decode_invalid_token_signature` - Invalid JWT detection
-- `test_decode_malformed_token` - Malformed JWT rejection
-- `test_decode_valid_token` - Valid JWT acceptance
-- `test_login_nonexistent_user` - Non-existent user handling
-- `test_login_wrong_password` - Wrong password handling
-- `test_verify_password_correct` - Password verification success
-- `test_verify_password_incorrect` - Password verification failure
-
----
-
-## Entity Repository Tests
-
-### MERGE/Upsert Logic
-
-Test: `test_post_entity_merge_existing`
-- Verifies Neo4j MERGE clause execution
-- Ensures duplicate entities are handled correctly
-- Tests entity creation with properties
-
-### Lookup Operations
-
-Test: `test_get_entity_not_found`
-- Tests null result handling for non-existent entities
-- Verifies proper error states
-
-Test: `test_get_entity_found_with_relationships`
-- Tests entity retrieval with relationship metadata
-- Verifies first_seen, last_seen, and count fields
-
----
-
-## Parser Tests
-
-### Alert Parser
-
-Covers free-text security alert parsing:
-- IP address extraction (including private IPs)
-- Domain name extraction
-- File hash detection (MD5)
-- Entity type classification
-- Multiple entity extraction
-
-### JSON Parser
-
-Covers structured log parsing from:
-- SIEM events - User, IP, Host extraction
-- EDR events - Process, hash, user extraction
-- Cloud audit logs - Cloud resources, hosts
-- Custom JSON formats
-
-### Base Parser
-
-Covers generic parsing functionality:
-- Node and edge extraction
-- Relationship mapping
-- Timestamp handling
-- Evidence tracking
-
----
-
-## Audit Log Tests
-
-Tests for audit logging functionality:
-
-1. **test_write_audit_log_missing_change_field**
-   - Logs with optional change field omitted
-   - Tests graceful handling of missing data
-
-2. **test_write_audit_log_with_change_payload**
-   - Logs with complete change tracking
-   - Tests before/after state preservation
-
-3. **test_write_audit_log_with_all_fields**
-   - Full audit entry with all fields
-   - Tests complete logging capability
-
----
-
-## Integration Tests
-
-### API Endpoints Tested
-
-All 12 integration tests validate actual API responses:
-
-- `/api/tenants` - Tenant listing
-- `/api/tenants/{tenant}/entities/lists` - Entity enumeration
-- `/api/tenants/{tenant}/entities/lists?type=X` - Type filtering
-- `/api/tenants/{tenant}/entities/types/X/values/Y` - Entity lookup
-- `/api/tenants/{tenant}/graphs/entities/...?hop=1` - 1-hop traversal
-- `/api/tenants/{tenant}/graphs/entities/...?hop=2` - 2-hop traversal
-- `/api/tenants/{tenant}/graphs/get-types` - Type listing
-- `/api/tenants/{tenant}/graphs/filter-relationships` - Relationship filtering
-- `/api/tenants/{tenant}/graphs/clusters` - Cluster analysis
-- `/api/tenants/{tenant}/graphs/clusters/types/X` - Type clustering
-- `/api/tenants/{tenant}/enrichments/types/ips/values/X` - IP enrichment
-- `/api/tenants/{tenant}/enrichments/types/file-hashes/values/X` - Hash enrichment
-
----
-
-## Fixtures & Mocks
-
-### Key Test Fixtures
-
-**Global Fixtures** (`backend/test/conftest.py`):
-- `api` - FastAPI TestClient for API testing
-- Path mocking to prevent file system writes
-
-**Unit Test Fixtures** (`backend/test/unit/conftest.py`):
-- `geoip_reader` - Mock GeoIP2 reader
-- `vt_dataset` - VirusTotal mock data
-- Database mocks for Neo4j
-- Constraint mocks for tenant database
-
-**Integration Fixtures** (`backend/test/integration/conftest.py`):
-- Real Neo4j connection
 - Test dataset loading
 - Tenant seeding
 

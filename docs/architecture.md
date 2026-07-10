@@ -1,104 +1,61 @@
 ```mermaid
 flowchart TD
+    A[Security Events] --> B[Parser Layer]
+    B --> C[Service Layer]
+    F[FastAPI API] --> C
+    C --> D[Repository Layer]
+    D --> E[(Neo4j Graph)]
+    D --> J[(MongoDB)]
+    D --> K[(Redis)]
 
-A[Security Events] --> B[Parser Layer]
-B --> C[Service Layer]
-F[FastAPI API] --> C
-C --> D[Repository Layer]
-D --> E[(Neo4j)]
-
-G[Frontend / Cytoscape] --> F
-H[Auth Layer] --> F
-I[Testing] --> F
+    G[Frontend / Cytoscape] --> F
+    H[Auth Layer] --> F
+    I[Testing] --> F
 ```
 
 ## Architecture Layers
 
 ### 1. API Layer (FastAPI)
-- RESTful endpoints for entity management
-- JWT authentication with test mode bypass
-- Multi-tenant isolation
-- Swagger/OpenAPI documentation
-- Health checks and heartbeat endpoints
-
-**Authentication:**
-- JWT-based security
-- HTTPBearer tokens
-- Test mode support via `TESTING_IN_DOCKER` environment variable
-- Automatic credential bypass for integration tests
+- RESTful endpoints for entity management, graph traversal, enrichment, and audit log access
+- JWT-based authentication with tenant-aware authorization
+- Swagger/OpenAPI documentation and tenant-scoped routes
 
 ### 2. Service Layer
-- Business logic implementation
-- Entity enrichment coordination
-- Graph query orchestration
-- Audit logging
-- Transaction management
+- Business logic for ingesting events, creating entities, building relationships, and enriching metadata
+- Audit logging and evidence handling
+- Tenant validation and permission checks
 
-**Key Services:**
-- `AuthService` - JWT token creation and validation
-- `EntityService` - Entity CRUD and querying
-- `GraphService` - N-hop traversal and path finding
-- `EnrichmentService` - IP and hash enrichment
+**Key services:**
+- `services/auth.py` - login, JWT validation, and permission enforcement
+- `services/entities.py` - entity creation and lookup
+- `services/graph.py` - ingest, traversal, clustering, and path finding
+- `services/enrichment.py` - automatic/manual enrichment orchestration
+- `services/logs.py` - event and audit log retrieval
 
 ### 3. Parser Layer
-- Multi-format log parsing (JSON, CSV, custom)
-- Entity extraction from security events
-- Relationship inference
-- Evidence tracking
-
-**Supported Formats:**
-- SIEM alerts (JSON)
-- EDR events (JSON)
-- Cloud audit logs (JSON)
-- Free-text alerts (LLM-based extraction)
+- JSON, alert, and LLM-based parsing for security events
+- Entity and relationship extraction with evidence tracking
+- Event normalization so each event receives a timestamp and an event_id
 
 ### 4. Repository Layer
-- Database abstraction for Neo4j
-- Entity and relationship persistence
-- Query optimization (indexes)
-- Transaction handling
+- Neo4j repositories for graph entities and relationships
+- MongoDB repositories for users, roles, raw events, and audit logs
+- Redis-backed enrichment cache for repeated lookups
 
-**Repositories:**
-- `EntityRepository` - Node CRUD operations
-- `GraphRepository` - Relationship queries
-- `EnrichmentRepository` - Data enrichment storage
-- `UserRepository` - User management
+### 5. Authentication and Authorization
+- Users, roles, and permissions are stored in MongoDB collections
+- Role-to-permission mappings are resolved at request time
+- Tenant access is enforced per request and the API returns only authorized tenants
 
-### 5. Authentication Layer
-- JWT token generation and validation
-- User credential verification
-- Role-based access control
-- Multi-tenant authorization
+### 6. Data Stores
+- Neo4j stores the graph of entities and relationships
+- MongoDB stores raw events, audit logs, and authentication metadata
+- Redis caches enrichment output to reduce repeated lookups
 
-**Components:**
-- `auth/jwt.py` - Token encoding/decoding
-- `services/auth.py` - Authentication business logic
-- `repositories/user.py` - User storage and lookup
-
-### 6. Database Layer
-- Neo4j graph database
-- Relationship aggregation
-- Index management
-- Constraint enforcement
-
-**Features:**
-- APOC procedures for advanced queries
-- Indexes on entity types and values
-- Constraints for data integrity
-- Transaction support
-
-### 7. Testing Layer (New)
-- 58 unit and integration tests
-- 89% code coverage
-- Docker-based test environment
-- Isolated test database
-- Mock external services
-
-**Test Organization:**
-- Unit tests for business logic
-- Integration tests for API endpoints
-- Test fixtures for data setup
-- Mock services for external dependencies
+### 7. Testing Layer
+- Pytest-based unit and integration tests
+- Docker-based test environment that boots MongoDB, Neo4j, Redis, and the API service
+- Test mode supports in-container auth bypass for CI-friendly integration tests
 
 ---
 
@@ -106,162 +63,65 @@ I[Testing] --> F
 
 ### Entity Types
 
-* **User** - System users
-* **Host** - Computers/servers
-* **IP** - IP addresses
-* **Domain** - Domain names
-* **FileHash** - File hashes (MD5/SHA1/SHA256)
-* **URL** - Uniform Resource Locators / Web links
-* **Process** - System processes and parent processes
-* **CloudResource** - Cloud infrastructure components (AWS ARN, S3, Instances)
-* **Email** - Electronic mail addresses (Senders and Recipients)
-* **CVE** - Common Vulnerabilities and Exposures identifiers
-
-### Entity Properties
-
-* type - Entity classification
-* value - Entity identifier
-* metadata - Additional context
-* first_seen - Initial observation timestamp
-* last_seen - Most recent observation
-* source - Origin of data
-
-### Relationships
-
-* **related_to** - Generic connection
-* **accessed_by** - Access relationship
-* **contains** - Containment relationship
-* **executed_by** - Execution relationship
-* **resolved_to** - DNS resolution
-* **LOGGED_IN** - User authentication session on a host
-* **CONNECTED_TO** - Network traffic establishment between hosts, IPs, domains, or processes
-* **EXECUTED_ON** - File hash execution on a specific endpoint
-* **RESOLVED** - DNS lookup initiated by a host or IP
-* **RESOLVES_TO** - Domain mapping to a specific IP address
-* **REQUESTED** - HTTP/HTTPS request sent to a URL by a host, IP, or process
-* **RUNS_ON** - Process or cloud resource operating on a specific host
-* **LOADED** - Process loading a library or file hash into memory
-* **SPAWNED** - Parent process creating a child process
-* **BELONGS_TO** - URL path associated with a specific domain
-* **OWNS** - User account linked to an email address
-* **HOSTED_BY** - Email service managed by a domain
-* **SENT_TO** - Email transmission between communication endpoints
-* **ACCESSED** - User interacting with a cloud resource
-* **ASSIGNED_TO** - Cloud resource bound to an IP address
-* **AFFECTS** - Security vulnerability impacting a host, process, or cloud resource
+- User
+- Host
+- IP
+- Domain
+- URL
+- FileHash
+- Process
+- Email
+- CloudResource
+- CVE
 
 ### Relationship Metadata
-- count - Frequency of relationship
-- first_seen - Initial observation
-- last_seen - Most recent observation
-- evidences - Supporting data points
+
+- first_seen
+- last_seen
+- count
+- evidences
+
+### Storage Model
+
+- Graph state lives in Neo4j
+- Raw event payloads live in MongoDB as documents in the events collection
+- Audit events live in MongoDB as documents in the audit_logs collection
+- Evidence references an event_id so the original event can be retrieved on demand
 
 ---
 
 ## Deployment Architecture
 
 ### Docker Compose Setup
-```yaml
-services:
-  api:
-    - FastAPI application
-    - Port: 8000
-    - Environment: Production/Test
-  neo4j:
-    - Graph database
-    - Port: 7687 (bolt)
-    - Volume: Data persistence
-  nginx:
-    - Reverse proxy
-    - Port: 80
-    - Frontend serving
-```
+
+- `mongodb` provides the metadata and audit store
+- `mongo-express` provides a browser-based admin UI
+- `neo4j` provides the graph database
+- `redis` caches enrichment responses
+- `api` serves the FastAPI application
+- `frontend` serves the static UI through Nginx
 
 ### Test Environment
-```yaml
-services:
-  api-test:
-    - FastAPI with test mode enabled
-    - TESTING_IN_DOCKER=true
-  neo4j-test:
-    - Isolated test database
-    - Clean state before each run
-    - Test dataset pre-loaded
-```
+
+- `mongodb-test` and `neo4j-test` run in isolation for pytest
+- `api-test` uses `TESTING_IN_DOCKER=true` and seeds a test dataset before execution
 
 ---
 
 ## Security Considerations
 
-### Authentication
-- JWT tokens with 15-minute expiration
-- HTTPBearer token scheme
-- Test mode requires explicit environment variable
-- Prevents accidental production test authentication
-
-### Authorization
-- Multi-tenant isolation via graph labels
-- Role-based access control (admin/user)
-- Tenant-scoped API endpoints
-
-### Data Protection
-- Neo4j transaction logs
-- Audit logging for all changes
-- Encrypted connections (when configured)
+- JWT tokens are issued for authenticated sessions
+- Permissions are resolved from MongoDB-backed role definitions
+- Tenant access is checked before tenant-scoped routes are executed
+- External enrichment failures do not block ingestion or graph creation
 
 ---
 
-## Performance Optimizations
+## Operational Notes
 
-### Database
-- Indexes on entity type, value, and timestamp
-- Relationship aggregation (count, first_seen, last_seen)
-- Query result caching layer
-- N-hop query optimization
-
-### API
-- Async/await for concurrent request handling
-- Connection pooling for Neo4j
-- Response compression
-- HTTP caching headers
-
-### Frontend
-- Cytoscape.js graph rendering optimization
-- Lazy loading of relationships
-- Local caching of graph state
-- Dynamic layout calculation
-
----
-
-## Monitoring & Observability
-
-### Logging
-- Structured audit logs (JSON)
-- API request/response logging
-- Error and exception tracking
-- Parser processing logs
-
-### Metrics (Future)
-- Request latency
-- Database query performance
-- Cache hit rates
-- Error rates by endpoint
-
----
-
-## Testing Strategy
-
-### Unit Tests (44 tests)
-- Service business logic
-- Parser functionality
-- Repository queries
-- JWT token handling
-
-### Integration Tests (12 tests)
-- API endpoint validation
-- End-to-end workflows
-- Multi-tenant scenarios
-- Database persistence
+- Enrichment uses cached responses when available
+- Manual enrichment is available through the enrichment endpoint in addition to automatic ingestion-based enrichment
+- Event IDs are generated with ULID when the source payload omits one
 
 ### Coverage Targets
 - Critical path: 95%+ coverage
