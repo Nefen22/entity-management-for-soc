@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from database.constraints import MAPPING_RELATIONSHIPS, MAPPING_ENTITIES_KEY, TENANT_DATABASE
 from neo4j.time import DateTime
-from datetime import datetime
+from datetime import datetime, timezone
+import ulid
 import time
 #Funtion 
 
@@ -53,3 +54,11 @@ def format_neo4j_data(data):
         # Chuyển đổi neo4j.time.DateTime sang Python datetime tiêu chuẩn
         return datetime(data.year, data.month, data.day, data.hour, data.minute, int(data.second), int(data.nanosecond / 1000))
     return data
+
+def normalize_event(event:dict):
+    return {
+        **event,
+        "timestamp": event.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+        "event_id": event.get("event_id") or str(ulid.new()),
+        "source_type": event.get("source_type", "unknown"),
+    }

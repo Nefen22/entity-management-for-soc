@@ -2,7 +2,6 @@ from database.neo4j import driver
 from parsers.edge_parser import EdgePaser
 from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, TENANT_DATABASE
 
-
 async def post_relationship(tenant: str, edge: EdgePaser):
     async with driver.session() as session:
         src = edge.src
@@ -15,7 +14,7 @@ async def post_relationship(tenant: str, edge: EdgePaser):
                 ON CREATE SET r.first_seen = datetime($time),
                                 r.last_seen = datetime($time),
                                 r.count = 1,
-                                r.evidences = $evidence
+                                r.evidence = $evidence
                 ON MATCH SET r.last_seen = datetime($time),
                                 r.count = r.count + 1
                 RETURN  src, labels(src) AS src_label,

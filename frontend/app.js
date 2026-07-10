@@ -809,19 +809,34 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
                   <button class="rel-toggle" type="button">▶</button>
                 </div>
                 <div class="rel-details" id="rel-${index}" hidden>
-                  ${Object.entries(rel.rel_properties || {}).map(([k, v]) => `
+                  ${Object.entries(rel.rel_properties || {}).map(([k, v]) => {
+                    // Xử lý riêng cho evidence: render button thay vì giá trị thô
+                    if (k === "evidence" && v) {
+                      return `
+                        <div class="prop-row">
+                          <span class="k">${k}</span>
+                          <span class="v">
+                            <button class="evidence-btn" data-event-id="${v}">🔗 Xem event gốc</button>
+                          </span>
+                        </div>
+                      `;
+                    }
+                    // Các property khác giữ nguyên logic cũ
+                    return `
                       <div class="prop-row">
                         <span class="k">${k}</span>
                         <span class="v">${Array.isArray(v) ? v.map(x => `<div>• ${x}</div>`).join("") : v}</span>
                       </div>
-                    `).join("")}
+                    `;
+                  }).join("")}
+                </div>
                 </div>
               </div>
             `;
         }).join("")
       : '<div class="empty-note">Không có mối quan hệ.</div>';
   } else {
-    try {
+  try {
       const result = await safeFetchJson(apiUrl(`/graphs/clusters/types/${encodeURIComponent(data.clusterType)}`));
       relationships = result || [];
     } catch (err) {
@@ -873,6 +888,14 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
       btn.textContent = details.hidden ? "▶" : "▼";
     };
   });
+  area.querySelectorAll(".evidence-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation(); // tránh trigger click lan ra prop-row cha nếu có
+        const eventId = btn.dataset.eventId;
+        if (!eventId) return;
+        await showEventPopup(eventId, btn);
+      });
+    });
   const enrichBtn = area.querySelector("#enrichBtn"); 
 
   if (enrichBtn) {
@@ -894,6 +917,140 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
       }
     });
   }
+}
+async function showEventPopup(eventId, triggerBtn) {
+  // Đóng popup cũ nếu đang mở (tránh chồng nhiều popup)
+  document.querySelectorAll(".event-popover").forEach(el => el.remove());
+
+  const originalLabel = triggerBtn.innerHTML;
+  triggerBtn.disabled = true;
+  triggerBtn.innerHTML = '<span class="spin"></span>';
+
+  // Tạo popover, định vị theo vị trí button
+  const rect = triggerBtn.getBoundingClientRect();
+  const popover = document.createElement("div");
+  popover.className = "event-popover";
+  popover.innerHTML = `
+    <div class="event-popover-header">
+      <span>Chi tiết Event</span>
+      <button class="event-popover-close">✕</button>
+    </div>
+    <div class="event-popover-body">
+      <div class="event-popover-loading"><span class="spin"></span> Đang tải...</div>
+    </div>
+  `;
+  document.body.appendChild(popover);
+
+  // Định vị: ưu tiên hiện bên dưới button, lệch trái nếu tràn màn hình
+  positionPopover(popover, rect);
+
+  const closePopover = () => popover.remove();
+  popover.querySelector(".event-popover-close").addEventListener("click", closePopover);
+
+  // Click ra ngoài để đóng
+  const outsideClickHandler = (e) => {
+    if (!popover.contains(e.target) && e.target !== triggerBtn) {
+      closePopover();
+      document.removeEventListener("click", outsideClickHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", outsideClickHandler), 0);
+
+  try {
+    const result = await safeFetchJson(apiUrl(`/logs/events/${encodeURIComponent(eventId)}`));
+    const raw = result;
+
+    if (!raw) {
+      popover.querySelector(".event-popover-body").innerHTML =
+        '<div class="empty-note">Không tìm thấy dữ liệu event.</div>';
+      return;
+    }
+
+    // Các field cố định hiển thị riêng, phần còn lại render động
+    const fixedFields = ["event_id", "tenant", "source_type", "timestamp"];
+    const restEntries = Object.entries(raw).filter(([k]) => !fixedFields.includes(k));
+
+    popover.querySelector(".event-popover-body").innerHTML = `
+      <div class="prop-row">
+        <span class="k">Event ID</span>
+        <span class="v">${raw.event_id ?? "-"}</span>
+      </div>
+      <div class="prop-row">
+        <span class="k">Tenant</span>
+        <span class="v">${raw.tenant ?? "-"}</span>
+      </div>
+      <div class="prop-row">
+        <span class="k">Source Type</span>
+        <span class="v">${raw.source_type ?? "-"}</span>
+      </div>
+      <div class="prop-row">
+        <span class="k">Timestamp</span>
+        <span class="v">${raw.timestamp ? new Date(raw.timestamp).toLocaleString() : "-"}</span>
+      </div>
+      ${restEntries.map(([k, v]) => `
+        <div class="prop-row">
+          <span class="k">${formatKey(k)}</span>
+          <span class="v">${formatValue(v)}</span>
+        </div>
+      `).join("")}
+    `;
+
+    positionPopover(popover, rect);
+  } catch (err) {
+    popover.querySelector(".event-popover-body").innerHTML =
+      `<div class="empty-note">Lỗi tải event: ${err.message}</div>`;
+  } finally {
+    triggerBtn.disabled = false;
+    triggerBtn.innerHTML = originalLabel;
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function positionPopover(popover, rect) {
+  const popW = popover.offsetWidth || 320;
+  const popH = popover.offsetHeight || 200;
+  const margin = 8;
+
+  let top = rect.bottom + margin;
+  let left = rect.left;
+
+  // Nếu tràn phải màn hình, căn theo mép phải button
+  if (left + popW > window.innerWidth - margin) {
+    left = rect.right - popW;
+  }
+  // Nếu tràn dưới màn hình, hiện lên trên button thay vì dưới
+  if (top + popH > window.innerHeight - margin) {
+    top = rect.top - popH - margin;
+  }
+
+  popover.style.top = `${Math.max(margin, top)}px`;
+  popover.style.left = `${Math.max(margin, left)}px`;
+}
+
+// Đổi snake_case -> Title Case cho đẹp: "destination_host" -> "Destination Host"
+function formatKey(key) {
+  return key
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+// Xử lý mọi kiểu giá trị: object, array, null, string dài...
+function formatValue(v) {
+  if (v === null || v === undefined) return "-";
+  if (Array.isArray(v)) {
+    return v.map(x => `<div>• ${escapeHtml(String(x))}</div>`).join("");
+  }
+  if (typeof v === "object") {
+    // Nested object -> render dạng JSON thu gọn, tránh [object Object]
+    return `<pre class="nested-json">${escapeHtml(JSON.stringify(v, null, 2))}</pre>`;
+  }
+  return escapeHtml(String(v));
 }
 
 function highlightPath(nodes, edges) {

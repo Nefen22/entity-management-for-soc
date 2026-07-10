@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import aiofiles
 from fastapi import HTTPException
+from backend.repositories.mongo_repo import EventsRepository
 CURRENT_DIR = Path(__file__).resolve().parent
 LOG_DIR = CURRENT_DIR
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -64,3 +65,7 @@ async def get_logs(
         raise HTTPException(status_code=404, detail="Không tìm thấy file audit log.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi hệ thống: {e}")
+    
+async def get_event(tenant:str, event_id: str):
+    result = await EventsRepository.get_event(tenant=tenant, event_id=event_id)
+    return result

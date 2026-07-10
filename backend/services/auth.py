@@ -1,4 +1,4 @@
-from backend.repositories.auth import UserRepository
+from backend.repositories.mongo_repo import UserRepository
 from backend.auth.jwt import create_access_token, decode_access_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Depends, HTTPException, Request

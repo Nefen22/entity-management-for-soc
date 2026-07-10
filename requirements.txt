@@ -19,3 +19,4 @@ google
 PyJWT>=2.13.0
 pymongo==4.9.1
 passlib
+ulid-py

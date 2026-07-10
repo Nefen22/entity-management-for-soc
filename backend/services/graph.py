@@ -6,8 +6,9 @@ import json
 from models.responses import APIResponse
 import repositories.graph as repo
 from .entities import post_entity, check_existed_logs, write_node_create_log
-from database.constraints import REVERSED_TYPE, MAPPING_ENTITIES_KEY,TENANT_DATABASE
-from .function import format_drawing
+from database.constraints import MAPPING_ENTITIES_KEY,TENANT_DATABASE
+from repositories.mongo_repo import EventsRepository
+from .function import format_drawing, normalize_event
 from .enrichment import enrich
 from models.node import Node
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from datetime import datetime, timezone
 
 #Services
 async def ingest(tenant: str, event: dict | str, auto_ingest : bool | None = False):
+    event = normalize_event(event=event)
     try:
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
@@ -50,6 +52,7 @@ async def ingest(tenant: str, event: dict | str, auto_ingest : bool | None = Fal
             await write_node_create_log(dest_r)
             if auto_ingest:
                 await enrich(tenant=tenant, type=dest_r.type, value=dest_r.id)
+    await EventsRepository.post_event(tenant=tenant, event=event)
     return sub_event
 
 async def batch_sample(tenant: str, file: str | list, auto_ingest: bool | None = False):
