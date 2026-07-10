@@ -10,7 +10,7 @@ def clean(lst):
 
 class BaseParser(BaseModel):
     nodes: list[Vertex] | None = None
-    edges: list[dict] | None = None
+    edges: list[EdgePaser] | None = None
     source_type: str  | None = None
     evidence: str | None = None
     
@@ -30,11 +30,12 @@ class BaseParser(BaseModel):
                 (type_n_nodes[rels[0]].type,type_n_nodes[rels[1]].type)
             except:
                 continue
-            edges.append({"source": type_n_nodes[rels[0]],
-                "target": type_n_nodes[rels[1]],
-                "type": MAPPING_RELATIONSHIPS[(type_n_nodes[rels[0]].type,
+            edges.append(EdgePaser(src=type_n_nodes[rels[0]],
+                dest=type_n_nodes[rels[1]],
+                connect_type=MAPPING_RELATIONSHIPS[(type_n_nodes[rels[0]].type,
                                                 type_n_nodes[rels[1]].type)],
-                "time": time})
+                time=time,
+                evidence=event["event_id"]))
         lst_nodes = []
         for k,v in type_n_nodes.items():
             lst_nodes.append(v)
@@ -46,6 +47,6 @@ class BaseParser(BaseModel):
         return self.nodes
 
     def get_relationship(self):
-        relationships = [EdgePaser(src=edge["source"], dest=edge["target"], connect_type=edge["type"], evidence=self.evidence, time=str(edge["time"])) for edge in self.edges]
+        relationships = self.edges
         
         return relationships

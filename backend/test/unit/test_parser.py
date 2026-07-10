@@ -28,6 +28,7 @@ class TestBaseParserSplitNodesEdges:
     def test_extracts_nodes_from_include(self):
         event = {
             "timestamp": "2024-01-01T00:00:00Z",
+            "event_id": "extract",
             "user": "john.doe",
             "destination_host": "DESKTOP-001",
             "source_ip": "10.0.0.1",
@@ -51,6 +52,7 @@ class TestBaseParserSplitNodesEdges:
     def test_creates_edge_for_known_relationship(self):
         event = {
             "timestamp": "2024-01-01T00:00:00Z",
+            "event_id": "event-55",
             "source_ip": "192.168.1.1",
             "destination_host": "SERVER-01",
         }
@@ -58,9 +60,9 @@ class TestBaseParserSplitNodesEdges:
         _, edges = parser.split_nodes_edges(event, SIEM_INCLUDE)
 
         assert len(edges) == 1
-        assert edges[0]["type"] == "CONNECTED_TO"
-        assert edges[0]["source"].value == "192.168.1.1"
-        assert edges[0]["target"].value == "SERVER-01"
+        assert edges[0].connect_type== "CONNECTED_TO"
+        assert edges[0].src.value == "192.168.1.1"
+        assert edges[0].dest.value == "SERVER-01"
 
     def test_no_edge_when_relationship_not_in_mapping(self):
         """IP → Domain không có trong MAPPING_RELATIONSHIPS → không tạo edge."""
@@ -73,20 +75,21 @@ class TestBaseParserSplitNodesEdges:
         parser = self._make_parser()
         _, edges = parser.split_nodes_edges(event, CLOUD_INCLUDE)
         # source_host missing → không có node Host → không có edge
-        assert all(e["type"] != "" for e in edges)
+        assert all(e.connect_type != "" for e in edges)
 
     def test_stores_timestamp_on_edge(self):
         event = {
             "timestamp": "2024-06-01T09:00:00Z",
+            "event_id": "event-55",
             "user": "alice",
             "destination_host": "WS-002",
         }
         parser = self._make_parser()
         _, edges = parser.split_nodes_edges(event, SIEM_INCLUDE)
 
-        login_edge = next((e for e in edges if e["type"] == "LOGGED_IN"), None)
+        login_edge = next((e for e in edges if e.connect_type == "LOGGED_IN"), None)
         assert login_edge is not None
-        assert login_edge["time"] == "2024-06-01T09:00:00Z"
+        assert login_edge.time == "2024-06-01T09:00:00Z"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -120,7 +123,7 @@ class TestJsonParserFromEvent:
             "destination_host": "HOST-01",
         }
         parser = JsonParser.from_event(event, "siem")
-        edge_types = {e["type"] for e in parser.edges}
+        edge_types = {e.connect_type for e in parser.edges}
         assert "CONNECTED_TO" in edge_types
 
     def test_edr_extracts_all_fields(self):
@@ -155,7 +158,7 @@ class TestJsonParserFromEvent:
             "process_name": "cmd.exe",
         }
         parser = JsonParser.from_event(event, "edr")
-        edge_types = {e["type"] for e in parser.edges}
+        edge_types = {e.connect_type for e in parser.edges}
         assert "SPAWNED" in edge_types
 
     def test_cloud_extracts_host_ip(self):

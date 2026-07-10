@@ -1377,9 +1377,8 @@ function renderEventCard(event, index) {
   }).join("");
 
   const edgeHtml = edges.map(edge => {
-
-    const sc = colorFor(edge.source.type);
-    const tc = colorFor(edge.target.type);
+    const sc = colorFor(edge.src.type);
+    const tc = colorFor(edge.dest.type);
 
     const time = edge.time
       ? edge.time.replace("T"," ").substring(0,16)
@@ -1390,18 +1389,18 @@ function renderEventCard(event, index) {
 
         <span class="e-node"
           style="color:${sc};border-color:${sc}33;background:${sc}12;">
-          ${shorten(edge.source.value,20)}
+          ${shorten(edge.src.value,20)}
         </span>
 
         <span class="e-arrow">→</span>
 
-        <span class="e-type">${edge.type}</span>
+        <span class="e-type">${edge.connect_type}</span>
 
         <span class="e-arrow">→</span>
 
         <span class="e-node"
           style="color:${tc};border-color:${tc}33;background:${tc}12;">
-          ${shorten(edge.target.value,20)}
+          ${shorten(edge.dest.value,20)}
         </span>
 
         ${
@@ -1548,7 +1547,8 @@ async function runIngest() {
   }
 
   const tenant = document.getElementById("tenantSelect")?.value || "default";
-  const enrich = autoEnrich? `?auto_ingest=${true}`: ``
+  console.log(autoEnrich.checked)
+  const enrich = autoEnrich.checked ? `?auto_ingest=${true}`: ``;
   const url = isBatch
     ? `/api/tenants/${tenant}/graphs/ingest/batch${enrich}`
     : `/api/tenants/${tenant}/graphs/ingest${enrich}`;

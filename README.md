@@ -1,309 +1,152 @@
 # Entity Management for SOC
 
-A lightweight SOC investigation platform that extracts entities from security events, enriches threat intelligence data, and stores relationships inside Neo4j for graph-based investigation and visualization.
+A lightweight SOC investigation platform that ingests security events, extracts entities, stores graph relationships in Neo4j, and keeps authentication, raw events, and audit logs in MongoDB for investigation and review.
 
 ---
 
 ## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
+- Docker Compose
 - Python 3.12+ (for local development)
-- Neo4j 5.18+
+- Optional: API keys for AbuseIPDB and VirusTotal if you want external enrichment to run
 
-### Getting Started
+### Start the stack
 
 ```bash
 git clone https://github.com/Nefen22/entity-management-for-soc
 cd entity-management-for-soc
-docker-compose up -d
+docker compose up -d
 ```
+
+The compose stack starts MongoDB, Mongo Express, Neo4j, Redis, the FastAPI backend, and the frontend.
 
 | Service | URL |
 | ------- | --- |
 | API Docs (Swagger) | http://localhost:8000/docs |
 | Frontend | http://localhost |
 | Neo4j Browser | http://localhost:7474 |
+| Mongo Express | http://localhost:8081 |
 
-### Quick Demo
+### Login and ingest a sample event
 
 ```bash
-# Ingest batch data
-POST /api/tenants/{tenant}/graphs/ingest/batch
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+```
 
-# Query entity graph (4-hop)
-GET /api/tenants/{tenant}/graphs/entities/types/ip/values/8.8.8.8/graph/4
+Use the returned token to call tenant-scoped endpoints such as:
+
+```bash
+POST /api/tenants/{tenant}/graphs/ingest
+GET /api/tenants/{tenant}/graphs/entities/types/User/values/admin?hop=1
+```
+
+---
+
+## Features
+
+### Entity extraction
+
+Supported entity types include User, Host, IP, Domain, URL, FileHash, Process, Email, CloudResource, and CVE.
+
+### Graph investigation
+
+- Neo4j-backed relationship storage and multi-hop traversal
+- Cluster analysis, path finding, relationship filtering, and entity lookup
+- Tenant-scoped graph endpoints with graph labels per tenant
+
+### Enrichment
+
+- IP enrichment with GeoIP and AbuseIPDB data
+- File hash enrichment with VirusTotal-compatible data and a mock fallback
+- Automatic and manual enrichment workflows
+- Graceful fallback when external services are unavailable
+
+### Security and access control
+
+- MongoDB-backed authentication with users, roles, and tenant-aware permissions
+- JWT-based access for API requests
+- Role-based access control for graph view, ingest, and enrichment operations
+
+### Audit and evidence
+
+- Raw events are stored in MongoDB under the events collection
+- Audit logs are stored in MongoDB and support pagination plus filtering by time range, action, entity type, and entity id
+- Evidence references an event_id so the original raw event can be retrieved from MongoDB
+- Event IDs are generated with ULID when missing
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+| ----- | ---------- |
+| Backend | FastAPI |
+| Graph database | Neo4j |
+| Metadata store | MongoDB |
+| Cache | Redis |
+| Frontend | HTML, JavaScript |
+| Graph UI | Cytoscape.js |
+| Container | Docker Compose |
+
+---
+
+## Environment variables
+
+The backend uses the following environment variables:
+
+- `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`
+- `MONGODB_URI`, `MONGODB_DATABASE`
+- `JWT_SECRET_KEY`
+- `REDIS_HOST`
+- `GEMINI_API_KEY`, `ABUSEIPDB_API_KEY`, `VIRUSTOTAL_API_KEY`
+- `TESTING_IN_DOCKER`, `RESET_DB`, `INIT_DB`, `SEED_NAME`
+
+---
+
+## Project structure
+
+```text
+backend/
+  api/            # FastAPI routers
+  auth/           # JWT and password helpers
+  database/       # Neo4j, MongoDB, and seeding logic
+  repositories/   # Neo4j and MongoDB repositories
+  services/       # Business logic for entities, graph, auth, logs, enrichment
+  parsers/        # JSON, alert, LLM, and edge parsers
+frontend/         # Static UI assets
+ docs/             # Architecture, requirements, testing, and ADRs
 ```
 
 ---
 
 ## Testing
 
-The project includes comprehensive unit and integration tests with high code coverage.
+The project includes pytest-based unit and integration tests that exercise authentication, parser logic, enrichment, graph operations, and audit logging.
 
-### Running Tests
+### Running tests in Docker
 
 ```bash
-# Run all tests in Docker
-docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
-
-# Run specific test file
-pytest backend/test/unit/test_auth.py -v
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
-### Test Coverage
+The test environment boots MongoDB, Neo4j, Redis, and the API container in isolation.
 
-Current coverage: **89%** (58 tests passing)
+See [docs/TESTING.md](docs/TESTING.md) for more detail.
 
-Key modules with >95% coverage:
-- `backend/auth/jwt.py` - 95%
-- `backend/api/entities.py` - 100%
-- `backend/database/` - 100%
-- `backend/models/` - 100%
-- `backend/parsers/edge_parser.py` - 100%
-
-See [Testing Documentation](docs/TESTING.md) for detailed test information.
-
----
-
-## Features
-
-### Entity Extraction
-
-Supported entities:
-
-| Entity        | Example                                     |
-| ------------- | ------------------------------------------- |
-| User          | admin                                       |
-| Host          | FILE-SERVER-01                              |
-| IP            | 192.168.1.100                               |
-| Domain        | malicious.ru                                |
-| URL           | http://malicious.ru/payload.exe             |
-| FileHash      | MD5 / SHA1 / SHA256                         |
-| Process       | powershell.exe                              |
-| Email         | admin@corp.local                            |
-| CloudResource | EC2 instance, VM                            |
-| CVE           | CVE-2024-1234                               |
-
----
-
-### Flexible JSON Parser
-
-The platform supports custom JSON-based event ingestion.
-
-Supported sources:
-
-* SIEM events
-* EDR events
-* Cloud audit logs
-* Custom JSON formats
-
-Parser logic is configurable and easy to extend.
-
----
-
-### Entity Enrichment
-
-#### IP Enrichment
-
-* GeoIP lookup
-* ASN information
-
-#### File Hash Enrichment
-
-* Mock VirusTotal dataset
-* Malware detection information
-
-Enrichment results are cached with TTL.
-
----
-
-### Relationship Modeling
-
-Core relationships:
-
-* User → LOGGED_IN → Host
-* Host → CONNECTED_TO → IP
-* FileHash → EXECUTED_ON → Host
-
-Additional relationships:
-
-* Process → Host
-* Email → User
-* CVE → Host
-* CloudResource → IP
-* URL → Domain
-
-Relationship metadata:
-
-* first_seen
-* last_seen
-* count
-* evidences
-
----
-
-### Investigation Features
-
-* Entity lookup
-* Multi-hop investigation
-* Cluster expansion / collapse
-* Investigation mode
-* Relationship filtering
-* Entity type filtering
-* Global search
-* Shortest path finding between two entities
-* Audit log viewer
-
----
-
-### Graph Visualization
-
-Powered by Cytoscape.js.
-
-Supported layouts:
-
-* Force-directed
-* Breadth First Tree
-* Dagre Tree
-* Concentric
-
-Features:
-
-* Dynamic filtering
-* Cluster expand/collapse
-* Interactive investigation mode
-* Entity detail panel
-* Relationship metadata display
-* Path finding visualization
-* Audit log view
-* Graph export (PNG)
-* Multiple graph layouts
-
----
-
-### Security & DevOps
-
-* Docker Compose deployment
-* GitHub Actions CI
-* GitLab CI
-* Trivy container vulnerability scanning
-* Health checks for Neo4j
-* Integration tests with Docker Compose
-
----
-
-### Multi-Tenant Support
-
-Each tenant is isolated using graph labels.
-
-Example:
-
-* acme
-* google
-* internal
-
-API examples:
-
-```
-/api/tenants/logs
-/api/tenants/{tenant}/entities
-/api/tenants/{tenant}/graphs
-/api/tenants/{tenant}/enrichments
-```
-
----
-
-### Performance
-
-* Neo4j indexes
-* Relationship aggregation
-* Cached enrichment
-* Optimized N-hop queries
-
----
-
-## Tech Stack
-
-| Layer     | Technology       |
-| --------- | ---------------- |
-| Backend   | FastAPI          |
-| Database  | Neo4j            |
-| Frontend  | HTML, JavaScript |
-| Graph UI  | Cytoscape.js     |
-| Container | Docker           |
-
----
-
-## Implemented Features
-
-* [x] Entity extraction (10 entity types)
-* [x] Graph relationship modeling
-* [x] Multi-hop investigation
-* [x] GeoIP enrichment
-* [x] Mock VirusTotal enrichment
-* [x] Relationship metadata (first_seen, last_seen, count, evidences)
-* [x] Graph visualization
-* [x] Multiple layouts
-* [x] Dynamic filtering
-* [x] Multi-tenant support (label-based)
-* [x] Neo4j indexing
-* [x] REST API with Swagger docs
-* [x] Docker Compose deployment
-* [x] Investigation mode
-* [x] Cluster expand/collapse
-* [x] Shortest path finding
-* [x] Audit log viewer
-* [x] Graph export (PNG)
-* [x] GitHub Actions CI
-* [x] GitLab CI
-* [x] Trivy vulnerability scanning
-
----
-
-## Architecture
-
-See [architecture.md](architecture.md)
 ---
 
 ## Documentation
 
-- Requirements
-- Architecture
-- Roadmap
-
----
-
-## Screenshots
-
-### Ingest Events
-
-![Ingest Events](docs/images/ingest.png)
-
-### List & Detail Entities
-
-![List & Detail](docs/images/list.png)
-
-### Graph Explorer
-
-![Graph Explorer](docs/images/graph.png)
-
-### Investigation Mode
-
-![Investigation](docs/images/investigation.png)
-
-### Path Finding
-
-![Path Finding](docs/images/pathfinding.png)
-
-### Audit Logs
-
-![Audit Logs](docs/images/auditlogs.png)
+- [docs/architecture.md](docs/architecture.md)
+- [docs/requirements.md](docs/requirements.md)
+- [docs/TESTING.md](docs/TESTING.md)
+- [docs/roadmap.md](docs/roadmap.md)
 
 ---
 
 ## Project Status
 
-**MVP Complete** — backend, frontend, and core investigation features are implemented and running.
-
-Remaining: test coverage, CI/CD, and optional advanced features listed in the roadmap above.
+The core backend, frontend, and investigation workflow are implemented and running. The current implementation focuses on MongoDB-backed persistence, tenant-aware authorization, graph investigation, and enrichment with graceful fallback behavior.

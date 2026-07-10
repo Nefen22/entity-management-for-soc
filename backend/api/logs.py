@@ -7,7 +7,7 @@ router = APIRouter(prefix = "")
 @router.get("/audit-logs")
 async def get_logs(
     tenant: str,
-    page:int | None=1,
+    page:int | None = Query(default=1, ge=1),
     start_time: str | None = None,
     end_time: str | None = None,
     action: str | None = None,
