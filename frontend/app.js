@@ -128,6 +128,10 @@ async function safeFetchJson(url, options = {}) {
   }
 
   const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+        window.location.href = "/login.html";
+        return;
+    }
   if (!res.ok) throw new Error('HTTP ' + res.status);
   
   const json = await res.json();
@@ -903,9 +907,7 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
       enrichBtn.disabled = true;
       enrichBtn.innerHTML = '<span class="spin"></span> Đang enrich...';
       try {
-        const path = type === "IP"
-          ? `/enrichments/types/ips/values/${encodeURIComponent(data.id)}`
-          : `/enrichments/types/file-hashes/values/${encodeURIComponent(data.id)}`;
+        const path = `/enrichments/types/${type}/values/${encodeURIComponent(data.id)}`;
         const result = await safeFetchJson(apiUrl(path), { method: "POST" });        
         
         // Truyền panelId vào để khi re-render nó vẫn vẽ đúng vào panel đó
@@ -1590,4 +1592,5 @@ async function runIngest() {
     btn.disabled = false;
     btn.innerHTML = "⊕ Ingest";
   }
+  runGlobalSearch();
 }

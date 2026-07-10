@@ -1,22 +1,86 @@
 let logCurrentPage = 1;
 const logPageSize = 15;
+const urlParams = new URLSearchParams(window.location.search);
+const receivedData = urlParams.get('data');
 
-// Đồng bộ bảng màu mã Hex chính xác từ hàm colorFor của index.html
+if (receivedData) {
+  sessionStorage.setItem('soc_token', receivedData);
+}
+
 const entityColors = {
-  User: "#60a5fa", Host: "#f59e0b", IP: "#4ade80", Domain: "#a78bfa",
+  User: "#60a5fa", Host: "#f59e0b", IP: "#3d413e", Domain: "#a78bfa",
   FileHash: "#fb7185", URL: "#22d3ee", Process: "#e879f9", Email: "#facc15",
   CloudResource: "#34d399", CVE: "#f87171", Entity: "#94a3b8"
 };
+
+// --- BỎ gọi loadTenants() trực tiếp ở đây để đưa vào luồng khởi tạo chuẩn ---
+
+async function safeFetchJson(url, options = {}) {
+  const token = sessionStorage.getItem("soc_token");
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    window.location.href = "/login.html";
+    return;
+  }
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  
+  const json = await res.json();
+  return json.data !== undefined ? json.data : json;
+}
+
+async function loadTenants() {
+  const select = document.getElementById('tenantSelect');
+  try {
+    const tenants = await safeFetchJson('/api/tenants');
+    const list = Array.isArray(tenants) ? tenants : [];
+    select.innerHTML = list.map(t => `<option value="${t}">${t}</option>`).join('');
+  } catch {
+    select.innerHTML = '<option value="default">default</option>';
+  }
+  // Gán giá trị tenant đầu tiên tìm được
+  currentTenant = select.value;
+}
+
+document.getElementById('tenantSelect').addEventListener('change', function () {
+  console.log(this.value)
+  currentTenant = this.value;
+  fetchLogs(1);
+});
+
 
 async function fetchLogs(page) {
   try {
     logCurrentPage = page;
     const searchKeyword = document.getElementById('searchId').value.trim();
     const typeKeyword = document.getElementById('filterType').value;
-    let url = `/api/logs?page=${page}&limit=${logPageSize}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Mất kết nối hệ thống log API");
-    const res = await response.json();
+    const actionKeyword = document.getElementById('filterAction').value;
+    const startTimeVal = document.getElementById('startTime').value;
+    const endTimeVal = document.getElementById('endTime').value;
+    
+    // Đảm bảo lấy giá trị mới nhất từ thuộc tính hoặc biến toàn cục
+    const tenant = currentTenant || document.getElementById('tenantSelect').value;
+    if (!tenant) return; // Phòng trường hợp danh sách tenant trống
+
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('limit', logPageSize);
+    if (searchKeyword) params.set('entity_id', searchKeyword);
+    if (typeKeyword && typeKeyword !== 'ALL') params.set('entity_type', typeKeyword);
+    if (actionKeyword && actionKeyword !== 'ALL') params.set('action', actionKeyword);
+    if (startTimeVal) params.set('start_time', new Date(startTimeVal).toISOString());
+    if (endTimeVal) params.set('end_time', new Date(endTimeVal).toISOString());
+    
+    const url = `/api/tenants/${encodeURIComponent(tenant)}/logs/audit-logs?${params.toString()}`;
+    const res = await safeFetchJson(url);
     document.getElementById('logCount').innerText = res.metadata.total_records;
     document.getElementById('pageInfo').innerText = `Trang ${res.metadata.current_page} / ${res.metadata.total_pages}`;
     document.getElementById('btnPrevPage').disabled = !res.metadata.has_previous;
@@ -31,6 +95,8 @@ async function fetchLogs(page) {
     `;
   }
 }
+
+// ... Các hàm navigatePage, executeFilter, renderLogTable giữ nguyên cấu trúc cũ của bạn ...
 
 function navigatePage(step) {
   fetchLogs(logCurrentPage + step);
@@ -59,11 +125,7 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
     const color = entityColors[log.entity_type] || "#94a3b8";
     let propertiesString = "";
     try {
-      const IGNORE_FIELDS = new Set([
-        "first_seen",
-        "last_seen",
-        "count"
-      ]);
+      const IGNORE_FIELDS = new Set(["first_seen", "last_seen", "count"]);
 
       const before = typeof log.change.before === "string"
         ? (log.change.before ? JSON.parse(log.change.before) : {})
@@ -76,7 +138,6 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
       const beforeProps = before.properties || before.entity || before;
       const afterProps = after.properties || after.entity || after;
 
-      // bỏ các field không cần hiển thị
       for (const k of IGNORE_FIELDS) {
         delete beforeProps[k];
         delete afterProps[k];
@@ -96,15 +157,8 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
           </div>
         `;
       } else {
-        const keys = [...new Set([
-          ...Object.keys(beforeProps),
-          ...Object.keys(afterProps)
-        ])];
-
-        // chỉ hiển thị field thực sự thay đổi
-        const changedKeys = keys.filter(k =>
-          JSON.stringify(beforeProps[k]) !== JSON.stringify(afterProps[k])
-        );
+        const keys = [...new Set([...Object.keys(beforeProps), ...Object.keys(afterProps)])];
+        const changedKeys = keys.filter(k => JSON.stringify(beforeProps[k]) !== JSON.stringify(afterProps[k]));
 
         propertiesString = `
           <div class="space-y-1">
@@ -120,11 +174,7 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
         `;
       }
     } catch (e) {
-      propertiesString = `
-        <pre class="text-xs text-slate-400 whitespace-pre-wrap">
-${JSON.stringify(log.change, null, 2)}
-        </pre>
-      `;
+      propertiesString = `<pre class="text-xs text-slate-400 whitespace-pre-wrap">${JSON.stringify(log.change, null, 2)}</pre>`;
     }
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-[#121824]/60 transition border-b border-slate-900/60';
@@ -143,15 +193,25 @@ ${JSON.stringify(log.change, null, 2)}
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+// --- KHU VỰC THAY ĐỔI CHÍNH Ở ĐÂY ---
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1. Chờ load xong danh sách tenant và khởi tạo currentTenant trước
+  await loadTenants();
+
+  // 2. Điền dữ liệu bộ lọc từ URL params (giữ nguyên logic của bạn)
   const urlParams = new URLSearchParams(window.location.search);
   const searchIdFromUrl = urlParams.get('searchId');
   const entityTypeFromUrl = urlParams.get('entityType');
-  if (searchIdFromUrl) {
-    document.getElementById('searchId').value = searchIdFromUrl;
-  }
-  if (entityTypeFromUrl && entityColors[entityTypeFromUrl]) {
-    document.getElementById('filterType').value = entityTypeFromUrl;
-  }
+  const actionFromUrl = urlParams.get('action');
+  const startTimeFromUrl = urlParams.get('start_time');
+  const endTimeFromUrl = urlParams.get('end_time');
+
+  if (searchIdFromUrl) document.getElementById('searchId').value = searchIdFromUrl;
+  if (entityTypeFromUrl && entityColors[entityTypeFromUrl]) document.getElementById('filterType').value = entityTypeFromUrl;
+  if (actionFromUrl && ['CREATE', 'UPDATE'].includes(actionFromUrl)) document.getElementById('filterAction').value = actionFromUrl;
+  if (startTimeFromUrl) document.getElementById('startTime').value = startTimeFromUrl;
+  if (endTimeFromUrl) document.getElementById('endTime').value = endTimeFromUrl;
+
+  // 3. Sau khi đã có tenant mặc định và các bộ lọc, tiến hành fetch dữ liệu log lần đầu tiên
   fetchLogs(1);
 });

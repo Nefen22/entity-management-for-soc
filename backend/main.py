@@ -13,9 +13,9 @@ import os
 
 RESET_DB = os.getenv("RESET_DB", "true").lower() == "true"
 SEED_NAME = os.getenv("SEED_NAME", "")
+INIT_DB = os.getenv("INIT_DB", "false").lower()=="true"
 ADMIN_NAME = "admin"
 ADMIN_PASS = "admin123"
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,8 +25,8 @@ async def lifespan(app: FastAPI):
     for tenant in seed.keys():
         TENANT_DATABASE[tenant] = f"Tenant_{tenant}"
     if RESET_DB:
-        Path("/app/backend/logs/audit_log.jsonl").write_text("")
         await init_db(RESET_DB)
+    if INIT_DB:
         await seed_db(seed)
 
     yield

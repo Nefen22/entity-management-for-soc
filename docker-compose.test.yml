@@ -73,6 +73,7 @@ services:
       - MONGODB_DATABASE=test_db 
       - REDIS_HOST=redis-test-cache
       - RESET_DB=true
+      - INIT_DB=true
       - SEED_NAME=TEST
       - GEMINI_API_KEY=None
     volumes:

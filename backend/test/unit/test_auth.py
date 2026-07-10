@@ -76,7 +76,7 @@ class TestAuthService:
         assert result is None 
 
         with patch("services.auth.UserRepository.get_user", return_value=None):
-            from backend.repositories.auth import UserRepository
+            from backend.repositories.mongo_repo import UserRepository
             user = UserRepository.get_user("nonexistent_user_xyz")
             assert user is None
 

@@ -22,39 +22,102 @@
       <div class="text-xs text-slate-400 font-mono">
         Tổng số: <span id="logCount" class="text-emerald-400 font-bold">0</span> records
       </div>
+      <div class="field-inline">
+        <span>Tenant</span>
+        <select id="tenantSelect"></select>
+      </div>
       <a href="/" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium px-3 py-1.5 rounded border border-slate-700 transition flex items-center space-x-1">
         <span>◀</span> <span>Quay lại Dashboard</span>
       </a>
     </div>
   </header>
 
-  <section class="bg-[#0b0f17] border-b border-slate-800/60 p-4 shrink-0 grid grid-cols-1 md:grid-cols-3 gap-4">
+  <section class="bg-[#0b0f17] border-b border-slate-800/60 p-4 shrink-0 grid grid-cols-1 md:grid-cols-6 gap-4">
+
     <div>
-      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tìm kiếm Entity ID</label>
-      <input type="text" id="searchId" placeholder="Nhập ID thực thể (Ví dụ: IP, Hostname...)" 
-             class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition">
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        Entity ID
+      </label>
+      <input
+        type="text"
+        id="searchId"
+        placeholder="Entity ID..."
+        class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs font-mono"
+      >
     </div>
+
     <div>
-      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Loại thực thể (Entity Type)</label>
-      <select id="filterType" class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-cyan-500 transition">
-        <option value="ALL">-- Tất cả loại --</option>
-        <option value="User">User</option>
-        <option value="Host">Host</option>
-        <option value="IP">IP</option>
-        <option value="Domain">Domain</option>
-        <option value="FileHash">FileHash</option>
-        <option value="URL">URL</option>
-        <option value="Process">Process</option>
-        <option value="Email">Email</option>
-        <option value="CloudResource">CloudResource</option>
-        <option value="CVE">CVE</option>
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        Entity Type
+      </label>
+      <select id="filterType"
+        class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs">
+
+        <option value="ALL">All</option>
+        <option>User</option>
+        <option>Host</option>
+        <option>IP</option>
+        <option>Domain</option>
+        <option>FileHash</option>
+        <option>URL</option>
+        <option>Process</option>
+        <option>Email</option>
+        <option>CloudResource</option>
+        <option>CVE</option>
+
       </select>
     </div>
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        Action
+      </label>
+
+      <select id="filterAction"
+        class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs">
+
+        <option value="ALL">All</option>
+        <option value="CREATE">CREATE</option>
+        <option value="UPDATE">UPDATE</option>
+        <option value="DELETE">DELETE</option>
+
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        From
+      </label>
+
+      <input
+        type="datetime-local"
+        id="startTime"
+        class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs"
+      >
+    </div>
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        To
+      </label>
+
+      <input
+        type="datetime-local"
+        id="endTime"
+        class="w-full bg-[#121824] border border-slate-800 rounded px-3 py-1.5 text-xs"
+      >
+    </div>
+
     <div class="flex items-end">
-      <button onclick="executeFilter()" class="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-900 font-bold text-xs uppercase tracking-wider py-2 rounded transition shadow-lg shadow-cyan-950/20">
-        Áp dụng bộ lọc
+      <button
+        onclick="executeFilter()"
+        class="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-900 font-bold text-xs py-2 rounded">
+
+        Apply Filter
+
       </button>
     </div>
+
   </section>
 
   <main class="flex-1 bg-[#07090d] p-4 min-h-0 flex flex-col">

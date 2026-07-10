@@ -94,6 +94,7 @@ services:
       - MONGODB_DATABASE=entity_management
       - RESET_DB=false
       - SEED_NAME=DEMO
+      - INIT_DB=false
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - TESTING_IN_DOCKER=false
       - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY}

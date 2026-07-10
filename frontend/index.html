@@ -47,8 +47,8 @@
       <span>Tenant</span>
       <select id="tenantSelect"></select>
     </div>
-    <a href="/audit_log.html" target="_blank" style="text-decoration:none;">
-      <button class="secondary sm">📋 Audit Logs</button>
+    <a href="/audit_log.html" target="_blank" style="text-decoration:none;" id="audit-link"> 
+      <button class="secondary sm">📋 audit logs</button> 
     </a>
   </div>
 </header>
@@ -322,6 +322,14 @@ async function loadUser() {
         tab.style.display = "none";
     }
 }
+document.getElementById('audit-link').addEventListener('click', function(e) {
+  const sessionData = sessionStorage.getItem('soc_token') || '';
+  
+  const encodedData = encodeURIComponent(sessionData);
+  
+  this.href = `/audit_log.html?data=${encodedData}`;
+});
+
 
 </script>
 

@@ -11,7 +11,6 @@ def test_get_tenants(api):
     assert r.status_code == 200
     assert TENANT in r.json()["data"]
 
-
 def test_get_all_entities(api):
     r = api.get(f"/api/tenants/{TENANT}/entities/lists")
 

@@ -2,6 +2,25 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: #07090d;
 }
+:root{
+  --bg: #07090d;
+  --bg-soft: #0c0f15;
+  --panel: #10141c;
+  --panel-2: #161b25;
+  --line: #232a38;
+  --line-soft: #1a2030;
+  --text: #eaeef5;
+  --muted: #7c8aa3;
+  --muted-2: #4d5872;
+  --accent: #5eead4;
+  --accent-dim: rgba(94,234,212,0.12);
+  --indigo: #818cf8;
+  --amber: #fbbf24;
+  --rose: #fb7185;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
 .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
@@ -10,3 +29,10 @@ body {
 ::-webkit-scrollbar-track { background: #0f1420; }
 ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #334155; }
+.field-inline{ display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--muted); }
+select, input[type=text], input[type=number]{
+  background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+  padding:7px 10px; border-radius:var(--radius-sm); font-family:'Inter',sans-serif; font-size:12.5px;
+  outline:none; transition:.15s border-color;
+}
+select:focus, input:focus{ border-color:var(--accent); }

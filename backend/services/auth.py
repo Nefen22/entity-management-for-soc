@@ -42,12 +42,12 @@ async def authenticate_user(credentials: HTTPAuthorizationCredentials = Depends(
     except Exception:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-def require_permission(permission: str):
+def require_permission(permission: str | None = None):
     async def checker(user: dict = Depends(authenticate_user)):
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized")
         permissions = UserRepository.get_permission(user["role"])["permissions"]
-        if permission not in permissions:
+        if permission and permission not in permissions:
             raise HTTPException(status_code=403, detail="Forbidden")
         user["permissions"]=permissions
         return {

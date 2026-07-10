@@ -35,11 +35,6 @@ users = [
 ]
 
 
-def create_indexes():
-    users = MongoDB.collection("users")
-    roles = MongoDB.collection("roles")
-    users.create_index("username", unique=True)
-    roles.create_index("name", unique=True)
 
 
 def seed_roles():
@@ -63,6 +58,5 @@ def seed_users():
 
 
 def seed_auth():
-    create_indexes()
     seed_roles()
     seed_users()

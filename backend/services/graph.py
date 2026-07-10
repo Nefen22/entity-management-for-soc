@@ -43,13 +43,13 @@ async def ingest(tenant: str, event: dict | str, auto_ingest : bool | None = Fal
         if src_check:
             s_label = [label for label in result["src_label"] if label not in TENANT_DATABASE.values()][0]
             src_r = Node(id=result["src"][MAPPING_ENTITIES_KEY[s_label]],type=s_label,properties=result["src"])
-            await write_node_create_log(src_r)
+            await write_node_create_log(tenant,src_r)
             if auto_ingest:
                 await enrich(tenant=tenant, type=src_r.type, value=src_r.id)
         if dest_check:
             d_label = [label for label in result["dest_label"] if label not in TENANT_DATABASE.values()][0]
             dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],type=d_label,properties=result["dest"])
-            await write_node_create_log(dest_r)
+            await write_node_create_log(tenant,dest_r)
             if auto_ingest:
                 await enrich(tenant=tenant, type=dest_r.type, value=dest_r.id)
     await EventsRepository.post_event(tenant=tenant, event=event)

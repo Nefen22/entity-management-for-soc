@@ -16,10 +16,15 @@ class MongoDB:
         users = cls.collection("users")
         roles = cls.collection("roles")
         events = cls.collection("events")
+        audit = cls.collection("audit_logs")
         users.create_index("username", unique=True)
         roles.create_index("name", unique=True)
         events.create_index([("tenant", 1), ("event_id", 1)], unique=True)
         events.create_index([("tenant", 1), ("timestamp", 1)])
+        audit.create_index([("tenant", 1), ("timestamp", -1)])
+        audit.create_index([("tenant", 1), ("action", 1)])
+        audit.create_index([("tenant", 1), ("entity_id", 1)])
+        audit.create_index([("tenant", 1), ("entity_type", 1)])
 
     @classmethod
     def collection(cls, name: str):

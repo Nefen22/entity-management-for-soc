@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException, status
 import repositories.entities as repo
 from models.responses import APIResponse
-from logs.audit_log import write_audit_log
+from .logs import write_audit_log
 from database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE,MAPPING_ENTITIES_TYPE
 from .function import format_neo4j_data
 from models.node import Node
 from datetime import datetime
 
-async def write_node_create_log(node: Node, action = 'CREATE', before_node: Node | None = None):
+async def write_node_create_log(tenant:str,node: Node, action = 'CREATE', before_node: Node | None = None):
     label = node.type
-    write_audit_log(
+    await write_audit_log(tenant=tenant,
         action=action,
         entity_type=label,
         entity_id=node.id,
@@ -26,10 +26,11 @@ async def post_entity(tenant: str, type:str, value:str, time: str):
         result = await repo.post_entity(tenant, type, value)
         label = [label for label in result["label"] if label not in TENANT_DATABASE.values()][0]
         node = Node(id = result[label], type = result["label"], properties=result["properties"])
-        await write_node_create_log(node=node)
+        await write_node_create_log(tenant=tenant,node=node)
         
 
 async def get_entity(tenant: str, type:str, value: str):
+    type = "file_hashes" if type == "file-hashes" else type 
     result = await repo.get_entity(tenant=tenant, type=type, value=value)
     if result is None:
         return None
