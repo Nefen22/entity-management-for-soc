@@ -1,13 +1,11 @@
-from repositories.user import UserRepository
+from backend.repositories.auth import UserRepository
 from backend.auth.jwt import create_access_token, decode_access_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi import Depends, HTTPException, Request
+from backend.auth.password import verify_password
 import os
 
 security_scheme = HTTPBearer(auto_error=False)
-
-def verify_password(password: str, stored_password: str):
-    return password == stored_password
 
 async def login(username: str, password: str):
     user = UserRepository.get_user(username)
@@ -17,8 +15,7 @@ async def login(username: str, password: str):
     return create_access_token({
         "sub": username,
         "role": user["role"],
-        "tenant": user["tenants"],
-        "pemissions": user["permissions"]
+        "tenant": user["tenants"]
     })
 
 async def authenticate_user(credentials: HTTPAuthorizationCredentials = Depends(security_scheme)):
@@ -26,8 +23,7 @@ async def authenticate_user(credentials: HTTPAuthorizationCredentials = Depends(
         return {
             "username": "test_user",
             "role": "admin",
-            "tenants": "all",
-            "permissions": ["graph:view", "graph:ingest", "graph:enrichment"]
+            "tenants": "all"
         }
     
     if not credentials:
@@ -41,8 +37,7 @@ async def authenticate_user(credentials: HTTPAuthorizationCredentials = Depends(
         return {
             "username": payload["sub"],
             "role": user["role"],
-            "tenants": user["tenants"],
-            "permissions": user["permissions"]
+            "tenants": user["tenants"]
         }
     except Exception:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -51,10 +46,15 @@ def require_permission(permission: str):
     async def checker(user: dict = Depends(authenticate_user)):
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized")
-
-        if permission not in user.get("permissions", []):
+        permissions = UserRepository.get_permission(user["role"])["permissions"]
+        if permission not in permissions:
             raise HTTPException(status_code=403, detail="Forbidden")
-
-        return user
+        user["permissions"]=permissions
+        return {
+            "username": user["username"],
+            "role": user["role"],
+            "tenants": user["tenants"],
+            "permissions": permissions
+        }
 
     return checker

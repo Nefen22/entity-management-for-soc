@@ -9,17 +9,19 @@ from database.neo4j import init_db, driver
 from api.graph import batch_sample
 from datasets.seed import SEED
 from database.constraints import TENANT_DATABASE
-from api.auth import login
-from database.mongodb import MongoDB
+from database.seed import seed_auth, MongoDB
 import os
 
 RESET_DB = os.getenv("RESET_DB", "true").lower() == "true"
 SEED_NAME = os.getenv("SEED_NAME", "")
 ADMIN_NAME = "admin"
 ADMIN_PASS = "admin123"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     MongoDB.connect()
+    seed_auth()
     seed = SEED[SEED_NAME]
     for tenant in seed.keys():
         TENANT_DATABASE[tenant] = f"Tenant_{tenant}"
@@ -55,6 +57,7 @@ app.add_middleware(
 app.include_router(tenants_router)
 app.include_router(logs_router)
 app.include_router(auth_router)
+
 
 @app.get("/")
 async def root():

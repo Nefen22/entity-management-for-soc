@@ -24,8 +24,8 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/password123
       - NEO4J_PLUGINS=["apoc"]
-    networks:
-      - app-test
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=apoc.*
     healthcheck:
       test:
         [
@@ -43,12 +43,12 @@ services:
       timeout: 5s
       retries: 20
       start_period: 10s
+    networks:
+      - app-test
 
-  redis:
+  redis-test:
     image: redis:7-alpine
-    container_name: redis-cache
-    ports:
-      - "6379:6379"
+    container_name: redis-test-cache
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -69,8 +69,9 @@ services:
       - NEO4J_URI=bolt://neo4j-test:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=password123
-      - MONGO_URI=mongodb://root:secret_password123@mongodb-test:27017
+      - MONGODB_URI=mongodb://root:secret_password123@mongodb-test:27017/?authSource=admin
       - MONGODB_DATABASE=test_db 
+      - REDIS_HOST=redis-test-cache
       - RESET_DB=true
       - SEED_NAME=TEST
       - GEMINI_API_KEY=None
@@ -81,7 +82,7 @@ services:
     depends_on:
       neo4j-test:
         condition: service_healthy
-      redis:
+      redis-test:
         condition: service_healthy
       mongodb-test:
         condition: service_healthy

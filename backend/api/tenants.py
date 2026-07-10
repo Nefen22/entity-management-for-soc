@@ -10,7 +10,7 @@ from services.auth import authenticate_user, require_permission
 router = APIRouter(prefix = "/api/tenants")
 
 def validate_tenant(tenant: str, current_user = Depends(authenticate_user), permission = Depends(require_permission("graph:view"))):
-    if current_user["tenants"] == "all":
+    if  "all" in current_user["tenants"]:
         return tenant
     if tenant not in TENANT_DATABASE.keys():
         raise HTTPException(404, "Tenant not found")
@@ -26,7 +26,7 @@ router.include_router(graphs_router, prefix = "/{tenant}/graphs", tags = ["Graph
 def get_tenants(current_user = Depends(authenticate_user), permission = Depends(require_permission("graph:view"))):
     tenants = list(TENANT_DATABASE.keys())
     user_tenant = current_user["tenants"]
-    if current_user["tenants"] == "all":
+    if "all" in user_tenant:
         return APIResponse(message="GET tenants completed", data=tenants)
     return APIResponse(message="GET tenants completed", data=[tenant for tenant in tenants if tenant in user_tenant])
 

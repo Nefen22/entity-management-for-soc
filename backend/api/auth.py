@@ -18,5 +18,5 @@ async def login(data: LoginRequest):
     raise HTTPException(401, "Invalid username or password")
 
 @router.get("/me")
-async def me(current_user = Depends(services.authenticate_user)):
-    return current_user
+async def ingest(permissions = Depends(services.require_permission("graph:ingest"))):
+    return permissions

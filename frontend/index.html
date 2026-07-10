@@ -311,8 +311,10 @@ async function loadUser() {
             Authorization: "Bearer " + sessionStorage.getItem("soc_token")
         }
     });
+    if (!res.ok){
+      return;
+    }
     const user = await res.json();
-
     const tab = document.getElementById("tabIngest");
     if (user.permissions.includes("graph:ingest")) {
         tab.style.display = "";

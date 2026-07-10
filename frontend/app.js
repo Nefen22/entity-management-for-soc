@@ -413,7 +413,7 @@ function renderEntityChips(list) {
     });
     row.addEventListener('dblclick', () => {
       const type = entity.type || document.getElementById('globalTypeSelect').value || 'Entity';
-      const value = entity.value || entity.id;
+      const value = entity.fullLabel || entity.id;
       openEntityGraph(type, value);
     });
   });
@@ -563,7 +563,7 @@ async function startInvestigation(type, value) {
     syncLayoutSwitch();
     renderInvestigationFilters();
     const rootNode = cy.nodes('.root').length ? cy.nodes('.root') : cy.nodes().first();
-    if (rootNode.length) { rootNode.select(); showDetail(rootNode.data().id, rootNode.data().type); renderActionPanel(rootNode); }
+    if (rootNode.length) { rootNode.select(); showDetail(rootNode.data("id"), rootNode.data("type"), 'detailPanel'); renderActionPanel(rootNode); }
   } catch (err) {
     console.error(err);
     showToast('Không thể bắt đầu điều tra: ' + err.message);
@@ -873,7 +873,8 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
       btn.textContent = details.hidden ? "▶" : "▼";
     };
   });
-  const enrichBtn = document.getElementById("enrichBtn");
+  const enrichBtn = area.querySelector("#enrichBtn"); 
+
   if (enrichBtn) {
     enrichBtn.addEventListener("click", async () => {
       enrichBtn.disabled = true;
@@ -883,7 +884,9 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
           ? `/enrichments/types/ips/values/${encodeURIComponent(data.id)}`
           : `/enrichments/types/file-hashes/values/${encodeURIComponent(data.id)}`;
         const result = await safeFetchJson(apiUrl(path), { method: "POST" });        
-        showDetail(result.id, result.type, panelId);
+        
+        // Truyền panelId vào để khi re-render nó vẫn vẽ đúng vào panel đó
+        showDetail(result.id, result.type, panelId); 
       } catch (err) {
         showToast("Enrichment thất bại: " + err.message);
         enrichBtn.disabled = false;

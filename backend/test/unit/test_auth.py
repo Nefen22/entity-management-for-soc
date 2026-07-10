@@ -5,7 +5,8 @@ from unittest.mock import patch, MagicMock
 from fastapi import HTTPException
 
 from auth.jwt import create_access_token, decode_access_token, SECRET_KEY, ALGORITHM
-from services.auth import login, verify_password
+from services.auth import login
+from auth.password import verify_password, hash_password
 
 
 class TestJWTDecoding:
@@ -75,7 +76,7 @@ class TestAuthService:
         assert result is None 
 
         with patch("services.auth.UserRepository.get_user", return_value=None):
-            from repositories.user import UserRepository
+            from backend.repositories.auth import UserRepository
             user = UserRepository.get_user("nonexistent_user_xyz")
             assert user is None
 
@@ -87,15 +88,15 @@ class TestAuthService:
             "tenants": ["tenant1"]
         }
         
-        result = verify_password("wrong_password", fake_user["password"])
+        result = verify_password("wrong_password", hash_password(fake_user["password"]))
         assert result is False
 
     def test_verify_password_correct(self):
         """Test password verification with correct password"""
-        result = verify_password("mypassword", "mypassword")
+        result = verify_password("mypassword", hash_password("mypassword"))
         assert result is True
 
     def test_verify_password_incorrect(self):
         """Test password verification with incorrect password"""
-        result = verify_password("password1", "password2")
+        result = verify_password("password1", hash_password("password2"))
         assert result is False
