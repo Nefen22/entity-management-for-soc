@@ -3,7 +3,6 @@ import json
 from models.responses import APIResponse
 import services.graph as services
 from services.auth import require_permission
-
 router = APIRouter()
 
 @router.post("/ingest")

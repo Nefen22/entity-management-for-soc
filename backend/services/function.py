@@ -15,11 +15,14 @@ def check_n_add_nodes(check_list,node):
         return node
 
 async def format_drawing(lst: list):
+    lst=format_neo4j_data(lst)
     nodes_check = {}
     edges_check = []
     nodes = []
     edges = []
-    for rels in lst:
+    root_label = [label for label in lst["root_label"] if label not in TENANT_DATABASE.values()][0]
+    root_node = {"id": lst["root"][MAPPING_ENTITIES_KEY[root_label]], "type": root_label, "properties": lst["root"]}
+    for rels in lst["relationships"]:
         source = rels["source"]
         source_label = [rel for rel in rels["source_label"] if rel not in TENANT_DATABASE.values()][0]
         source_name = source[MAPPING_ENTITIES_KEY[source_label]]
@@ -37,11 +40,12 @@ async def format_drawing(lst: list):
                     "source": source_name,
                     "target": target_name,
                     "type": rels["edge_type"],
-                    "rel_properties": format_neo4j_data(rels["prop"])
+                    "rel_properties": rels["prop"]
                 })
     return{
-        "nodes": nodes,
-        "edges": edges,
+        "root"  : root_node,  
+        "nodes" : nodes,
+        "edges" : edges,
     }
 
 def format_neo4j_data(data):

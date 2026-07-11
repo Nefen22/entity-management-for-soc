@@ -8,7 +8,7 @@ import repositories.graph as repo
 from .entities import post_entity, check_existed_logs, write_node_create_log
 from database.constraints import MAPPING_ENTITIES_KEY,TENANT_DATABASE
 from repositories.mongo_repo import EventsRepository
-from .function import format_drawing, normalize_event
+from .function import format_drawing, normalize_event, format_neo4j_data
 from .enrichment import enrich
 from models.node import Node
 from datetime import datetime, timezone
@@ -68,8 +68,8 @@ async def batch_sample(tenant: str, file: str | list, auto_ingest: bool | None =
 
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(tenant=tenant,type=type, value=value, hop=hop)
-    #return result
-    return await format_drawing(result)
+    record = result.data()
+    return await format_drawing(record)
 
 async def clusters(tenant: str):
     result = await repo.clusters(tenant)

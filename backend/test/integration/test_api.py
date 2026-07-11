@@ -47,9 +47,9 @@ def test_get_entity(api):
     assert r.status_code == 200
 
     entity = r.json()["data"]
-
-    assert entity["id"] == "hr.manager"
-    assert entity["type"] == "User"
+    root = entity["root"]
+    assert root["id"] == "hr.manager"
+    assert root["type"] == "User"
 
 def test_graph_one_hop(api):
     r = api.get(

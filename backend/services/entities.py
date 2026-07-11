@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException, status
 import repositories.entities as repo
 from models.responses import APIResponse
 from .logs import write_audit_log
-from database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE,MAPPING_ENTITIES_TYPE
-from .function import format_neo4j_data
+from database.constraints import MAPPING_ENTITIES_KEY, TENANT_DATABASE
+from .function import format_neo4j_data, format_drawing
+from repositories.graph import get_relationship_n_hop
 from models.node import Node
 from datetime import datetime
 
@@ -31,20 +32,11 @@ async def post_entity(tenant: str, type:str, value:str, time: str):
 
 async def get_entity(tenant: str, type:str, value: str):
     type = "file_hashes" if type == "file-hashes" else type 
-    result = await repo.get_entity(tenant=tenant, type=type, value=value)
-    if result is None:
+    result = await get_relationship_n_hop(tenant=tenant,type=type, value=value, hop=1)
+    if not result: 
         return None
     record = result.data()
-    labels=[label for label in record["label"] if label not in TENANT_DATABASE.values()]
-    properties = format_neo4j_data(record["entity"])
-    properties["first_seen"] = format_neo4j_data(record["first_seen"])
-    properties["last_seen"] = format_neo4j_data(record["last_seen"])
-    properties["count"] = record["count"]
-    return Node(
-        id= record["entity"][MAPPING_ENTITIES_KEY[labels[0]]],
-        type= labels[0],
-        properties= properties
-    )
+    return await format_drawing(record)
 
 async def get_list_entity(tenant: str,type:str, relationship:str | None = None, start:str | None = None, end:str | None = None):
     result = await repo.get_list_entity(tenant=tenant, type=type, relationship = relationship, start=start, end=end)

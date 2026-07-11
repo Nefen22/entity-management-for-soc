@@ -28,7 +28,7 @@ async def enrich(tenant:str, type:str, value:str):
             entity_type=MAPPING_ENTITIES_TYPE[type],
             entity_id=value,
             change = {
-                "before": node_before.properties,
+                "before": node_before["root"]["properties"],
                 "after": result.properties
             },
             time= str(datetime.now())

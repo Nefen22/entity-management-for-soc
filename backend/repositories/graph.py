@@ -29,23 +29,32 @@ async def post_relationship(tenant: str, edge: EdgePaser):
 async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
-        query="""MATCH p=(start: {tenant} {type} {key_value})
-                    CALL apoc.path.expandConfig(start, {{
-                        minLevel: 1,
-                        maxLevel: {hop},           // Số hop tối đa
-                        uniqueness: "RELATIONSHIP_GLOBAL" // Thuật toán tối ưu lọc trùng cạnh ngay khi duyệt
-                    }}) YIELD path
-                    UNWIND relationships(path) AS rel
-                    WITH DISTINCT rel
-                    RETURN startNode(rel) AS source, labels(startNode(rel)) AS source_label,
-                            endNode(rel) AS target, labels(endNode(rel)) AS target_label,
-                            type(rel) AS edge_type,
-                            properties(rel) AS prop""".format(key_value=f"{{{MAPPING_ENTITIES_KEY[type]} : $value}}" if type and value else "",
+        query="""MATCH (start:{tenant}{type} {key_value})
+                CALL apoc.path.expandConfig(start, {{
+                    minLevel: 1,
+                    maxLevel: $hop,
+                    uniqueness: "RELATIONSHIP_GLOBAL"
+                }}) YIELD path
+                UNWIND relationships(path) AS rel
+                WITH DISTINCT start, rel
+                WITH start,
+                    collect({{
+                        source: startNode(rel), source_label: labels(startNode(rel)),
+                        target: endNode(rel), target_label: labels(endNode(rel)),
+                        edge_type: type(rel), prop: properties(rel)
+                    }}) AS relationships,
+                    collect(CASE WHEN startNode(rel) = start OR endNode(rel) = start THEN rel END) AS root_rels
+                RETURN apoc.map.merge(properties(start), {{
+                    first_seen: apoc.coll.min([r IN root_rels | r.first_seen]),
+                    last_seen: apoc.coll.max([r IN root_rels | r.last_seen]),
+                    count: size(root_rels)
+                }}) AS root,
+                labels(start) AS root_label,
+                relationships""".format(key_value=f"{{{MAPPING_ENTITIES_KEY[type]} : $value}}" if type and value else "",
                                                               type=":" + MAPPING_ENTITIES_TYPE[type] if type else "",
-                                                              hop=hop,
                                                               tenant=TENANT_DATABASE[tenant])
-        result = await session.run(query, value=value)
-        return await result.data()
+        result = await session.run(query, value=value, hop=hop)
+        return await result.single()
 
 async def clusters(tenant: str):
     async with driver.session() as session:

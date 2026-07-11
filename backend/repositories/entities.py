@@ -1,19 +1,6 @@
 from database.neo4j import driver
 from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, TENANT_DATABASE
 
-async def get_entity(tenant: str, type: str, value: str):
-    type = type if type != "file-hashes" else "file_hashes"
-    async with driver.session() as session:
-        query ="""MATCH (entity:{tenant}:{type}{{{key}: $value}})-[r]-(t)
-                    RETURN entity, labels(entity) AS label,
-                            min(r.first_seen) AS first_seen,
-                            max(r.last_seen) AS last_seen,
-                            count(r) AS count
-                    """.format(tenant=TENANT_DATABASE[tenant],key=MAPPING_ENTITIES_KEY[type],type=MAPPING_ENTITIES_TYPE[type])
-        result = await session.run(query, value=value)
-        if not result:
-            return None
-        return await result.single()
 
 async def get_list_entity(tenant: str, type:str, relationship:str, start:str | None = None, end:str | None = None):
     async with driver.session() as session:

@@ -759,43 +759,54 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
   ? cy.getElementById(data_id).data()
   : await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data_type)}/values/${encodeURIComponent(data_id)}`));
 
-  const props = data.properties || {};
-  const type = data.isCluster === "true" ? "CLUSTER" : data.type;
+  const props = data.properties || data["root"].properties;
+  const type = data.isCluster === "true" ? "CLUSTER" : data["root"].type;
   const baseIdentities = [
-    "value", "username", "hostname", "name", "hash_value", 
+    "value", "username", "hostname", "name", "hash_value",
     "url", "process_name", "resource_id", "address", "cve_id"
   ];
 
-  const baseProfileKeys = new Set([...baseIdentities, "first_seen", "last_seen", "count"]);
+  const metaKeys = new Set(["first_seen", "last_seen", "count"]);
+  const identityKeys = new Set(baseIdentities);
 
-  const baseProps = {};
+  const identityProps = {};
+  const metaProps = {};
   const enrichmentProps = {};
 
   Object.entries(props).forEach(([k, v]) => {
-    if (baseProfileKeys.has(k)) {
-      baseProps[k] = v;
+    if (identityKeys.has(k)) {
+      identityProps[k] = v;
+    } else if (metaKeys.has(k)) {
+      metaProps[k] = v;
     } else {
       enrichmentProps[k] = v;
     }
   });
 
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = String(str ?? "");
+    return div.innerHTML;
+  }
+
   const renderPropsHtml = (propsObj, emptyMessage) => {
     const propsHtml = Object.entries(propsObj)
       .map(([k, v]) => `
         <div class="prop-row">
-          <span class="k">${k}</span>
-          <span class="v">${v}</span>
+          <span class="k">${escapeHtml(k)}</span>
+          <span class="v">${escapeHtml(v)}</span>
         </div>
       `).join('') || `<div class="empty-note">${emptyMessage}</div>`;
     return propsHtml;
   };
-  const baseProfileHtml = renderPropsHtml(baseProps, "Không có thông tin cơ bản.");
+  const identityHtml = renderPropsHtml(identityProps, "Không có định danh.");
+  const baseProfileHtml = renderPropsHtml(metaProps, "Không có thông tin cơ bản.");
   const enrichmentProfileHtml = renderPropsHtml(enrichmentProps, "Không có thông tin bổ sung.");
   let relationships = [];
   let relsHtml;
   if (data.isCluster !== "true") {
     try {
-      const result = await safeFetchJson(apiUrl(`/graphs/entities/types/${encodeURIComponent(data.type)}/values/${encodeURIComponent(data.id)}?hop=1`));
+      const result = data
       relationships = result.edges || [];
     } catch (err) {
       console.error(err);
@@ -873,14 +884,17 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
       ${type}
     </span>
     <div class="id-box">
-      ${type}:${data.fullLabel || data.id}
+      ${type}:${data.fullLabel || data.id || data["root"].id}
     </div>
     ${enrichHtml}
+    <div class="eyebrow" style="margin-top:12px;">Định danh (Identity)</div>
+      ${identityHtml}
     <div class="eyebrow" style="margin-top:12px;">Thông tin cơ bản (Base Profile)</div>
       ${baseProfileHtml}
     <div class="eyebrow" style="margin-top:12px;">Thông tin làm giàu (Enrichment Profile)</div>
       ${enrichmentProfileHtml}
     ${relsTitle}
+    <div>
     <div>
       ${relsHtml}
     </div>
@@ -1593,4 +1607,63 @@ async function runIngest() {
     btn.innerHTML = "⊕ Ingest";
   }
   runGlobalSearch();
+}
+
+document.getElementById("loadFileBtn").addEventListener("click", () => {
+  document.getElementById("ingestFileInput").click();
+});
+
+document.getElementById("ingestFileInput").addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+
+  const status = document.getElementById("ingestStatus");
+  const input = document.getElementById("ingestInput");
+  const isBatch = typeof ingestMode !== "undefined" && ingestMode === "batch";
+
+  try {
+    const contents = await Promise.all(files.map(readFileAsText));
+
+    if (files.length === 1) {
+      // 1 file: đổ nguyên nội dung vào textarea, để runIngest tự parse JSON/text
+      input.value = contents[0];
+    } else {
+      // Nhiều file: chỉ hợp lệ khi ở chế độ Batch
+      if (!isBatch) {
+        showStatus("err", "Chọn nhiều file chỉ dùng được ở chế độ Batch. Hãy chuyển mode hoặc chọn 1 file.");
+        e.target.value = "";
+        return;
+      }
+
+      // Mỗi file parse JSON riêng (nếu là JSON), nếu không parse được thì coi là text thô
+      const items = contents.map((raw) => {
+        const trimmed = raw.trim();
+        try {
+          return JSON.parse(trimmed);
+        } catch {
+          return { text: trimmed };
+        }
+      });
+
+      // Nếu 1 file nào đó tự nó đã là array, "trải phẳng" ra để đúng format batch
+      const flattened = items.flatMap((item) => (Array.isArray(item) ? item : [item]));
+
+      input.value = JSON.stringify(flattened, null, 2);
+    }
+
+    showStatus("ok", `Đã tải ${files.length} file (${files.map(f => f.name).join(", ")}).`);
+  } catch (err) {
+    showStatus("err", "Không đọc được file: " + err.message);
+  } finally {
+    e.target.value = ""; // reset để chọn lại cùng file vẫn trigger change
+  }
+});
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error(`Không đọc được file "${file.name}"`));
+    reader.readAsText(file);
+  });
 }
