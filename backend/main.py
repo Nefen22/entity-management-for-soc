@@ -64,3 +64,53 @@ async def root():
         "message": "Welcome to Entity management for SOC"
     }
 
+@app.get("/health")
+async def health():
+    return {
+        "status": "healthy"
+    }
+
+@app.get("/health/live")
+async def liveness():
+    return {
+        "status": "alive"
+    }
+
+@app.get("/health/ready")
+async def readiness():
+    checks = {}
+
+    try:
+        MongoDB._client.admin.command("ping")
+        checks["mongodb"] = "ok"    
+    except Exception:
+        checks["mongodb"] = "down"
+
+    try:
+        async with driver.session() as session:
+            await session.run("RETURN 1")
+        checks["neo4j"] = "ok"
+    except Exception:
+        checks["neo4j"] = "down"
+    from enrichment.enrich import redis_client
+    try:
+        await redis_client.ping()
+        checks["redis"] = "ok"
+    except Exception:
+        checks["redis"] = "down"
+
+    healthy = all(v == "ok" for v in checks.values())
+
+    if not healthy:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "status": "not_ready",
+                "checks": checks
+            }
+        )
+
+    return {
+        "status": "ready",
+        "checks": checks
+    }
