@@ -31,7 +31,7 @@ class LLMParser(BaseParser):
         else:
             message = event
         encoded_event, entity_search = encode_entity(json.dumps(message, ensure_ascii=False, indent=2))
-        print(f"Encoded event: {encoded_event}")
+        print(f"Encoded event: {json.dumps(encoded_event)}")
         try:
             LLM_result = LLM_Client.parse(encoded_event, entity_search)
         except Exception as e:
@@ -47,10 +47,11 @@ class LLMParser(BaseParser):
                                                 if k not in
                                                 ["source_type", "timestamp", "event_id", "event_type"]}
                                                 | event)
-        print(f"Canonical: {canonical}")
+        print(f"Canonical: {json.dumps(canonical)}")
         for ele in canonical:
             ele["source_type"] = event.get("source_type") if event.get("source_type") else "canonical"
             ele["timestamp"] = event.get("timestamp") if event.get("timestamp") else str(datetime.now(timezone.utc).isoformat())
+            ele["event_id"] = event.get("event_id")
             event_get = JsonParser.from_event(ele, "canonical")
             nodes += event_get.nodes
             edges += event_get.edges
@@ -60,5 +61,5 @@ class LLMParser(BaseParser):
             source_type=event.get("source_type"),
             nodes=nodes,
             edges=edges,
-            evidence=event.get("event_id", "")
+            evidence=event.get("event_id")
         )

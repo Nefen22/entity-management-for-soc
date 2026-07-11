@@ -35,7 +35,7 @@ class BaseParser(BaseModel):
                 connect_type=MAPPING_RELATIONSHIPS[(type_n_nodes[rels[0]].type,
                                                 type_n_nodes[rels[1]].type)],
                 time=time,
-                evidence=event["event_id"]))
+                evidence=event.get("event_id")))
         lst_nodes = []
         for k,v in type_n_nodes.items():
             lst_nodes.append(v)

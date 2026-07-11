@@ -7,6 +7,7 @@ async def write_audit_log(
     entity_type: str,
     entity_id: str,
     time: str,
+    event_id:str | None = None,
     change: dict | None = None,
 ):
     AuditRepository.post_log(
@@ -16,6 +17,7 @@ async def write_audit_log(
             "action": action,
             "entity_type": entity_type,
             "entity_id": entity_id,
+            "event_id": event_id,
             "change": change or {}
         }
     )

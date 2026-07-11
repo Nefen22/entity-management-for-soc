@@ -17,15 +17,16 @@ async def test_write_audit_log_posts_expected_payload():
         )
 
     post_log.assert_called_once_with(
-        tenant="phishing",
-        log={
-            "timestamp": "2024-01-01T00:00:00Z",
-            "action": "CREATE",
-            "entity_type": "User",
-            "entity_id": "admin",
-            "change": {"before": {}, "after": {"value": "admin"}},
-        },
-    )
+                tenant="phishing",
+                log={
+                    "timestamp": "2024-01-01T00:00:00Z",
+                    "action": "CREATE",
+                    "entity_type": "User",
+                    "entity_id": "admin",
+                    "event_id": None,  # Thêm dòng này để khớp với hàm mới cập nhật
+                    "change": {"before": {}, "after": {"value": "admin"}},
+                },
+            )
 
 
 @pytest.mark.asyncio
@@ -45,6 +46,7 @@ async def test_write_audit_log_uses_empty_change_when_missing():
             "timestamp": "2024-01-02T00:00:00Z",
             "action": "UPDATE",
             "entity_type": "IP",
+            "event_id": None,
             "entity_id": "192.168.1.1",
             "change": {},
         },

@@ -47,7 +47,7 @@ async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
                 RETURN apoc.map.merge(properties(start), {{
                     first_seen: apoc.coll.min([r IN root_rels | r.first_seen]),
                     last_seen: apoc.coll.max([r IN root_rels | r.last_seen]),
-                    count: size(root_rels)
+                    count: apoc.coll.sum([r IN root_rels | r.count])
                 }}) AS root,
                 labels(start) AS root_label,
                 relationships""".format(key_value=f"{{{MAPPING_ENTITIES_KEY[type]} : $value}}" if type and value else "",
@@ -98,18 +98,22 @@ async def filter_relationship(tenant: str, type:str):
 
 async def path_finding(tenant: str, type: str, value:str, dest_type:str, dest_value:str):
     async with driver.session() as session:
-        query = """MATCH (src:{tenant}{src_type}{{{src_key}:$src_value}}),
-                (dest:{tenant}{dest_type}{{{dest_key}:$dest_value}}),
-                p = shortestPath((src)-[*..15]-(dest))
+        query = """MATCH (src:{tenant}{src_type} {{{src_key}: $src_value}}),
+                    (dest:{tenant}{dest_type} {{{dest_key}: $dest_value}}),
+                    p = shortestPath((src)-[*..15]-(dest))
                 UNWIND relationships(p) AS rel
-                    WITH DISTINCT rel
-                    RETURN startNode(rel) AS source, labels(startNode(rel)) AS source_label,
-                            endNode(rel) AS target, labels(endNode(rel)) AS target_label,
-                            type(rel) AS edge_type,
-                            properties(rel) AS prop""".format(tenant=TENANT_DATABASE[tenant],
+                WITH DISTINCT src, dest, rel
+                WITH src, dest, collect({{
+                    source: startNode(rel), source_label: labels(startNode(rel)),
+                    target: endNode(rel), target_label: labels(endNode(rel)),
+                    edge_type: type(rel), prop: properties(rel)
+                }}) AS relationships
+                RETURN src AS root, labels(src) AS root_label,
+                    dest AS destination, labels(dest) AS destination_label,
+                    relationships""".format(tenant=TENANT_DATABASE[tenant],
                                                             src_type=":"+MAPPING_ENTITIES_TYPE[type] if type else "",
                                                             src_key=MAPPING_ENTITIES_KEY[type],
                                                             dest_type=":"+MAPPING_ENTITIES_TYPE[dest_type] if type else "",
                                                             dest_key=MAPPING_ENTITIES_KEY[dest_type])
         result = await session.run(query, src_value=value, dest_value=dest_value)
-        return await result.data()
+        return await result.single()

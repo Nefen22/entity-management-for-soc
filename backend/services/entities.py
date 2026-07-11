@@ -8,12 +8,13 @@ from repositories.graph import get_relationship_n_hop
 from models.node import Node
 from datetime import datetime
 
-async def write_node_create_log(tenant:str,node: Node, action = 'CREATE', before_node: Node | None = None):
+async def write_node_create_log(tenant:str,node: Node, action = 'CREATE', before_node: Node | None = None, event_id:str | None = None):
     label = node.type
     await write_audit_log(tenant=tenant,
         action=action,
         entity_type=label,
         entity_id=node.id,
+        event_id= event_id,
         change={"before": {},
                 "after": node.model_dump_json()}
                 if not before_node else
@@ -22,12 +23,12 @@ async def write_node_create_log(tenant:str,node: Node, action = 'CREATE', before
         time= str(datetime.now())
     )
 
-async def post_entity(tenant: str, type:str, value:str, time: str):
+async def post_entity(tenant: str, type:str, value:str, event_id:str | None = None):
     if (await check_existed_logs(tenant=tenant, type=type, value=value)):
         result = await repo.post_entity(tenant, type, value)
         label = [label for label in result["label"] if label not in TENANT_DATABASE.values()][0]
         node = Node(id = result[label], type = result["label"], properties=result["properties"])
-        await write_node_create_log(tenant=tenant,node=node)
+        await write_node_create_log(tenant=tenant,node=node, event_id=event_id)
         
 
 async def get_entity(tenant: str, type:str, value: str):

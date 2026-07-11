@@ -4,6 +4,7 @@ from neo4j.time import DateTime
 from datetime import datetime, timezone
 import ulid
 import time
+import json
 #Funtion 
 
 def check_n_add_nodes(check_list,node):
@@ -66,3 +67,11 @@ def normalize_event(event:dict):
         "event_id": event.get("event_id") or str(ulid.new()),
         "source_type": event.get("source_type", "unknown"),
     }
+
+def normalize_dict(d):
+    clean_dict = {}
+    for k, v in d.items():
+        if k in ['first_seen', 'last_seen', 'count']:  
+            continue
+        clean_dict[k] = str(v) 
+    return json.dumps(clean_dict, sort_keys=True)

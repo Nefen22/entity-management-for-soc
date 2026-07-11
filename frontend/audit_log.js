@@ -2,6 +2,7 @@ let logCurrentPage = 1;
 const logPageSize = 15;
 const urlParams = new URLSearchParams(window.location.search);
 const receivedData = urlParams.get('data');
+const apiUrl = (path) => `/api/tenants/${currentTenant}${path}`;
 
 if (receivedData) {
   sessionStorage.setItem('soc_token', receivedData);
@@ -51,7 +52,6 @@ async function loadTenants() {
 }
 
 document.getElementById('tenantSelect').addEventListener('change', function () {
-  console.log(this.value)
   currentTenant = this.value;
   fetchLogs(1);
 });
@@ -96,8 +96,6 @@ async function fetchLogs(page) {
   }
 }
 
-// ... Các hàm navigatePage, executeFilter, renderLogTable giữ nguyên cấu trúc cũ của bạn ...
-
 function navigatePage(step) {
   fetchLogs(logCurrentPage + step);
 }
@@ -124,8 +122,9 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
       : `<span class="bg-blue-950/60 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold">UPDATE</span>`;
     const color = entityColors[log.entity_type] || "#94a3b8";
     let propertiesString = "";
+    let evidenceId = null;
     try {
-      const IGNORE_FIELDS = new Set(["first_seen", "last_seen", "count"]);
+      const IGNORE_FIELDS = new Set(["first_seen", "last_seen", "count", "evidence"]);
 
       const before = typeof log.change.before === "string"
         ? (log.change.before ? JSON.parse(log.change.before) : {})
@@ -137,6 +136,10 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
 
       const beforeProps = before.properties || before.entity || before;
       const afterProps = after.properties || after.entity || after;
+
+      // Lấy evidence trước khi xóa khỏi object (ưu tiên after, fallback before)
+      console.log(log)
+      evidenceId = log.event_id;
 
       for (const k of IGNORE_FIELDS) {
         delete beforeProps[k];
@@ -173,6 +176,16 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
           </div>
         `;
       }
+
+      if (evidenceId) {
+        propertiesString += `
+          <div class="mt-1 flex justify-end">
+            <button class="evidence-btn" data-event-id="${evidenceId}">
+              🔗 Xem event gốc
+            </button>
+          </div>
+        `;
+      }
     } catch (e) {
       propertiesString = `<pre class="text-xs text-slate-400 whitespace-pre-wrap">${JSON.stringify(log.change, null, 2)}</pre>`;
     }
@@ -191,6 +204,151 @@ function renderLogTable(logs, filterId = "", filterType = "ALL") {
     `;
     tbody.appendChild(tr);
   });
+}
+
+document.getElementById('logTableBody').addEventListener("click", async (e) => {
+  const btn = e.target.closest(".evidence-btn");
+  if (!btn) return;
+  e.stopPropagation();
+  const eventId = btn.dataset.eventId;
+  if (!eventId) return;
+  await showEventPopup(eventId, btn);
+});
+
+async function showEventPopup(eventId, triggerBtn) {
+  // Đóng popup cũ nếu đang mở (tránh chồng nhiều popup)
+  document.querySelectorAll(".event-popover").forEach(el => el.remove());
+
+  const originalLabel = triggerBtn.innerHTML;
+  triggerBtn.disabled = true;
+  triggerBtn.innerHTML = '<span class="spin"></span>';
+
+  // Tạo popover, định vị theo vị trí button
+  const rect = triggerBtn.getBoundingClientRect();
+  const popover = document.createElement("div");
+  popover.className = "event-popover";
+  popover.innerHTML = `
+    <div class="event-popover-header">
+      <span>Chi tiết Event</span>
+      <button class="event-popover-close">✕</button>
+    </div>
+    <div class="event-popover-body">
+      <div class="event-popover-loading"><span class="spin"></span> Đang tải...</div>
+    </div>
+  `;
+  document.body.appendChild(popover);
+
+  // Định vị: ưu tiên hiện bên dưới button, lệch trái nếu tràn màn hình
+  positionPopover(popover, rect);
+
+  const closePopover = () => popover.remove();
+  popover.querySelector(".event-popover-close").addEventListener("click", closePopover);
+
+  // Click ra ngoài để đóng
+  const outsideClickHandler = (e) => {
+    if (!popover.contains(e.target) && e.target !== triggerBtn) {
+      closePopover();
+      document.removeEventListener("click", outsideClickHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener("click", outsideClickHandler), 0);
+
+  try {
+    const result = await safeFetchJson(apiUrl(`/logs/events/${encodeURIComponent(eventId)}`));
+    const raw = result;
+
+    if (!raw) {
+      popover.querySelector(".event-popover-body").innerHTML =
+        '<div class="empty-note">Không tìm thấy dữ liệu event.</div>';
+      return;
+    }
+
+    // Các field cố định hiển thị riêng, phần còn lại render động
+    const fixedFields = ["event_id", "tenant", "source_type", "timestamp"];
+    const restEntries = Object.entries(raw).filter(([k]) => !fixedFields.includes(k));
+
+    popover.querySelector(".event-popover-body").innerHTML = `
+      <div class="prop-row">
+        <span class="k">Event ID</span>
+        <span class="v">${raw.event_id ?? "-"}</span>
+      </div>
+      <div class="prop-row">
+        <span class="k">Tenant</span>
+        <span class="v">${raw.tenant ?? "-"}</span>
+      </div>
+      <div class="prop-row">
+        <span class="k">Source Type</span>
+        <span class="v">${raw.source_type ?? "-"}</span>
+      </div>
+      <div class="prop-row">
+        <span class="k">Timestamp</span>
+        <span class="v">${raw.timestamp ? new Date(raw.timestamp).toLocaleString() : "-"}</span>
+      </div>
+      ${restEntries.map(([k, v]) => `
+        <div class="prop-row">
+          <span class="k">${formatKey(k)}</span>
+          <span class="v">${formatValue(v)}</span>
+        </div>
+      `).join("")}
+    `;
+
+    positionPopover(popover, rect);
+  } catch (err) {
+    popover.querySelector(".event-popover-body").innerHTML =
+      `<div class="empty-note">Lỗi tải event: ${err.message}</div>`;
+  } finally {
+    triggerBtn.disabled = false;
+    triggerBtn.innerHTML = originalLabel;
+  }
+}
+
+
+// Đổi snake_case -> Title Case cho đẹp: "destination_host" -> "Destination Host"
+function formatKey(key) {
+  return key
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+// Xử lý mọi kiểu giá trị: object, array, null, string dài...
+function formatValue(v) {
+  if (v === null || v === undefined) return "-";
+  if (Array.isArray(v)) {
+    return v.map(x => `<div>• ${escapeHtml(String(x))}</div>`).join("");
+  }
+  if (typeof v === "object") {
+    // Nested object -> render dạng JSON thu gọn, tránh [object Object]
+    return `<pre class="nested-json">${escapeHtml(JSON.stringify(v, null, 2))}</pre>`;
+  }
+  return escapeHtml(String(v));
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function positionPopover(popover, rect) {
+  const popW = popover.offsetWidth || 320;
+  const popH = popover.offsetHeight || 200;
+  const margin = 8;
+
+  let top = rect.bottom + margin;
+  let left = rect.left;
+
+  // Nếu tràn phải màn hình, căn theo mép phải button
+  if (left + popW > window.innerWidth - margin) {
+    left = rect.right - popW;
+  }
+  // Nếu tràn dưới màn hình, hiện lên trên button thay vì dưới
+  if (top + popH > window.innerHeight - margin) {
+    top = rect.top - popH - margin;
+  }
+
+  popover.style.top = `${Math.max(margin, top)}px`;
+  popover.style.left = `${Math.max(margin, left)}px`;
 }
 
 // --- KHU VỰC THAY ĐỔI CHÍNH Ở ĐÂY ---

@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from repositories.entities import post_entity, get_entity
-
+from repositories.entities import post_entity
+from services.entities import get_entity
 
 class TestPostEntityUpsert:
     """Test repositories/entities.py post_entity (MERGE/Upsert logic)"""
@@ -57,27 +57,29 @@ class TestGetEntityNotFound:
             # Result should be None
             assert result is None
 
+
     @pytest.mark.asyncio
     async def test_get_entity_found_with_relationships(self):
         """Test successful lookup of existing entity with relationships"""
-        mock_session = AsyncMock()
-        mock_result = AsyncMock()
-        
         mock_entity = {
-            "entity": {"value": "192.168.1.1"},
-            "label": ["IP"],
-            "first_seen": "2024-01-01T00:00:00Z",
-            "last_seen": "2024-01-31T23:59:59Z",
-            "count": 5
+            "root": {"value": "192.168.1.1",
+                     "first_seen": "2024-01-01T00:00:00Z",
+                    "last_seen": "2024-01-31T23:59:59Z",
+                    "count": 5,},
+            "root_label": ["IP"],
+            "relationships": [],
         }
-        
-        mock_result.single.return_value = mock_entity
-        mock_session.run.return_value = mock_result
-        
-        with patch("repositories.entities.driver.session") as mock_driver:
-            mock_driver.return_value.__aenter__.return_value = mock_session
+
+        mock_neo4j_result = MagicMock()
+        mock_neo4j_result.data.return_value = mock_entity
+
+        with patch("services.entities.get_relationship_n_hop") as mock_hop:
+            mock_hop.return_value = mock_neo4j_result 
             
             result = await get_entity("phishing", "IP", "192.168.1.1")
             
-            # Result should have the entity data
-            assert result == mock_entity
+            assert result is not None
+            assert "root" in result
+            assert result["root"]["id"] == "192.168.1.1"
+            assert result["root"]["type"] == "IP"
+            assert "edges" in result

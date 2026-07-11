@@ -156,6 +156,35 @@ MAPPING_RELATIONSHIPS = {
     ("IP", "Domain"):              "CONNECTED_TO",
     ("Domain", "URL"):             "HOSTS",
 }
+
+ALERT_RELATIONSHIPS = {
+    ("User", "Host"): "RELATED_TO",
+    ("User", "IP"): "RELATED_TO",
+
+    ("Host", "IP"): "RELATED_TO",
+
+    ("Host", "Domain"): "RELATED_TO",
+    ("Host", "URL"): "RELATED_TO",
+
+    ("IP", "Domain"): "RELATED_TO",
+    ("IP", "URL"): "RELATED_TO",
+
+    ("Domain", "URL"): "RELATED_TO",
+
+    ("Process", "Host"): "RELATED_TO",
+    ("Process", "User"): "RELATED_TO",
+    ("Process", "FileHash"): "RELATED_TO",
+
+    ("Email", "URL"): "RELATED_TO",
+    ("Email", "FileHash"): "RELATED_TO",
+    ("Email", "Email"): "RELATED_TO",
+
+    ("CloudResource", "Host"): "RELATED_TO",
+    ("CloudResource", "IP"): "RELATED_TO",
+
+    ("CVE", "Host"): "RELATED_TO",
+    ("CVE", "Process"): "RELATED_TO",
+}
 # ── SIEM ──────────────────────────────────────────────────────────────────────
 SIEM_SCHEMA = {
     "nodes": {

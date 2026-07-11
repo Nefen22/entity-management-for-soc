@@ -212,7 +212,7 @@ def test_from_event_defaults_source_type_and_timestamp_when_missing():
     assert passed_ele["timestamp"]
 
     assert parsed.source_type is None
-    assert parsed.evidence == ""
+    assert parsed.evidence is None
 
     assert parsed.nodes[0].value == "admin"
 

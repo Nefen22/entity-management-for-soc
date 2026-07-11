@@ -758,7 +758,7 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
   const data = !data_type
   ? cy.getElementById(data_id).data()
   : await safeFetchJson(apiUrl(`/entities/types/${encodeURIComponent(data_type)}/values/${encodeURIComponent(data_id)}`));
-
+  const id = data.id || data["root"].id;
   const props = data.properties || data["root"].properties;
   const type = data.isCluster === "true" ? "CLUSTER" : data["root"].type;
   const baseIdentities = [
@@ -884,7 +884,7 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
       ${type}
     </span>
     <div class="id-box">
-      ${type}:${data.fullLabel || data.id || data["root"].id}
+      ${type}:${data.fullLabel || data.id || id}
     </div>
     ${enrichHtml}
     <div class="eyebrow" style="margin-top:12px;">Định danh (Identity)</div>
@@ -921,11 +921,11 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
       enrichBtn.disabled = true;
       enrichBtn.innerHTML = '<span class="spin"></span> Đang enrich...';
       try {
-        const path = `/enrichments/types/${type}/values/${encodeURIComponent(data.id)}`;
+        const path = `/enrichments/types/${type}/values/${encodeURIComponent(id)}`;
         const result = await safeFetchJson(apiUrl(path), { method: "POST" });        
         
         // Truyền panelId vào để khi re-render nó vẫn vẽ đúng vào panel đó
-        showDetail(result.id, result.type, panelId); 
+        showDetail(id, type, panelId); 
       } catch (err) {
         showToast("Enrichment thất bại: " + err.message);
         enrichBtn.disabled = false;

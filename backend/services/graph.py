@@ -15,14 +15,14 @@ from datetime import datetime, timezone
 
 
 #Services
-async def ingest(tenant: str, event: dict | str, auto_ingest : bool | None = False):
-    event = normalize_event(event=event)
+async def ingest(tenant: str, pre_event: dict | str, auto_ingest : bool | None = False):
+    event = normalize_event(event=pre_event)
     try:
         sub_event = JsonParser.from_event(event, event.get("source_type"))
     except ValueError:
         try:
             sub_event = LLMParser.from_event(event)
-        except:
+        except Exception:
             sub_event = AlertParser.from_event(event)
 
         if sub_event.nodes == []:
@@ -33,7 +33,7 @@ async def ingest(tenant: str, event: dict | str, auto_ingest : bool | None = Fal
             continue 
         for node in value:
             await post_entity(tenant=tenant, type=type, value=node,
-                              time=event.get("timestamp") if event.get("timestamp") else str(datetime.now(timezone.utc).isoformat()))
+                              event_id=event["event_id"])
             if auto_ingest:
                 await enrich(tenant=tenant, type=type, value=node)
     for ele_rel in rel:
@@ -43,15 +43,15 @@ async def ingest(tenant: str, event: dict | str, auto_ingest : bool | None = Fal
         if src_check:
             s_label = [label for label in result["src_label"] if label not in TENANT_DATABASE.values()][0]
             src_r = Node(id=result["src"][MAPPING_ENTITIES_KEY[s_label]],type=s_label,properties=result["src"])
-            await write_node_create_log(tenant,src_r)
+            await write_node_create_log(tenant=tenant,node=src_r, event_id=event["event_id"])
             if auto_ingest:
-                await enrich(tenant=tenant, type=src_r.type, value=src_r.id)
+                await enrich(tenant=tenant, type=src_r.type, value=src_r.id, event_id=event["event_id"])
         if dest_check:
             d_label = [label for label in result["dest_label"] if label not in TENANT_DATABASE.values()][0]
             dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],type=d_label,properties=result["dest"])
-            await write_node_create_log(tenant,dest_r)
+            await write_node_create_log(tenant=tenant,node=dest_r, event_id=event["event_id"])
             if auto_ingest:
-                await enrich(tenant=tenant, type=dest_r.type, value=dest_r.id)
+                await enrich(tenant=tenant, type=dest_r.type, value=dest_r.id, event_id=event["event_id"])
     await EventsRepository.post_event(tenant=tenant, event=event)
     return sub_event
 
@@ -116,4 +116,4 @@ async def filter_relationship(tenant: str, type:str):
 
 async def path_finding(tenant: str, type: str, value:str, dest_type:str, dest_value:str):
     result = await repo.path_finding(tenant=tenant, type=type, value=value, dest_type=dest_type, dest_value=dest_value)
-    return await format_drawing(result)
+    return await format_drawing(result.data())
