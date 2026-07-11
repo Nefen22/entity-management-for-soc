@@ -1,57 +1,41 @@
-# Functional Requirements
+# Functional & Non-Functional Requirements
 
-## V1
-- FR-01: Ingest SIEM, EDR, cloud audit, and structured alert events from JSON input.
-- FR-02: Extract entities from logs and alerts, including User, Host, IP, Domain, URL, FileHash, Process, Email, CloudResource, and CVE.
-- FR-03: Store entities and relationships in Neo4j with tenant-specific graph labels.
-- FR-04: Query entity relationships using multi-hop traversal and path-finding workflows.
-- FR-05: Enrich IP entities with GeoIP and AbuseIPDB data when available.
-- FR-06: Enrich file hash entities using VirusTotal-compatible data with mock fallback.
-- FR-07: Visualize graph relationships for a selected entity.
-- FR-08: Support configurable parsers for different log sources, including LLM-assisted free-text extraction.
-- FR-09: Maintain relationship metadata including first_seen, last_seen, count, and evidences.
-
-## V2
-- FR-10: Support tenant-aware authorization with MongoDB-backed users, roles, and permissions.
-- FR-11: Persist raw events in MongoDB and expose them through event lookup endpoints.
-- FR-12: Persist audit logs in MongoDB and support filtering and pagination in the audit-log API.
-- FR-13: Support both automatic and manual enrichment workflows.
-- FR-14: Support graceful degradation when external enrichment services are unavailable.
-- FR-15: Generate ULID-based event identifiers when the source payload omits one.
-
-# Non-Functional Requirements
-
-- NFR-01: The system shall support tenant-scoped graph ingestion and investigation.
-- NFR-02: Enrichment failures shall not prevent entity storage or graph creation.
-- NFR-03: The system shall be deployable using Docker Compose.
-- NFR-04: The system shall expose API documentation through Swagger UI.
-- NFR-05: Authentication shall support test mode bypass for CI/CD testing via the TESTING_IN_DOCKER environment variable.
-- NFR-06: New behavior shall be covered by pytest-based unit and integration tests.
+This document outlines the functional and non-functional requirements implemented in the Entity Management for SOC platform (v2.0.0).
 
 ---
 
-# Testing Requirements
+## 1. Functional Requirements
 
-## Test Coverage
+### Event Ingestion & Parsing
+- **FR-01: Multi-Source Ingestion**: Ingest security events and logs from SIEM, EDR, Cloud Audit, and Alert sources via single-event or batch JSON payloads.
+- **FR-02: Parser Fallback Pipeline**:
+  1. **JsonParser**: Matches structured EDR, SIEM, or Cloud sources based on config mappings.
+  2. **LLMParser**: Uses a Large Language Model (Gemini 2.5 Flash) with variable substitution (`<ips_0>`, etc.) to parse free-text/unstructured alerts.
+  3. **AlertParser**: Regex fallback to extract IOCs from text using `iocextract` if JSON and LLM parsing fail.
+- **FR-03: Entity Extraction**: Extract 10 distinct entity types: User, Host, IP, Domain, URL, FileHash, Process, Email, CloudResource, and CVE.
+- **FR-04: Relationship Mapping**: Dynamically construct directed relationships (e.g. `CONNECTED_TO`, `LOGGED_IN`, `EXECUTED_ON`) based on node occurrences.
+- **FR-05: ULID Validation**: Automatically generate a unique ULID for any event that does not contain a pre-existing `event_id`.
 
-The current implementation is validated through pytest-based tests covering auth, parsers, enrichment, graph operations, and audit logging.
+### Database & Storage
+- **FR-06: Property Graph Storage**: Store entities and relationships in Neo4j under tenant-prefixed labels.
+- **FR-07: Log Archiving**: Persist the raw incoming event payloads inside the MongoDB `events` collection.
+- **FR-08: Audit Log Auditing**: Store every node/relationship creation or update transaction inside the MongoDB `audit_logs` collection.
 
-### Test Environment
-- Isolated MongoDB, Neo4j, and Redis services in Docker for integration runs
-- Test dataset seeding via the `SEED_NAME=TEST` environment variable
-- Authentication bypass via `TESTING_IN_DOCKER=true`
+### Traversal, Enrichment, & Query
+- **FR-09: Multi-Hop Traversal**: Query n-hop connections and find shortest paths between suspicious entities.
+- **FR-10: Caching Enrichment**: Orchestrate enrichment for IPs (GeoIP, AbuseIPDB) and FileHashes (VirusTotal API with a local Mock JSON fallback) with 1-hour Redis TTL cache.
+- **FR-11: Graceful Enrichment Fallback**: If external APIs fail, bypass enrichment without blocking the core event ingestion pipeline.
 
-### Test Execution
+### Authentication & Tenant Isolation
+- **FR-12: JWT & RBAC**: Enforce username/password JWT authentication and role-based permissions (`graph:ingest`, `graph:view`, `graph:enrichment`).
+- **FR-13: Multi-Tenant Scoping**: Restrict data visibility and ingestion parameters based on user's authorized tenants, enforced at both the API and database levels.
 
-```bash
-docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
-```
+---
 
-### Key Areas Covered
-- Authentication and JWT handling
-- Entity and graph repository behavior
-- Parser extraction logic
-- Enrichment fallback behavior
-- Audit log persistence and filtering
+## 2. Non-Functional Requirements
 
-See [TESTING.md](TESTING.md) for detailed test documentation.
+- **NFR-01: Performance & Caching**: Cache all enrichment requests in Redis to limit database querying and avoid API throttling.
+- **NFR-02: Security & Encryption**: Store passwords using bcrypt hashes. Protect REST endpoints using RS256/HS256 signed JWT tokens.
+- **NFR-03: Deployment**: Package the entire stack (API, Nginx, Neo4j, MongoDB, Redis, Mongo Express) in a single unified `docker-compose.yml` configuration.
+- **NFR-04: API Documentation**: Automatically generate and serve OpenAPI documentation via Swagger UI.
+- **NFR-05: Test Auth Bypass**: Support `TESTING_IN_DOCKER=true` to skip normal JWT signature validation inside the testing containers, allowing mock-free integration tests.
