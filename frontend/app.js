@@ -1596,7 +1596,8 @@ async function runIngest() {
     if (Array.isArray(json.data)) {
       renderResults(parseIngestData(json.data));
     }
-
+    loadGlobalFilterOptions();
+    loadOverviewClusterGraph();
   } catch (err) {
     showStatus(
       "err",
