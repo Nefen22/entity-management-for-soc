@@ -41,7 +41,7 @@ def extract_enitty(message:str):
         
     urls = set(iocextract.extract_urls(message))
     if urls:
-        result['urls'] = {normalize_url(url) for url in urls}
+        result['urls'] = urls
         
     emails = set(iocextract.extract_emails(message))
     if emails:
