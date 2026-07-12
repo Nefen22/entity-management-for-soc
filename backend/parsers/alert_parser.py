@@ -5,32 +5,62 @@ from database.constraints import MAPPING_ENTITIES_TYPE, ALERT_RELATIONSHIPS, DOM
 import iocextract
 import json
 
+EMAIL_RE = re.compile(
+    r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
+)
+
+def clean_email(value: str) -> str:
+    m = EMAIL_RE.search(value)
+    return m.group(0) if m else value
+
+def normalize_url(value: str) -> str:
+    if not value:
+        return value
+
+    value = value.strip()
+
+    value = value.strip("<>\"'")
+
+    value = re.sub(r'\[\.\]|\(\.\)|\{\.\}', '.', value)
+    value = re.sub(r'\[:\]|\(:\)|\{:\}', ':', value)
+
+    value = re.sub(r'^hxxps?', lambda m: m.group(0).replace("hxxp", "http"), value, flags=re.IGNORECASE)
+
+    value = re.sub(r'^(https?)\s*:\s*//', r'\1://', value, flags=re.IGNORECASE)
+
+    value = re.sub(r'\s+', '', value)
+
+    return value
+
 def extract_enitty(message:str):
     result = {}
     
-    ips = list(iocextract.extract_ipv4s(message))
+    ips = set(iocextract.extract_ipv4s(message))
     if ips:
         result['ips'] = ips
         
-    urls = list(iocextract.extract_urls(message))
+    urls = set(iocextract.extract_urls(message))
     if urls:
-        result['urls'] = urls
+        result['urls'] = {normalize_url(url) for url in urls}
         
-    emails = list(iocextract.extract_emails(message))
+    emails = set(iocextract.extract_emails(message))
     if emails:
-        result['emails'] = emails
+        result['emails'] =  {
+                clean_email(email)
+                for email in emails
+            }
         
-    hashes = list(iocextract.extract_hashes(message))
+    hashes = set(iocextract.extract_hashes(message))
     if hashes:
         result['file_hashes'] = hashes
-    domains = DOMAIN.findall(message)
+    domains = set(DOMAIN.findall(message))
     if domains:
         result["domains"] = domains
 
-    cves = CVE.findall(message)
+    cves = set(CVE.findall(message))
     if cves:
         result["cves"] = cves
-
+    print("iocextract", result)
     return result
 
 def list_vertex(type:  str, lst:list):

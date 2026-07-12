@@ -9,6 +9,7 @@ from .json_parser import JsonParser
 from fastapi import HTTPException, status
 from datetime import datetime, timezone
 
+
 def encode_entity(message: str):
     entity_search = {}
     extract = extract_enitty(message)
@@ -17,9 +18,9 @@ def encode_entity(message: str):
     for k, v in extract.items():
         entity_type = k
         count = 0
-        for ele in v:
+        for ele in list(v):
             encoded = encoded.replace(ele, f"<{entity_type}_{count}>")
-            entity_search[ele] = f"<{entity_type}_{count}>"
+            entity_search[f"<{entity_type}_{count}>"] = ele
             count+=1
     return encoded, entity_search
 
@@ -31,7 +32,7 @@ class LLMParser(BaseParser):
         else:
             message = event
         encoded_event, entity_search = encode_entity(json.dumps(message, ensure_ascii=False, indent=2))
-        print(f"Encoded event: {json.dumps(encoded_event)}")
+        print(f"Encoded event: {encoded_event}")
         try:
             LLM_result = LLM_Client.parse(encoded_event, entity_search)
         except Exception as e:

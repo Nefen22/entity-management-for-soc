@@ -22,7 +22,7 @@ async def ingest(tenant: str, pre_event: dict | str, auto_ingest : bool | None =
     except ValueError:
         try:
             sub_event = LLMParser.from_event(event)
-        except Exception:
+        except Exception as e:
             sub_event = AlertParser.from_event(event)
 
         if sub_event.nodes == []:

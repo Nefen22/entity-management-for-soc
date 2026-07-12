@@ -1,11 +1,15 @@
 import os
 import json
+import re
 import requests
 from google import genai
 from google.genai import types
 from .prompt import Prompt, SYSTEM_PROMPT
+import re
+
+
 class LLM_Client:
-    MODEL = "gemini-2.5-flash"
+    MODEL = "gemini-3.5-flash"
 
     _client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -26,8 +30,7 @@ class LLM_Client:
         )
         
         events = response.text
-        print(f"LLM respone: {json.loads(events)}")
+        print(f"LLM respone: {events}")
         for key, value in encode_entity.items():
-            events = events.replace(value, key)
-        
+            events = events.replace(key, value)
         return json.loads(events)
