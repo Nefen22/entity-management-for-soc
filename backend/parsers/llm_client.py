@@ -6,6 +6,8 @@ from google import genai
 from google.genai import types
 from .prompt import Prompt, SYSTEM_PROMPT
 import re
+from json_repair import repair_json
+from .alert_parser import normalize_url
 
 
 class LLM_Client:
@@ -32,5 +34,5 @@ class LLM_Client:
         events = response.text
         print(f"LLM respone: {events}")
         for key, value in encode_entity.items():
-            events = events.replace(key, value)
-        return json.loads(events)
+            events = events.replace(key, normalize_url(value))
+        return json.loads(repair_json(events))
