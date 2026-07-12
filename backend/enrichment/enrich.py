@@ -23,7 +23,10 @@ async def ips_enrich(value:str):
         data_abuse = await ips_enrichment_abuseipdb(value) | {}
     except:
         data_abuse = {}
-    data_geoip = await enrichment_ip_func(value)
+    try:
+        data_geoip = await enrichment_ip_func(value)
+    except:
+        data_geoip = {}
     data = {**data_geoip, **data_abuse}
     await redis_client.setex(cache_key, 3600, json.dumps(data))
 
@@ -43,7 +46,10 @@ async def hash_enrich(value:str):
         print("Virustotal!")
     except Exception as e:
         print(e)
-        data = await enrichment_file_hash_func(value)
+        try:
+            data = await enrichment_file_hash_func(value)
+        except:
+            data = {}
         print("Mock Virutotal!")
 
     await redis_client.setex(cache_key, 3600, json.dumps(data))

@@ -27,7 +27,7 @@ async def post_entity(tenant: str, type:str, value:str, event_id:str | None = No
     if (await check_existed_logs(tenant=tenant, type=type, value=value)):
         result = await repo.post_entity(tenant, type, value)
         label = [label for label in result["label"] if label not in TENANT_DATABASE.values()][0]
-        node = Node(id = result[label], type = result["label"], properties=result["properties"])
+        node = Node(id = result["node"][MAPPING_ENTITIES_KEY[label]], type = result["label"], properties=result["node"])
         await write_node_create_log(tenant=tenant,node=node, event_id=event_id)
         
 

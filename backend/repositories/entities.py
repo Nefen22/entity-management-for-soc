@@ -1,8 +1,11 @@
 from database.neo4j import driver
 from database.constraints import MAPPING_ENTITIES_TYPE, MAPPING_ENTITIES_KEY, TENANT_DATABASE
-
+from .function import check_rels
+from fastapi import HTTPException
 
 async def get_list_entity(tenant: str, type:str, relationship:str, start:str | None = None, end:str | None = None):
+    if not check_rels(relationship):
+        raise HTTPException(status_code=404, detail="Relationship not found")   
     async with driver.session() as session:
         rel = ""
         start_date="""any(first IN rel.first_seen WHERE datetime(first) >= datetime($start))"""
@@ -16,13 +19,21 @@ async def get_list_entity(tenant: str, type:str, relationship:str, start:str | N
         else:
             date_time =f"""WHERE {start_date}
                             AND {end_date}"""
-        query ="""MATCH (node:{tenant}{type})-[rel{relationship}]-(t)
-                    {date_filter}
+        if not (start or end):
+            query ="""MATCH (node:{tenant}{type}) {rels}
                     RETURN DISTINCT node, labels(node) AS label
                     """.format(tenant=TENANT_DATABASE[tenant],
                                type = ":"+MAPPING_ENTITIES_TYPE[type] if type else "",
-                               relationship=":"+relationship if relationship else "",
+                               rels=f"-[rel:{relationship}]-(t)" if relationship else "",
                                date_filter = date_time)
+        else:
+            query ="""MATCH (node:{tenant}{type})-[rel{relationship}]-(t)
+                        {date_filter}
+                        RETURN DISTINCT node, labels(node) AS label
+                        """.format(tenant=TENANT_DATABASE[tenant],
+                                type = ":"+MAPPING_ENTITIES_TYPE[type] if type else "",
+                                relationship=":"+relationship if relationship else "",
+                                date_filter = date_time)
         result = await session.run(query, start=start, end=end)
         return await result.data()
 

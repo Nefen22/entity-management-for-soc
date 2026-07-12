@@ -16,5 +16,14 @@ load_dotenv(backend_dir / ".env")
 
 @pytest.fixture(scope="session")
 def api():
+    from services.auth import authenticate_user
+    async def mock_authenticate_user():
+        return {
+            "username": "test_user",
+            "role": "admin",
+            "tenants": "all"
+        }
+    app.dependency_overrides[authenticate_user] = mock_authenticate_user
     with TestClient(app) as client:
         yield client
+    app.dependency_overrides.pop(authenticate_user, None)

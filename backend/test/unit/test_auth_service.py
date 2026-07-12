@@ -39,18 +39,9 @@ async def test_login_returns_none_for_missing_user():
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_returns_test_user_when_test_mode_enabled():
-    with patch.dict(os.environ, {"TESTING_IN_DOCKER": "true"}, clear=False):
-        result = await authenticate_user(credentials=None)
-
-    assert result == {"username": "test_user", "role": "admin", "tenants": "all"}
-
-
-@pytest.mark.asyncio
 async def test_authenticate_user_raises_for_missing_credentials():
-    with patch.dict(os.environ, {"TESTING_IN_DOCKER": "false"}, clear=False):
-        with pytest.raises(HTTPException) as exc_info:
-            await authenticate_user(credentials=None)
+    with pytest.raises(HTTPException) as exc_info:
+        await authenticate_user(credentials=None)
 
     assert exc_info.value.status_code == 401
     assert exc_info.value.detail == "Unauthorized"
@@ -61,8 +52,7 @@ async def test_authenticate_user_raises_for_invalid_or_tampered_token():
     credentials = MagicMock()
     credentials.credentials = "bad-token"
 
-    with patch.dict(os.environ, {"TESTING_IN_DOCKER": "false"}, clear=False), \
-         patch("services.auth.decode_access_token", side_effect=Exception("tampered")), \
+    with patch("services.auth.decode_access_token", side_effect=Exception("tampered")), \
          patch("services.auth.UserRepository.get_user", return_value=None):
         with pytest.raises(HTTPException) as exc_info:
             await authenticate_user(credentials=credentials)
@@ -76,8 +66,7 @@ async def test_authenticate_user_returns_user_from_valid_payload():
     credentials = MagicMock()
     credentials.credentials = "valid-token"
 
-    with patch.dict(os.environ, {"TESTING_IN_DOCKER": "false"}, clear=False), \
-         patch("services.auth.decode_access_token", return_value={"sub": "admin"}), \
+    with patch("services.auth.decode_access_token", return_value={"sub": "admin"}), \
          patch("services.auth.UserRepository.get_user", return_value={"role": "admin", "tenants": ["all"]}):
         result = await authenticate_user(credentials=credentials)
 

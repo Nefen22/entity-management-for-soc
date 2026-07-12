@@ -19,13 +19,6 @@ async def login(username: str, password: str):
     })
 
 async def authenticate_user(credentials: HTTPAuthorizationCredentials = Depends(security_scheme)):
-    if os.getenv("TESTING_IN_DOCKER") == "true":
-        return {
-            "username": "test_user",
-            "role": "admin",
-            "tenants": "all"
-        }
-    
     if not credentials:
         raise HTTPException(status_code=401, detail="Unauthorized")
     

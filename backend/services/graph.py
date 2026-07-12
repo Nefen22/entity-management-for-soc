@@ -28,25 +28,24 @@ async def ingest(tenant: str, pre_event: dict | str, auto_ingest : bool | None =
         if sub_event.nodes == []:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Can not extract any entity")
     rel = sub_event.get_relationship()
-    for type, value in sub_event.get_nodes():
-        if not (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])) or value == []:
+    for node in sub_event.get_nodes():
+        value = node.value
+        type = node.type
+        if (value in ([ele.src.value for ele in rel]+[ele.dest.value for ele in rel])):
             continue 
-        for node in value:
-            await post_entity(tenant=tenant, type=type, value=node,
-                              event_id=event["event_id"])
-            if auto_ingest:
-                await enrich(tenant=tenant, type=type, value=node)
+        await post_entity(tenant=tenant, type=type, value=value,
+                            event_id=event["event_id"])
+        if auto_ingest:
+            await enrich(tenant=tenant, type=type, value=value)
     for ele_rel in rel:
-        src_check = await check_existed_logs(tenant, ele_rel.src.type, ele_rel.src.value, True)
-        dest_check = await check_existed_logs(tenant, ele_rel.dest.type, ele_rel.dest.value, True)
         result = await repo.post_relationship(tenant, ele_rel)
-        if src_check:
+        if result["src_is_new"]:
             s_label = [label for label in result["src_label"] if label not in TENANT_DATABASE.values()][0]
             src_r = Node(id=result["src"][MAPPING_ENTITIES_KEY[s_label]],type=s_label,properties=result["src"])
             await write_node_create_log(tenant=tenant,node=src_r, event_id=event["event_id"])
             if auto_ingest:
                 await enrich(tenant=tenant, type=src_r.type, value=src_r.id, event_id=event["event_id"])
-        if dest_check:
+        if result["dest_is_new"]:
             d_label = [label for label in result["dest_label"] if label not in TENANT_DATABASE.values()][0]
             dest_r = Node(id=result["dest"][MAPPING_ENTITIES_KEY[d_label]],type=d_label,properties=result["dest"])
             await write_node_create_log(tenant=tenant,node=dest_r, event_id=event["event_id"])

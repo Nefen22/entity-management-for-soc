@@ -1,7 +1,6 @@
 import os
 import httpx
 import json
-import requests
 
 ABUSEIPDB_API_KEY = os.getenv("ABUSEIPDB_API_KEY", "")
 
@@ -18,12 +17,8 @@ async def ips_enrichment_abuseipdb(value:str):
         "maxAgeInDays": 90
     }
     try:
-        response = requests.get(
-            url,
-            headers=headers,
-            params= params,
-            timeout=10
-        )
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.get(url, headers=headers, params=params)
     except Exception as e:
         raise e
     data = response.json()["data"]

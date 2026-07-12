@@ -8,7 +8,6 @@ from pathlib import Path
 URI = os.getenv("NEO4J_URI")
 USER = os.getenv("NEO4J_USER")
 PASSWORD = os.getenv("NEO4J_PASSWORD")
-TESTING_IN_DOCKER = os.getenv("TESTING_IN_DOCKER", "true").lower() == "true"
 
 driver = AsyncGraphDatabase.driver(URI, auth=(USER, PASSWORD))
 

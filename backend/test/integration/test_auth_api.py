@@ -44,12 +44,22 @@ def test_login_endpoint_returns_422_for_missing_fields():
 # ---------------------- /api/auth/me ----------------------
 
 def test_me_endpoint_returns_permissions_for_authenticated_user():
-    with patch.dict(os.environ, {"TESTING_IN_DOCKER": "true"}, clear=False), \
-         patch(
+    from services.auth import authenticate_user
+    async def mock_authenticate_user():
+        return {
+            "username": "test_user",
+            "role": "admin",
+            "tenants": "all"
+        }
+    app.dependency_overrides[authenticate_user] = mock_authenticate_user
+    try:
+        with patch(
              "services.auth.UserRepository.get_permission",
              return_value={"permissions": ["graph:view", "graph:ingest"]},
-         ):
-        response = client.get("/api/auth/me")
+          ):
+            response = client.get("/api/auth/me")
+    finally:
+        app.dependency_overrides.pop(authenticate_user, None)
 
     assert response.status_code == 200
     body = response.json()
@@ -57,26 +67,31 @@ def test_me_endpoint_returns_permissions_for_authenticated_user():
 
 
 def test_me_endpoint_returns_403_when_permission_denied():
-    with patch.dict(os.environ, {"TESTING_IN_DOCKER": "true"}, clear=False), \
-         patch(
+    from services.auth import authenticate_user
+    async def mock_authenticate_user():
+        return {
+            "username": "test_user",
+            "role": "user",
+            "tenants": "all"
+        }
+    app.dependency_overrides[authenticate_user] = mock_authenticate_user
+    try:
+        with patch(
              "services.auth.UserRepository.get_permission",
              return_value={"permissions": []},
-         ), \
+          ), \
          patch("services.auth.require_permission") as mock_require:
-        # require_permission("") mặc định trong router không truyền quyền cụ thể,
-        # nên test này giả lập trường hợp checker raise 403 khi danh sách quyền rỗng
-        # và endpoint yêu cầu 1 quyền cụ thể không có trong danh sách.
-        async def forbidden_checker(user=None):
-            from fastapi import HTTPException
-            raise HTTPException(403, "Forbidden")
+            async def forbidden_checker(user=None):
+                from fastapi import HTTPException
+                raise HTTPException(403, "Forbidden")
 
-        mock_require.return_value = forbidden_checker
-        response = client.get("/api/auth/me")
+            mock_require.return_value = forbidden_checker
+            response = client.get("/api/auth/me")
+    finally:
+        app.dependency_overrides.pop(authenticate_user, None)
     assert response.status_code in (200, 403)
 
 
 def test_me_endpoint_returns_401_when_unauthenticated():
-    with patch.dict(os.environ, {"TESTING_IN_DOCKER": "false"}, clear=False):
-        response = client.get("/api/auth/me")
-
+    response = client.get("/api/auth/me")
     assert response.status_code == 401
