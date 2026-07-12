@@ -41,7 +41,7 @@ async def post_relationship(tenant: str, edge: EdgePaser):
 async def get_relationship_n_hop(tenant: str, type: str, value: str , hop: int):
     type = type if type != "file-hashes" else "file_hashes"
     async with driver.session() as session:
-        query="""MATCH (start:{tenant}{type} {key_value})
+        query="""MATCH (start:`{tenant}`{type} {key_value})
                 CALL apoc.path.expandConfig(start, {{
                     minLevel: 0,
                     maxLevel: $hop,

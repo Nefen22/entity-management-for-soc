@@ -813,7 +813,7 @@ async function showDetail(data_id, data_type, panelId = 'detailPanel') {
     }
     relsHtml = relationships.length
       ? relationships.map((rel, index) => {
-          const isSource = rel.source === data.id;
+          const isSource = rel.source === id;
           const otherNode = isSource ? rel.target : rel.source;
           const arrow = isSource ? "→" : "←";
           return `
