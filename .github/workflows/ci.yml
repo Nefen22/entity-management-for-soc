@@ -21,6 +21,7 @@ jobs:
       - name: Run Integration Tests
         env: 
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} 
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: |
           docker compose -f docker-compose.test.yml up --abort-on-container-exit
         
