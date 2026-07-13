@@ -69,6 +69,8 @@ async def batch_sample(tenant: str, file: str | list, auto_ingest: bool | None =
 
 async def get_relationship_n_hop(tenant: str, type:str, value:str, hop:int):
     result = await repo.get_relationship_n_hop(tenant=tenant,type=type, value=value, hop=hop)
+    if not result:
+        return None
     record = result.data()
     return await format_drawing(record)
 
@@ -117,4 +119,6 @@ async def filter_relationship(tenant: str, type:str):
 
 async def path_finding(tenant: str, type: str, value:str, dest_type:str, dest_value:str):
     result = await repo.path_finding(tenant=tenant, type=type, value=value, dest_type=dest_type, dest_value=dest_value)
+    if not result:
+        return None
     return await format_drawing(result.data())

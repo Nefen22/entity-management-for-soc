@@ -11,10 +11,10 @@ from services.auth import authenticate_user, require_permission
 router = APIRouter(prefix = "/api/tenants")
 
 def validate_tenant(tenant: str, current_user = Depends(authenticate_user), permission = Depends(require_permission("graph:view"))):
-    if  "all" in current_user["tenants"]:
-        return tenant
     if tenant not in TENANT_DATABASE.keys():
         raise HTTPException(404, "Tenant not found")
+    if  "all" in current_user["tenants"]:
+        return tenant
     if tenant not in current_user["tenants"]:
         raise HTTPException(403, "Forbidden tenant")
     return tenant

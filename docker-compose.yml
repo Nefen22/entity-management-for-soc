@@ -97,6 +97,7 @@ services:
       - INIT_DB=false
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - TESTING_IN_DOCKER=false
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY}
       - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY}
     ports:

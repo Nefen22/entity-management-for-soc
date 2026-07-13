@@ -13,7 +13,7 @@ headers = {
 
 async def ips_enrichment_abuseipdb(value:str):
     params = {
-        "ipAddress": {value},
+        "ipAddress": value,
         "maxAgeInDays": 90
     }
     try:

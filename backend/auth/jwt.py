@@ -3,7 +3,7 @@ from typing import Optional
 import jwt
 import os
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "default_secret_key") 
+SECRET_KEY = os.getenv("JWT_SECRET_KEY") 
 ALGORITHM = "HS256"
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

@@ -134,7 +134,7 @@ async def path_finding(tenant: str, type: str, value:str, dest_type:str, dest_va
                     relationships""".format(tenant=TENANT_DATABASE[tenant],
                                                             src_type=":"+MAPPING_ENTITIES_TYPE[type] if type else "",
                                                             src_key=MAPPING_ENTITIES_KEY[type],
-                                                            dest_type=":"+MAPPING_ENTITIES_TYPE[dest_type] if type else "",
+                                                            dest_type=":"+MAPPING_ENTITIES_TYPE[dest_type] if dest_type else "",
                                                             dest_key=MAPPING_ENTITIES_KEY[dest_type])
         result = await session.run(query, src_value=value, dest_value=dest_value)
         return await result.single()
