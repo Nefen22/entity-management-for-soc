@@ -72,6 +72,7 @@ services:
       - MONGODB_URI=mongodb://root:secret_password123@mongodb-test:27017/?authSource=admin
       - MONGODB_DATABASE=test_db 
       - REDIS_HOST=redis-test-cache
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - RESET_DB=true
       - INIT_DB=true
       - SEED_NAME=TEST

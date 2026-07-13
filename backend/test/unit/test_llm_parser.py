@@ -38,8 +38,8 @@ def test_encode_entity_replaces_detected_entities_with_placeholders():
 
     assert encoded == "connection from <IP_0> and <IP_1>"
     assert entity_search == {
-        "1.2.3.4": "<IP_0>",
-        "5.6.7.8": "<IP_1>"
+        "<IP_0>": "1.2.3.4",
+        "<IP_1>": "5.6.7.8"
     }
 
 

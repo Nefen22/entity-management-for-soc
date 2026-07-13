@@ -12,7 +12,7 @@ def _make_response(text):
 
 
 def test_parse_returns_parsed_json_with_entities_decoded():
-    encode_entity = {"1.2.3.4": "<IP_0>"}
+    encode_entity = {"<IP_0>": "1.2.3.4"}
     raw_response_text = json.dumps({"summary": "attack from <IP_0>"})
 
     mock_client = MagicMock()
@@ -52,7 +52,7 @@ def test_parse_raises_when_response_is_not_valid_json():
 
 
 def test_parse_replaces_multiple_encoded_entities():
-    encode_entity = {"1.2.3.4": "<IP_0>", "evil.com": "<Domain_0>"}
+    encode_entity = {"<IP_0>": "1.2.3.4", "<Domain_0>": "evil.com"}
     raw_response_text = json.dumps({"src": "<IP_0>", "domain": "<Domain_0>"})
 
     mock_client = MagicMock()

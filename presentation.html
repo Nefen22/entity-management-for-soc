@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entity Management for SOC - Final Defense Presentation</title>
+  <!-- Montserrat & Sarabun Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Fira+Code:wght@400;500&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* CSS VARIABLES - PPTX LIGHT MODE THEME */
+    :root {
+      --bg-dark: #f3f4f6;
+      /* Light gray page background */
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --bg-card-border: rgba(0, 0, 0, 0.08);
+      --text-main: #111827;
+      /* Near black text */
+      --text-muted: #4b5563;
+      /* Dark gray for secondary text */
+
+      --accent-primary: #ee0000;
+      /* Viettel Red */
+      --accent-primary-glow: rgba(238, 0, 0, 0.05);
+      --accent-secondary: #06b6d4;
+      /* Cyan */
+      --accent-secondary-glow: rgba(6, 182, 212, 0.05);
+      --accent-alert: #e11d48;
+      /* Dark Rose */
+      --accent-alert-glow: rgba(225, 29, 72, 0.05);
+      --accent-success: #10b981;
+      /* Emerald */
+
+      --font-title: 'Montserrat', 'Helvetica Neue', sans-serif;
+      --font-body: 'Sarabun', 'Arial', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      transition: background-color 0.3s ease;
+    }
+
+    /* PRESENTATION MODE WRAPPERS */
+    #app-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* SLIDE FRAME */
+    #slide-frame {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background-color: var(--bg-dark);
+      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      z-index: 10;
+    }
+
+    /* PRESENTER CONSOLE (RIGHT SIDE) */
+    #presenter-console {
+      width: 450px;
+      height: 100%;
+      background-color: #0c0f16;
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      display: none;
+      flex-direction: column;
+      padding: 24px;
+      z-index: 20;
+      overflow-y: auto;
+      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      color: #f3f4f6;
+    }
+
+    body.presenter-mode #presenter-console {
+      display: flex;
+    }
+
+    body.presenter-mode #slide-frame {
+      flex: 0 0 calc(100% - 450px);
+      background-color: #e5e7eb;
+      padding: 30px;
+    }
+
+    /* SLIDE DECK CONTAINER */
+    #deck {
+      width: 100%;
+      height: 100%;
+      max-width: 1920px;
+      max-height: 1080px;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.presenter-mode #deck {
+      transform: scale(0.9);
+      transform-origin: center center;
+      border: 3px solid var(--accent-primary);
+      border-radius: 8px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    /* SLIDE CONTENT STYLING WITH PPTX BACKGROUNDS */
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.98) translate3d(0, 5px, 0);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), visibility 0.4s;
+      padding: 60px 80px 48px 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      /* Content Slides Default Background: background.png */
+      background-image: url('slide_images/background.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      background-color: #ffffff;
+      color: var(--text-main);
+    }
+
+    /* Cover Slide Unique Background: Picture1.png */
+    #slide-0 {
+      background-image: url('slide_images/Picture1.png');
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+      color: #ffffff;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1) translate3d(0, 0, 0);
+      z-index: 5;
+    }
+
+    /* SLIDE HEADER & FOOTER */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .slide-question {
+      font-family: var(--font-title);
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #111827;
+      /* Dark title matching slide master */
+      letter-spacing: -0.015em;
+    }
+
+    .slide-subtitle {
+      font-family: var(--font-title);
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-primary);
+      /* Viettel Red accent */
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      padding-top: 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      z-index: 8;
+    }
+
+    /* SLIDE CONTENT LAYOUT */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .slide-body.full-width {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .slide-text {
+      flex: 0 0 49%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .slide-text p {
+      font-size: 16px;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .slide-visual {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      max-height: 480px;
+      position: relative;
+    }
+
+    /* CARD STYLING FOR LIGHT MODE */
+    .glow-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 10px;
+      padding: 16px 20px;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glow-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent-primary);
+      opacity: 0.9;
+    }
+
+    .glow-card.secondary::before {
+      background: var(--accent-secondary);
+    }
+
+    .glow-card.alert::before {
+      background: var(--accent-alert);
+    }
+
+    .glow-card.success::before {
+      background: var(--accent-success);
+    }
+
+    .glow-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(238, 0, 0, 0.2);
+      box-shadow: 0 6px 18px rgba(238, 0, 0, 0.06);
+    }
+
+    .glow-card h3 {
+      font-family: var(--font-title);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .glow-card p {
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
+
+    .glow-card ul {
+      margin-top: 8px;
+      list-style-position: inside;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* CONTROLS OVERLAY */
+    #controls-overlay {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 50px;
+      padding: 6px 14px;
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    }
+
+    #controls-overlay button {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 20px;
+      transition: all 0.2s ease;
+      font-family: var(--font-title);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #controls-overlay button:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--accent-primary);
+    }
+
+    /* COVER SLIDE UNIQUE OVERRIDES */
+    #slide-0 .cover-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+    }
+
+    #slide-0 .cover-title {
+      font-family: var(--font-title);
+      font-size: 46px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      color: #ffffff;
+      background: none;
+      -webkit-text-fill-color: initial;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      max-width: 1100px;
+    }
+
+    #slide-0 .cover-subtitle {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.85);
+      max-width: 850px;
+      line-height: 1.55;
+      margin-bottom: 40px;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    #slide-0 .cover-metadata {
+      display: flex;
+      gap: 36px;
+      font-size: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 16px 32px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(4px);
+    }
+
+    #slide-0 .meta-label {
+      color: #ffcccc;
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+    }
+
+    #slide-0 .meta-val {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    #slide-0 .slide-subtitle {
+      color: #ffffff !important;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    #slide-0 .slide-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* PRESENTER CONSOLE LIGHT ELEMENTS */
+    #presenter-console select {
+      background: #1f2937;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    #presenter-console .notes-box {
+      background: #1f2937;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e5e7eb;
+    }
+
+    /* CODE BLOCKS FOR LIGHT THEME */
+    pre {
+      background: #1e293b !important;
+      /* Dark Slate to keep high code contrast */
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 6px;
+      padding: 12px;
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.45;
+      color: #38bdf8;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .highlight-red {
+      color: #f43f5e;
+      font-weight: bold;
+    }
+
+    .highlight-green {
+      color: #10b981;
+      font-weight: bold;
+    }
+
+    .highlight-blue {
+      color: #60a5fa;
+      font-weight: bold;
+    }
+
+    .highlight-yellow {
+      color: #fbbf24;
+      font-weight: bold;
+    }
+
+    /* SVG DIAGRAM ADJUSTMENTS FOR LIGHT THEME background */
+    svg {
+      background: rgba(255, 255, 255, 0.85) !important;
+      border: 1px solid rgba(0, 0, 0, 0.06) !important;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    }
+
+    svg text {
+      fill: #1f2937 !important;
+      /* Dark gray font inside SVGs */
+    }
+
+    svg rect {
+      fill: #ffffff !important;
+      stroke: #d1d5db !important;
+    }
+
+    svg circle {
+      fill: #f3f4f6 !important;
+      stroke: #9ca3af !important;
+    }
+
+    /* Specific overrides to retain color meaning in diagrams */
+    .flow-line {
+      stroke-dasharray: 6;
+      animation: dash 35s linear infinite;
+    }
+
+    /* COMPARISON TABLE */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .comparison-table th {
+      font-family: var(--font-title);
+      font-weight: 700;
+      color: #111827;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.08);
+      padding: 12px;
+      background: #f9fafb;
+    }
+
+    .comparison-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      color: var(--text-muted);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .comparison-table tr:hover {
+      background: rgba(0, 0, 0, 0.01);
+    }
+
+    .comparison-table strong {
+      color: #111827;
+    }
+
+    .badge {
+      background: rgba(238, 0, 0, 0.05);
+      border: 1px solid var(--accent-primary);
+      color: var(--accent-primary);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: var(--font-title);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge.secondary {
+      background: rgba(6, 182, 212, 0.05);
+      border: 1px solid var(--accent-secondary);
+      color: var(--accent-secondary);
+    }
+
+    .badge.alert {
+      background: rgba(225, 29, 72, 0.05);
+      border: 1px solid var(--accent-alert);
+      color: var(--accent-alert);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="app-container">
+
+    <!-- LEFT SIDE: SLIDE PREVIEW / SHOW -->
+    <div id="slide-frame">
+      <div id="deck">
+
+        <!-- COVER SLIDE (0) -->
+        <div class="slide active" id="slide-0" data-slide-name="Mở đầu">
+          <div class="cover-content">
+            <span class="slide-subtitle"
+              style="text-transform: uppercase; font-size: 14px; letter-spacing: 0.1em; font-weight: 700;">Báo cáo bảo
+              vệ Mini-Project</span>
+            <h1 class="cover-title">Entity Management for SOC</h1>
+            <p class="cover-subtitle">Báo cáo Mini-Project · Trần Quốc Nam · Mentor: Phạm Văn Trọng · Viettel Cyber
+              Security</p>
+
+            <div class="cover-metadata">
+              <div class="meta-item">
+                <span class="meta-label">Sinh viên</span>
+                <span class="meta-val">Trần Quốc Nam</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Đơn vị</span>
+                <span class="meta-val">Viettel Cyber Security</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Mentor</span>
+                <span class="meta-val">Phạm Văn Trọng</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>SOC Entity Management Platform</span>
+            <span>Slide 1/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 1 (Problem) -->
+        <div class="slide" id="slide-1" data-slide-name="Đặt Vấn Đề">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">01. Đặt Vấn Đề</span>
+              <h2 class="slide-question">Tại Sao Điều Tra SOC Truyền Thống Khó Khăn?</h2>
+            </div>
+            <span class="badge alert">Operational Pain</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Thách thức của SOC:</strong> Sự cô lập và phi cấu trúc của dữ liệu log khiến việc điều tra
+                lateral movement gặp nhiều trở ngại.</p>
+
+              <div class="glow-card alert">
+                <h3>Sự Cô Lập Của Log</h3>
+                <p>Log từ SIEM, EDR, Cloud lưu ở nhiều nơi với cấu trúc khác nhau. Nhà phân tích phải truy vấn thủ công,
+                  làm tăng MTTR.</p>
+              </div>
+
+              <div class="glow-card alert">
+                <h3>Cảnh Báo Dạng Tự Do</h3>
+                <p>Alerts dạng free-text từ các nguồn Threat Intelligence không có cấu trúc cố định, khiến parser truyền
+                  thống thất bại.</p>
+              </div>
+
+              <div class="glow-card">
+                <h3>Đồ Thị Hóa Quan Hệ</h3>
+                <p>Chuyển từ lưu trữ tài liệu sang mô hình hóa thực thể. Sử dụng Neo4j để xâu chuỗi sự kiện và liên kết
+                  quan hệ tự động.</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <svg width="420" height="340" viewBox="0 0 420 340">
+                <!-- Isolated Side -->
+                <text x="60" y="30" fill="var(--accent-alert)" font-size="11" font-weight="700" font-family="Montserrat"
+                  letter-spacing="1">ISOLATED LOGS (SILO)</text>
+
+                <rect x="30" y="55" width="80" height="32" rx="4" fill="#ffffff" stroke="var(--accent-alert)"
+                  stroke-width="1.5" />
+                <text x="70" y="74" font-size="10" font-family="Sarabun" font-weight="600" text-anchor="middle">SIEM
+                  (JSON)</text>
+
+                <rect x="30" y="105" width="80" height="32" rx="4" fill="#ffffff" stroke="var(--accent-alert)"
+                  stroke-width="1.5" />
+                <text x="70" y="124" font-size="10" font-family="Sarabun" font-weight="600" text-anchor="middle">EDR
+                  (JSON)</text>
+
+                <rect x="30" y="155" width="80" height="32" rx="4" fill="#ffffff" stroke="var(--accent-alert)"
+                  stroke-width="1.5" />
+                <text x="70" y="174" font-size="10" font-family="Sarabun" font-weight="600" text-anchor="middle">Cloud
+                  (JSON)</text>
+
+                <rect x="30" y="205" width="80" height="32" rx="4" fill="#ffffff" stroke="var(--accent-alert)"
+                  stroke-width="1.5" />
+                <text x="70" y="224" font-size="9" font-family="Sarabun" font-weight="600" text-anchor="middle">Free
+                  Text Alert</text>
+
+                <line x1="120" y1="140" x2="160" y2="140" stroke="var(--accent-alert)" stroke-width="1.5"
+                  stroke-dasharray="4" />
+                <text x="140" y="130" fill="var(--accent-alert)" font-size="9" font-family="Sarabun"
+                  text-anchor="middle" font-weight="bold">Manual Investigation</text>
+
+                <circle cx="190" cy="140" r="18" fill="#f3f4f6" stroke="#9ca3af" stroke-width="1.5" />
+                <text x="190" y="144" font-size="10" font-family="Sarabun" text-anchor="middle"
+                  font-weight="600">Analyst</text>
+
+                <!-- Connected Side -->
+                <text x="270" y="30" fill="var(--accent-primary)" font-size="11" font-weight="700"
+                  font-family="Montserrat" letter-spacing="1">ENTITY GRAPH</text>
+
+                <circle cx="330" cy="70" r="18" fill="#ffffff" stroke="var(--accent-secondary)" stroke-width="1.5" />
+                <text x="330" y="74" font-size="9" font-family="Sarabun" font-weight="600"
+                  text-anchor="middle">User</text>
+
+                <circle cx="285" cy="135" r="18" fill="#ffffff" stroke="var(--accent-primary)" stroke-width="1.5" />
+                <text x="285" y="139" font-size="9" font-family="Sarabun" font-weight="600"
+                  text-anchor="middle">IP</text>
+
+                <circle cx="375" cy="135" r="18" fill="#ffffff" stroke="var(--accent-primary)" stroke-width="1.5" />
+                <text x="375" y="139" font-size="9" font-family="Sarabun" font-weight="600"
+                  text-anchor="middle">Host</text>
+
+                <circle cx="330" cy="200" r="18" fill="#ffffff" stroke="var(--accent-secondary)" stroke-width="1.5" />
+                <text x="330" y="204" font-size="8" font-family="Sarabun" font-weight="600"
+                  text-anchor="middle">FileHash</text>
+
+                <!-- Edges -->
+                <line x1="320" y1="85" x2="295" y2="120" stroke="#9ca3af" stroke-width="1" />
+                <line x1="340" y1="85" x2="365" y2="120" stroke="#9ca3af" stroke-width="1" />
+                <line x1="303" y1="135" x2="357" y2="135" stroke="var(--accent-primary)" stroke-width="2"
+                  class="flow-line" />
+                <line x1="295" y1="150" x2="320" y2="185" stroke="#9ca3af" stroke-width="1" />
+                <line x1="365" y1="150" x2="340" y2="185" stroke="#9ca3af" stroke-width="1" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="slide-frame-footer">
+            <div class="slide-footer">
+              <span>Đặt Vấn Đề</span>
+              <span>Slide 2/11</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 2 (Objectives) -->
+        <div class="slide" id="slide-2" data-slide-name="Mục tiêu">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">02. Mục Tiêu</span>
+              <h2 class="slide-question">Ba Mục Tiêu Cốt Lõi Của Đề Tài</h2>
+            </div>
+            <span class="badge">Objectives</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Định hướng giải quyết:</strong> Xây dựng hệ thống tự động hóa chuẩn hóa dữ liệu bảo mật và nâng cao hiệu quả điều tra của analyst.</p>
+
+              <div class="glow-card success">
+                <h3>1. Ingest Đa Nguồn Dữ Liệu</h3>
+                <p>Hỗ trợ tiếp nhận và tiền xử lý log từ nhiều nguồn như SIEM, EDR, Cloud logs và cả các cảnh báo dạng tự do.</p>
+              </div>
+
+              <div class="glow-card secondary">
+                <h3>2. Tự Động Xây Dựng Entity Graph</h3>
+                <p>Trích xuất thực thể (User, Host, IP, File Hash) và tự động thiết lập mối quan hệ từ cả log cấu trúc và phi cấu trúc.</p>
+              </div>
+
+              <div class="glow-card">
+                <h3>3. Hỗ Trợ Điều Tra Trực Quan</h3>
+                <p>Cung cấp tính năng Graph Visualization, Path Finding tìm lateral movement, làm giàu dữ liệu và RBAC.</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <table class="comparison-table">
+                <thead>
+                  <tr>
+                    <th>Tính Năng</th>
+                    <th>Relational / Document JOIN</th>
+                    <th>Entity Graph (Neo4j)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Độ trễ truy vết</strong></td>
+                    <td>Tăng theo cấp số nhân khi đi sâu đa bước (O(N\log N))</td>
+                    <td>Đo lường O(1) qua con trỏ bộ nhớ trực tiếp</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Độ phức tạp câu lệnh</strong></td>
+                    <td>Nhiều tầng JOIN lồng nhau (SQL) hoặc lookup phức tạp</td>
+                    <td>Cypher cực kỳ đơn giản:<br><code
+                        style="color: var(--accent-primary); font-size:11px;">(u:User)-[*..3]->(ip:IP)</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Tích hợp thông tin</strong></td>
+                    <td>Cần định nghĩa trường cứng hoặc cấu trúc nested phức tạp</td>
+                    <td>Lưu linh hoạt thuộc tính trên Node và Edge, hỗ trợ Path Finding</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Mục Tiêu Đề Tài</span>
+            <span>Slide 3/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 3 (Architecture Design) -->
+        <div class="slide" id="slide-3" data-slide-name="Kiến Trúc">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">03. Kiến Trúc</span>
+              <h2 class="slide-question">Tại Sao Thiết Kế Hệ Thống Đa Cơ Sở Dữ Liệu?</h2>
+            </div>
+            <span class="badge">Multi-DB Linkage</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Lưu trữ phân tách:</strong> Kết hợp thế mạnh của từng công nghệ CSDL để lưu trữ tối ưu cả cấu
+                trúc đồ thị lẫn bằng chứng logs nguyên bản.</p>
+
+              <div class="glow-card">
+                <h3>Neo4j: Tối ưu hóa traversal</h3>
+                <p>Chịu trách nhiệm lưu trữ và truy vấn cấu trúc đồ thị an ninh mạng. Giải quyết bài toán Path Finding
+                  và truy vết mối quan hệ.</p>
+              </div>
+
+              <div class="glow-card secondary">
+                <h3>MongoDB: Lưu trữ Raw Event & Audit Log</h3>
+                <p>Lưu trữ nguyên bản log thô JSON đa dạng và ghi lịch sử chỉnh sửa đồ thị (CREATE/UPDATE diffs) mà
+                  không gây phình to đồ thị Neo4j.</p>
+              </div>
+
+              <div class="glow-card alert">
+                <h3>Redis: Caching cho Enrichment</h3>
+                <p>Lưu trữ đệm kết quả làm giàu dữ liệu thực thể từ VirusTotal, AbuseIPDB với TTL 3600s để bảo vệ API
+                  rate limits.</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <svg width="420" height="340" viewBox="0 0 420 340">
+                <!-- Client -->
+                <rect x="15" y="145" width="80" height="50" rx="4" fill="#ffffff" stroke="var(--accent-primary)"
+                  stroke-width="1.5" />
+                <text x="55" y="170" fill="#111827" font-size="10" font-family="Montserrat" text-anchor="middle"
+                  font-weight="bold">Web Client</text>
+                <text x="55" y="182" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">Cytoscape.js</text>
+
+                <!-- Arrows -->
+                <line x1="95" y1="170" x2="135" y2="170" stroke="var(--accent-primary)" stroke-width="1.5"
+                  class="flow-line" />
+
+                <!-- FastAPI -->
+                <rect x="135" y="125" width="115" height="90" rx="6" fill="#ffffff" stroke="var(--accent-primary)"
+                  stroke-width="2" />
+                <text x="192" y="150" fill="#111827" font-size="11" font-family="Montserrat" text-anchor="middle"
+                  font-weight="bold">FastAPI Layer</text>
+
+                <rect x="145" y="165" width="95" height="18" rx="2" fill="#f3f4f6" stroke="#d1d5db"
+                  stroke-width="0.5" />
+                <text x="192" y="177" fill="var(--accent-primary)" font-size="8" font-family="Montserrat"
+                  text-anchor="middle" font-weight="bold">JWT / RBAC</text>
+
+                <rect x="145" y="188" width="95" height="18" rx="2" fill="#f3f4f6" stroke="#d1d5db"
+                  stroke-width="0.5" />
+                <text x="192" y="200" fill="#111827" font-size="8" font-family="Sarabun" text-anchor="middle">Ingest
+                  Pipeline</text>
+
+                <!-- Output routes -->
+                <path d="M 250,150 L 305,85 M 250,170 L 305,170 M 250,190 L 305,255" stroke="#9ca3af" stroke-width="1.5"
+                  fill="none" />
+
+                <!-- Redis -->
+                <rect x="305" y="60" width="100" height="50" rx="4" fill="#ffffff" stroke="var(--accent-alert)"
+                  stroke-width="1.5" />
+                <text x="355" y="85" fill="#111827" font-size="11" font-family="Montserrat" text-anchor="middle"
+                  font-weight="bold">Redis</text>
+                <text x="355" y="97" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">Enrichment (3600s)</text>
+
+                <!-- Neo4j -->
+                <rect x="305" y="145" width="100" height="50" rx="4" fill="#ffffff" stroke="var(--accent-success)"
+                  stroke-width="1.5" />
+                <text x="355" y="170" fill="#111827" font-size="11" font-family="Montserrat" text-anchor="middle"
+                  font-weight="bold">Neo4j</text>
+                <text x="355" y="182" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">Entity Graph</text>
+
+                <!-- MongoDB -->
+                <rect x="305" y="230" width="100" height="50" rx="4" fill="#ffffff" stroke="var(--accent-secondary)"
+                  stroke-width="1.5" />
+                <text x="355" y="255" fill="#111827" font-size="11" font-family="Montserrat" text-anchor="middle"
+                  font-weight="bold">MongoDB</text>
+                <text x="355" y="267" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">Raw Logs / Audit</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Kiến Trúc</span>
+            <span>Slide 4/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 4 (3-Tier Ingest Pipeline) -->
+        <div class="slide" id="slide-4" data-slide-name="Ingest Pipeline">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">04. Pipeline Ingest</span>
+              <h2 class="slide-question">Tại Sao Thiết Kế Pipeline Ingest 3 Tầng?</h2>
+            </div>
+            <span class="badge secondary">Triage Priority</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Dự phòng linh hoạt:</strong> Đảm bảo hệ thống hoạt động liên tục ngay cả khi dịch vụ trí tuệ
+                nhân tạo (AI) bên ngoài gặp sự cố hoặc nghẽn mạng.</p>
+
+              <div class="glow-card">
+                <h3>JSON Parser (Core - Ưu tiên 1)</h3>
+                <p>Xử lý log có cấu trúc (SIEM/EDR/Cloud) qua mapping tĩnh. Tốc độ cực cao, chi phí tính toán bằng 0.
+                </p>
+              </div>
+
+              <div class="glow-card secondary">
+                <h3>LLM Normalizer (AI Fallback - Ưu tiên 2)</h3>
+                <p>Fallback khi log không đúng định dạng chuẩn. Chuẩn hóa log tự do sang Canonical Event qua Gemini API.
+                </p>
+              </div>
+
+              <div class="glow-card alert">
+                <h3>Regex Parser (Safety Fallback - Ưu tiên 3)</h3>
+                <p>Lá chắn cuối cùng. Trích xuất trực tiếp IOC thô bằng regex khi API AI quá tải hoặc lỗi kết nối.</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <svg width="420" height="340" viewBox="0 0 420 340">
+                <!-- Priority Flow -->
+                <polygon points="210,35 60,125 360,125" fill="rgba(6,182,212,0.06)" stroke="var(--accent-secondary)"
+                  stroke-width="2" />
+                <text x="210" y="80" fill="#111827" font-size="11" font-weight="bold" font-family="Montserrat"
+                  text-anchor="middle">1. JSON PARSER</text>
+                <text x="210" y="100" fill="var(--text-muted)" font-size="8.5" font-family="Sarabun"
+                  text-anchor="middle">Mapping cấu trúc tĩnh (Độ trễ µs / Cost: $0)</text>
+
+                <polygon points="60,125 360,125 330,225 90,225" fill="rgba(238,0,0,0.04)" stroke="var(--accent-primary)"
+                  stroke-width="2" />
+                <text x="210" y="160" fill="#111827" font-size="11" font-weight="bold" font-family="Montserrat"
+                  text-anchor="middle">2. LLM NORMALISER</text>
+                <text x="210" y="178" fill="var(--accent-primary)" font-size="8.5" font-family="Sarabun"
+                  text-anchor="middle" font-weight="bold">Fallback AI (Gemini 3.5 Flash / Placeholder)</text>
+                <text x="210" y="195" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">Chuẩn hóa logs phi cấu trúc thành Canonical Event</text>
+
+                <polygon points="90,225 330,225 300,305 120,305" fill="rgba(225,29,72,0.06)"
+                  stroke="var(--accent-alert)" stroke-width="2" />
+                <text x="210" y="255" fill="#111827" font-size="11" font-weight="bold" font-family="Montserrat"
+                  text-anchor="middle">3. REGEX FALLBACK</text>
+                <text x="210" y="275" fill="var(--accent-alert)" font-size="8.5" font-family="Sarabun"
+                  text-anchor="middle" font-weight="bold">Trích xuất IOC thô (iocextract / Local)</text>
+                <text x="210" y="290" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">Đảm bảo pipeline luôn chạy khi API ngoài bị lỗi</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Ingest Pipeline</span>
+            <span>Slide 5/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 5 (Placeholder & Canonical) -->
+        <div class="slide" id="slide-5" data-slide-name="Placeholder & Canonical">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">05. Tích Hợp AI & Toàn Vẹn Dữ Liệu</span>
+              <h2 class="slide-question">Cơ Chế Placeholder Encoding & Canonical Event</h2>
+            </div>
+            <span class="badge success">Integrity Control</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Bảo vệ dữ liệu an ninh:</strong> Sử dụng AI một cách thông minh bằng cách giới hạn nhiệm vụ và kiểm soát dữ liệu đầu vào/đầu ra.</p>
+
+              <div class="glow-card">
+                <h3>Placeholder Encoding (Bảo vệ IOC)</h3>
+                <p>Mã hóa các thực thể quan trọng (IP, URL, Hash) thành các token dạng <code>&lt;ips_0&gt;</code> trước khi gửi cho LLM. Triệt tiêu hallucination và chống AI tự ý sửa đổi.</p>
+              </div>
+
+              <div class="glow-card secondary">
+                <h3>Canonical Event (Chuẩn hóa trung gian)</h3>
+                <p>LLM chỉ làm nhiệm vụ đọc ngữ nghĩa văn bản và đưa về Canonical JSON schema chung. AI không trực tiếp vẽ node hay thiết lập mối quan hệ trên graph.</p>
+              </div>
+
+              <div class="glow-card success">
+                <h3>Thống Nhất Pipeline Xử Lý Phía Sau</h3>
+                <p>Khôi phục IOC gốc từ placeholder, đưa Canonical Event qua JSON Parser cốt lõi để vẽ graph. Giúp toàn hệ thống chỉ cần duy trì một Graph Builder.</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <div class="glow-card secondary"
+                style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 12px; font-family: var(--font-mono); font-size: 11px;">
+                <h4
+                  style="color: var(--accent-primary); font-family: var(--font-title); font-size: 14px; font-weight: 700;">
+                  Placeholder Encoding Flow</h4>
+                <div>
+                  <span class="highlight-red">Input:</span> "Outbound to 185.220.101.45"
+                </div>
+                <div style="color: var(--text-muted); font-size: 10px; font-family: var(--font-body);">
+                  ➔ Tách IPv4 bằng Regex cục bộ: <span class="highlight-yellow">185.220.101.45</span>
+                </div>
+                <div>
+                  <span class="highlight-blue">To LLM:</span> "Outbound to &lt;ips_0&gt;"
+                </div>
+                <div style="color: var(--text-muted); font-size: 10px; font-family: var(--font-body);">
+                  ➔ LLM phân tích và trả về Canonical JSON
+                </div>
+                <div>
+                  <span class="highlight-green">Restore & Ingest:</span> Khôi phục <span class="highlight-yellow">185.220.101.45</span> nạp JSON Parser ➔ Neo4j
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Placeholder & Canonical</span>
+            <span>Slide 6/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 6 (Entity Graph Investigation) -->
+        <div class="slide" id="slide-6" data-slide-name="Điều tra Graph">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">06. Điều Tra Trên Graph</span>
+              <h2 class="slide-question">Chức Năng Hỗ Trợ Điều Tra Trên Đồ Thị</h2>
+            </div>
+            <span class="badge secondary">Triage Features</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Công cụ tối ưu triage:</strong> Giao diện trực quan hóa Cytoscape kết hợp kiểm soát phân quyền API nghiêm ngặt và Audit Log đầy đủ.</p>
+
+              <div class="glow-card">
+                <h3>Xác thực JWT & Phân quyền RBAC</h3>
+                <p>Quyền Analyst chỉ được xem đồ thị và làm giàu thực thể. Quyền Admin mới được phép upload và ingest log mới.</p>
+              </div>
+
+              <div class="glow-card secondary">
+                <h3>Graph Explorer (Cytoscape.js)</h3>
+                <p>Hỗ trợ tương tác trực quan, chạy thuật toán Path Finding tìm đường đi ngắn nhất để truy vết lateral movement.</p>
+              </div>
+
+              <div class="glow-card success">
+                <h3>Audit Log & Cache Làm Giàu</h3>
+                <p>Ghi nhận thay đổi (diff Before/After) vào MongoDB. Redis cache kết quả enrichment (VirusTotal, AbuseIPDB) với TTL 1h.</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <svg width="420" height="340" viewBox="0 0 420 340">
+                <!-- Shortest path diagram -->
+                <text x="210" y="30" fill="var(--text-muted)" font-size="10" font-family="Montserrat" font-weight="600"
+                  text-anchor="middle">PATH FINDING TRONG ĐIỀU TRA</text>
+
+                <circle cx="60" cy="180" r="18" fill="#ffffff" stroke="var(--accent-alert)" stroke-width="2" />
+                <text x="60" y="210" font-size="8.5" font-family="Sarabun" font-weight="600" text-anchor="middle">User
+                  (alice)</text>
+
+                <circle cx="150" cy="110" r="16" fill="#ffffff" stroke="#9ca3af" stroke-width="1.5" />
+                <text x="150" y="137" font-size="8" font-family="Sarabun" text-anchor="middle">Host-01</text>
+
+                <circle cx="240" cy="110" r="16" fill="#ffffff" stroke="#9ca3af" stroke-width="1.5" />
+                <text x="240" y="137" font-size="8" font-family="Sarabun" text-anchor="middle">powershell</text>
+
+                <circle cx="200" cy="230" r="18" fill="#ffffff" stroke="var(--accent-primary)" stroke-width="2" />
+                <text x="200" y="260" font-size="8.5" font-family="Sarabun" font-weight="600" text-anchor="middle">IP
+                  (Malicious)</text>
+
+                <circle cx="340" cy="180" r="18" fill="#ffffff" stroke="var(--accent-success)" stroke-width="2" />
+                <text x="340" y="210" font-size="8.5" font-family="Sarabun" font-weight="600" text-anchor="middle">S3
+                  Bucket</text>
+
+                <line x1="75" y1="165" x2="135" y2="120" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3" />
+                <line x1="166" y1="110" x2="224" y2="110" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3" />
+                <line x1="254" y1="122" x2="325" y2="168" stroke="#9ca3af" stroke-width="1" stroke-dasharray="3" />
+
+                <!-- Path highlighted -->
+                <line x1="75" y1="190" x2="185" y2="225" stroke="var(--accent-primary)" stroke-width="3"
+                  class="flow-line" />
+                <line x1="215" y1="225" x2="325" y2="190" stroke="var(--accent-primary)" stroke-width="3"
+                  class="flow-line" />
+
+                <text x="120" y="220" fill="var(--accent-primary)" font-size="8" font-family="Montserrat"
+                  font-weight="bold">LOGGED_IN</text>
+                <text x="280" y="220" fill="var(--accent-primary)" font-size="8" font-family="Montserrat"
+                  font-weight="bold">ACCESSED</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Điều Tra Thực Thể</span>
+            <span>Slide 7/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 7 (Demo Scenario) -->
+        <div class="slide" id="slide-7" data-slide-name="Demo">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">07. Demo Trực Tiếp</span>
+              <h2 class="slide-question">Kịch Bản Demo Các Tình Huống Thực Tế</h2>
+            </div>
+            <span class="badge">Live Demo</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Kiểm chứng tính năng:</strong> Minh họa khả năng xử lý đa nguồn dữ liệu và giao diện điều tra trực quan.</p>
+
+              <div class="glow-card alert">
+                <h3>1. Ingest Log JSON Có Cấu Trúc</h3>
+                <p>Tải file log JSON mẫu (SIEM, EDR). JSON Parser sẽ tự động trích xuất các Entity và tạo graph trên Neo4j theo schema mapping.</p>
+              </div>
+
+              <div class="glow-card">
+                <h3>2. Ingest Free Text (LLM Normalizer)</h3>
+                <p>Nhập tay một ghi chú điều tra (unstructured incident note). Kích hoạt Placeholder Encoding -> LLM -> Canonical Event -> JSON Parser.</p>
+              </div>
+
+              <div class="glow-card success">
+                <h3>3. Analyst Investigation</h3>
+                <p>Tìm kiếm thực thể, mở rộng đồ thị, thực hiện làm giàu (enrichment IP), kiểm chứng Redis cache, và chạy tìm đường đi (Path Finding).</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <div class="glow-card secondary" style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 24px;">
+                <h4 style="color: var(--accent-primary); font-family: var(--font-title); font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 10px;">LUỒNG KIỂM THỬ DEMO</h4>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="badge">Bước 1</span>
+                    <span>Đăng nhập JWT / RBAC (Analyst/Admin)</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="badge secondary">Bước 2</span>
+                    <span>Chọn Tenant Acme / Xem Entity List</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="badge success">Bước 3</span>
+                    <span>Ingest JSON & Graph Visualization</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="badge alert">Bước 4</span>
+                    <span>Ingest Free Text (LLM & Placeholder)</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="badge">Bước 5</span>
+                    <span>Enrich IP (Redis Cache) & Path Finding</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Kịch Bản Demo</span>
+            <span>Slide 8/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 8 (Experimental Validation) -->
+        <div class="slide" id="slide-8" data-slide-name="Thực Nghiệm">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">08. Đánh Giá Thực Nghiệm</span>
+              <h2 class="slide-question">Kết Quả Đánh Giá Thực Nghiệm Hệ Thống</h2>
+            </div>
+            <span class="badge success">System Verification</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Xác thực hệ thống:</strong> Đảm bảo độ bền vững của mã nguồn thông qua unit tests diện rộng và kiểm thử tải cho bộ nhớ đệm.</p>
+
+              <div class="glow-card success">
+                <h3>Đa Nguồn & Fallback</h3>
+                <p>Ingest SIEM, EDR, Cloud nhanh chóng. LLM fallback chuẩn hóa chính xác, Regex cứu cánh khi API lỗi.</p>
+              </div>
+
+              <div class="glow-card success">
+                <h3>Hiệu Năng Redis Cache</h3>
+                <p>Redis cache giúp loại bỏ các lượt gọi API trùng lặp, duy trì tính ổn định của hệ thống và bảo vệ quota API bên ngoài.</p>
+              </div>
+
+              <div class="glow-card success">
+                <h3>Phân Quyền & Code Coverage</h3>
+                <p>RBAC chặn đứng các API ingest trái phép. Pytest đạt tỷ lệ bao phủ mã nguồn 96% (với 129 test cases thành công).</p>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <div class="glow-card secondary"
+                style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 14px;">
+                <h4
+                  style="color: var(--accent-primary); font-family: var(--font-title); font-size: 15px; font-weight: 700;">
+                  Tóm Tắt Kết Qủa Kiểm Thử</h4>
+                <div
+                  style="display:flex; justify-content:space-between; border-bottom: 1px solid var(--bg-card-border); padding-bottom: 6px; font-size: 12px;">
+                  <span>Successful Test Cases</span>
+                  <span class="highlight-green">129 Passed</span>
+                </div>
+                <div
+                  style="display:flex; justify-content:space-between; border-bottom: 1px solid var(--bg-card-border); padding-bottom: 6px; font-size: 12px;">
+                  <span>Pytest Coverage Rate</span>
+                  <span class="highlight-green">96%</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding-bottom: 6px; font-size: 12px;">
+                  <span>Redis Enrichment Cache</span>
+                  <span class="highlight-green">Active (TTL 3600s)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Đánh Giá Thực Nghiệm</span>
+            <span>Slide 9/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 9 (Limitations & Future Work) -->
+        <div class="slide" id="slide-9" data-slide-name="Hạn chế & Phát triển">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">09. Hạn Chế & Hướng Phát Triển</span>
+              <h2 class="slide-question">Hạn Chế Hiện Tại & Lộ Trình Phát Triển</h2>
+            </div>
+            <span class="badge">Roadmap</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text">
+              <p><strong>Lộ trình nâng cấp:</strong> Hoàn thiện hệ thống bằng cách tăng tính tự chủ bảo mật của AI và thiết kế cơ chế xử lý hàng đợi bất đồng bộ.</p>
+
+              <div class="glow-card alert">
+                <h3>Hạn Chế Hiện Tại</h3>
+                <ul>
+                    <li>Mối quan hệ tĩnh theo schema mapping, chưa mô hình hóa event type đầy đủ ngữ nghĩa.</li>
+                    <li>Chưa có cơ chế Entity Resolution để hợp nhất thực thể trùng lặp.</li>
+                    <li>Chưa tích hợp sẵn Correlation Engine tự động phát hiện chuỗi tấn công.</li>
+                </ul>
+              </div>
+
+              <div class="glow-card success">
+                  <h3>Hướng Phát Triển</h3>
+                  <ul>
+                      <li>Bổ sung Event Taxonomy/Semantic Layer tăng độ chính xác của relationship.</li>
+                      <li>Xây dựng cơ chế Entity Resolution hợp nhất các thực thể tương đương.</li>
+                      <li>Tích hợp Kafka xử lý stream log tải lớn và bổ sung Correlation Engine.</li>
+                  </ul>
+              </div>
+            </div>
+
+            <div class="slide-visual">
+              <svg width="420" height="340" viewBox="0 0 420 340">
+                <text x="210" y="30" fill="var(--text-muted)" font-size="10" font-family="Montserrat" font-weight="600"
+                  text-anchor="middle">LỘ TRÌNH KIẾN TRÚC MỞ RỘNG</text>
+
+                <!-- Pipeline Block Future -->
+                <rect x="25" y="100" width="80" height="140" rx="6" fill="#ffffff" stroke="var(--accent-secondary)"
+                  stroke-width="2" />
+                <text x="65" y="160" fill="#111827" font-size="11" font-family="Montserrat" font-weight="bold"
+                  text-anchor="middle" transform="rotate(-90 65 160)">INGEST STREAM</text>
+
+                <line x1="105" y1="170" x2="160" y2="170" stroke="var(--accent-secondary)" stroke-width="1.5"
+                  class="flow-line" />
+
+                <!-- Local parser -->
+                <rect x="160" y="130" width="100" height="80" rx="6" fill="#ffffff" stroke="var(--accent-primary)"
+                  stroke-width="2" />
+                <text x="210" y="157" fill="#111827" font-size="10" font-family="Montserrat" font-weight="bold"
+                  text-anchor="middle">Local Ollama</text>
+                <text x="210" y="172" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">(Llama-3 IR Parser)</text>
+                <text x="210" y="190" fill="var(--accent-success)" font-size="8" font-family="Sarabun" font-weight="600"
+                  text-anchor="middle">✔ Bảo mật dữ liệu</text>
+
+                <line x1="260" y1="170" x2="315" y2="170" stroke="var(--accent-secondary)" stroke-width="1.5"
+                  class="flow-line" />
+
+                <!-- Attack Path engine -->
+                <rect x="315" y="130" width="85" height="80" rx="6" fill="#ffffff" stroke="var(--accent-success)"
+                  stroke-width="2" />
+                <text x="357" y="157" fill="#111827" font-size="10" font-family="Montserrat" font-weight="bold"
+                  text-anchor="middle">Graph Triage</text>
+                <text x="357" y="172" fill="var(--text-muted)" font-size="8" font-family="Sarabun"
+                  text-anchor="middle">(Auto Detection)</text>
+                <text x="357" y="190" fill="var(--accent-success)" font-size="8" font-family="Sarabun" font-weight="600"
+                  text-anchor="middle">✔ Trích xuất Attack-path</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Hạn Chế & Lộ Trình</span>
+            <span>Slide 10/11</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 10 (Conclusion) -->
+        <div class="slide" id="slide-10" data-slide-name="Kết Luận">
+          <div class="slide-header">
+            <div>
+              <span class="slide-subtitle">10. Kết Luận</span>
+              <h2 class="slide-question">Tổng Kết Giá Trị Cốt Lõi Của Đề Tài</h2>
+            </div>
+            <span class="badge success">Conclusion</span>
+          </div>
+
+          <div class="slide-body">
+            <div class="slide-text" style="flex: 0 0 60%;">
+              <p><strong>Ý nghĩa cốt lõi:</strong> Giải quyết bài toán chuẩn hóa dữ liệu phục vụ điều tra SOC bằng mô hình Entity Graph tối ưu và an toàn.</p>
+
+              <div class="glow-card success">
+                <h3>Thiết Kế Pipeline Đa Tầng Thống Nhất</h3>
+                <p>Canonical Event và Multi-layer Ingestion giúp hệ thống dễ dàng mở rộng sang các nguồn log mới mà không cần sửa đổi Graph Builder cốt lõi.</p>
+              </div>
+
+              <div class="glow-card secondary">
+                <h3>Kết Hợp AI Và Khả Năng Dự Phòng Hợp Lý</h3>
+                <p>LLM chỉ đảm nhận khâu chuẩn hóa trung gian, kết hợp Placeholder Encoding bảo đảm an toàn dữ liệu. Hệ thống có khả năng tự động fallback khi AI ngoại tuyến.</p>
+              </div>
+            </div>
+
+            <div class="slide-visual" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 16px;">
+              <h2 style="font-family: var(--font-title); font-size: 28px; font-weight: 800; color: var(--accent-primary);">XIN CẢM ƠN!</h2>
+              <p style="font-size: 15px; color: var(--text-muted); max-width: 320px; line-height: 1.5;">Em xin cảm ơn các anh/chị mentor đã lắng nghe. Rất mong nhận được ý kiến đóng góp và câu hỏi.</p>
+              <div style="border-top: 1px solid rgba(0,0,0,0.1); width: 100px; margin-top: 10px;"></div>
+              <p style="font-family: var(--font-title); font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--accent-secondary);">Q&A Session</p>
+            </div>
+          </div>
+
+          <div class="slide-footer">
+            <span>Kết Luận</span>
+            <span>Slide 11/11</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CONTROLS OVERLAY -->
+      <div id="controls-overlay">
+        <button onclick="prevSlide()" id="prev-btn">◀ Quay Lại</button>
+        <button onclick="togglePresenterMode()" id="pres-toggle-btn">Chế Độ Thuyết Trình (P)</button>
+        <button onclick="nextSlide()" id="next-btn">Tiếp Theo ▶</button>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDE: PRESENTER CONSOLE (Shown in presenter mode) -->
+    <div id="presenter-console">
+
+      <div class="console-header">
+        <div class="console-title">
+          <span>🎙️ Presenter Console</span>
+        </div>
+        <div class="console-timer" id="console-timer">
+          <span id="timer-display">00:00</span>
+          <button class="timer-btn" onclick="toggleTimer()" id="timer-control-btn">Pause</button>
+          <button class="timer-btn" onclick="resetTimer()">Reset</button>
+        </div>
+      </div>
+
+      <div class="console-section">
+        <h4>Chọn Slide nhanh</h4>
+        <select id="slide-selector" onchange="jumpToSlide(this.value)"
+          style="width: 100%; background: #1f2937; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px; border-radius: 6px; font-family: var(--font-title); font-size: 14px;">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+
+      <div class="console-section" style="flex: 1; display: flex; flex-direction: column;">
+        <h4>Lời thoại thuyết trình</h4>
+        <div class="notes-box" id="notes-box" style="line-height: 1.6; font-size: 13px;">
+          <!-- Populated by JS dynamically -->
+        </div>
+      </div>
+
+      <div class="console-section">
+        <h4>Slide tiếp theo</h4>
+        <div class="next-preview" id="next-preview">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- JAVASCRIPT FOR ENGINE -->
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const slideSelector = document.getElementById('slide-selector');
+    const notesBox = document.getElementById('notes-box');
+    const nextPreview = document.getElementById('next-preview');
+
+    // Slide speaker notes derived from presentation_notes_with_demo.md and presentation_notes.md
+    const slideNotes = [
+      // Slide 1 (Index 0): Title
+      `<h4>Slide 1 - Giới thiệu (20–30s)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Xin chào các anh/chị mentor. Em là <strong>Trần Quốc Nam</strong>, hôm nay em xin trình bày đề tài <strong>Entity Management for SOC Investigation Console</strong>."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Mục tiêu của đề tài là xây dựng một hệ thống hỗ trợ điều tra an ninh mạng bằng cách tự động trích xuất các thực thể từ nhiều nguồn log khác nhau, xây dựng Entity Graph và hỗ trợ analyst điều tra trực quan hơn."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Trong phần trình bày em sẽ giới thiệu bài toán, kiến trúc hệ thống, pipeline xử lý dữ liệu, sau đó sẽ demo trực tiếp."</p>
+       <p style="color: var(--accent-primary); font-weight: bold; margin-top: 10px;">➔ Chuyển slide: "Đầu tiên em xin trình bày bài toán mà hệ thống hướng đến giải quyết."</p>`,
+
+      // Slide 2 (Index 1): Problem Statement
+      `<h4>Slide 2 - Đặt Vấn Đề (~1 phút)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Trong môi trường SOC, dữ liệu được thu thập từ rất nhiều nguồn khác nhau như SIEM, EDR và Cloud Platform. Mỗi nguồn lại sử dụng schema và định dạng log khác nhau."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Ngoài các log đã có cấu trúc, analyst còn phải xử lý các Incident Note hoặc Alert được viết dưới dạng văn bản tự nhiên. Điều này khiến quá trình điều tra khá mất thời gian vì analyst phải tự đọc log và liên kết User, Host, Process, IP hay File Hash bằng tay."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Ý tưởng của đề tài là chuẩn hóa các nguồn dữ liệu này thành một mô hình thống nhất, sau đó xây dựng Entity Graph để phục vụ investigation."</p>
+       <p style="color: #60a5fa; font-weight: bold; margin-top: 8px;">Nhấn mạnh:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Như vậy thay vì chỉ lưu log, hệ thống tập trung biểu diễn mối quan hệ giữa các thực thể."</p>`,
+
+      // Slide 3 (Index 2): Objectives
+      `<h4>Slide 3 - Mục tiêu đề tài (~40s)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Từ bài toán đó, hệ thống đặt ra ba mục tiêu chính."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Thứ nhất là hỗ trợ ingest dữ liệu từ nhiều nguồn khác nhau."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Thứ hai là tự động xây dựng Entity Graph từ cả dữ liệu có cấu trúc lẫn phi cấu trúc."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Cuối cùng là cung cấp các chức năng hỗ trợ investigation như graph visualization, path finding, enrichment và RBAC."</p>`,
+
+      // Slide 4 (Index 3): System Architecture
+      `<h4>Slide 4 - Kiến trúc hệ thống (~1 phút)</h4>
+       <p style="color: #fbbf24; font-weight: bold; margin-top: 4px;">⚠️ Mentor thường hỏi nhiều ở slide này!</p>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Kiến trúc hệ thống được chia thành nhiều tầng. Người dùng thao tác thông qua giao diện React. Nginx đóng vai trò reverse proxy và chuyển tiếp request đến FastAPI. Backend chịu trách nhiệm xác thực JWT, phân quyền RBAC, ingest dữ liệu và quản lý graph."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Trong quá trình xử lý: Neo4j lưu Entity Graph; MongoDB lưu Raw Event và Audit Log; Redis cache kết quả enrichment để giảm thời gian truy vấn."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Việc tách riêng từng thành phần giúp hệ thống dễ mở rộng và triển khai."</p>
+       <p style="color: #f43f5e; font-weight: bold; margin-top: 8px;">💡 Nếu được hỏi về lý do chọn MongoDB:</p>
+       <p style="color: #cbd5e1; margin-top: 4px;">"MongoDB không dùng để lưu graph mà lưu dữ liệu gốc và audit nhằm phục vụ truy vết sau này."</p>`,
+
+      // Slide 5 (Index 4): Multi-layer Parser (Ingest Pipeline)
+      `<h4>Slide 5 - Pipeline Ingest (~1 phút)</h4>
+       <p style="color: #fbbf24; font-weight: bold; margin-top: 4px;">⭐ Đây là điểm mạnh nhất của project. Nói chậm & rõ!</p>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Đây là pipeline xử lý dữ liệu của hệ thống. Đầu tiên, nếu dữ liệu đã có cấu trúc như SIEM, EDR hoặc Cloud Log thì Json Parser sẽ xử lý trực tiếp. Parser sử dụng schema mapping để xác định entity và relationship."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Nếu parser không nhận diện được nguồn log hoặc không trích xuất được bất kỳ entity nào thì hệ thống sẽ tự động chuyển sang LLM Parser."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"LLM sẽ đọc ngữ nghĩa của văn bản và chuẩn hóa thành Canonical Event. Sau đó Canonical Event vẫn tiếp tục đi qua cùng Json Parser để xây dựng Entity Graph."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Trong trường hợp AI không khả dụng hoặc trả về kết quả lỗi thì hệ thống sẽ fallback sang Alert Parser sử dụng IOCExtract và Regex để trích xuất IOC cơ bản."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Nhờ thiết kế nhiều tầng nên hệ thống luôn cố gắng xử lý dữ liệu thay vì phụ thuộc hoàn toàn vào AI."</p>`,
+
+      // Slide 6 (Index 5): Placeholder Encoding & Canonical
+      `<h4>Slide 6 - Placeholder Encoding & Canonical (~1 phút)</h4>
+       <p style="color: #fbbf24; font-weight: bold; margin-top: 4px;">💡 Mentor rất thích cách thiết kế này!</p>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Trước khi gửi dữ liệu cho AI, hệ thống sẽ thực hiện Placeholder Encoding. Các IOC như URL, Domain, Email hoặc File Hash sẽ được thay thế bằng placeholder, ví dụ URL được thay bằng &lt;urls_0&gt;."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Mục tiêu là hạn chế hallucination và tránh việc AI tự sửa hoặc làm sai các giá trị IOC quan trọng."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Sau khi AI trả về kết quả dưới dạng Canonical Event, hệ thống sẽ decode placeholder trở lại giá trị ban đầu."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Ở đây, AI chỉ chịu trách nhiệm chuẩn hóa dữ liệu về Canonical Event, việc sinh Node và Relationship vẫn sử dụng Json Parser. Điều này giúp toàn bộ pipeline phía sau được thống nhất."</p>
+       <p style="color: #60a5fa; font-weight: bold; margin-top: 8px;">Nhấn mạnh:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"AI không trực tiếp tạo graph. AI chỉ chuẩn hóa dữ liệu."</p>`,
+
+      // Slide 7 (Index 6): Entity Graph Investigation
+      `<h4>Slide 7 - Điều Tra Trên Graph (~1 phút)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Sau khi dữ liệu được chuyển thành Entity Graph, analyst có thể thực hiện điều tra trực tiếp trên graph. Thay vì đọc từng dòng log, analyst chỉ cần chọn một Entity bất kỳ, ví dụ User hoặc Host, để xem các thực thể liên quan."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Hệ thống hiện hỗ trợ một số chức năng chính: Tra cứu Entity, Hiển thị Relationship, Multi-hop Query, Path Finding, Entity Enrichment, Raw Event và Audit Log."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Neo4j rất phù hợp với bài toán này vì các truy vấn điều tra thường là tìm các mối quan hệ nhiều bước giữa User, Host, Process, IP và File Hash, thay vì truy vấn theo bảng như cơ sở dữ liệu quan hệ."</p>
+       <p style="color: var(--accent-primary); font-weight: bold; margin-top: 10px;">➔ Chuyển slide: "Tiếp theo em sẽ demo trực tiếp toàn bộ pipeline của hệ thống."</p>`,
+
+      // Slide 8 (Index 7): Demo
+      `<h4>Slide 8 - Kịch Bản Demo (~20s trước khi demo)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Trong phần demo, em sẽ minh họa hai tình huống. Đầu tiên là ingest một log JSON có cấu trúc để xây dựng Entity Graph. Sau đó em sẽ ingest một Incident Note dạng văn bản tự nhiên để minh họa pipeline LLM Parser và Canonical Event."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Cuối cùng em sẽ thực hiện investigation trên graph vừa được tạo."</p>
+       <p style="color: var(--accent-primary); font-weight: bold; margin-top: 10px;">➔ Bắt đầu Demo (5 phút):</p>
+       <p style="color: #a5b4fc; font-size: 11px; margin-top: 4px; font-family: var(--font-mono); line-height: 1.4;">
+         <strong>Bước 1 - Đăng nhập:</strong> Bằng tài khoản Analyst. Giải thích JWT + RBAC kiểm tra quyền backend.<br>
+         <strong>Bước 2 - Chọn Tenant:</strong> Chọn Acme (thể hiện Multi-tenancy phân tách dữ liệu).<br>
+         <strong>Bước 3 - Ingest JSON:</strong> Upload JSON thô, nhấn Ingest. Giải thích Json Parser direct map.<br>
+         <strong>Bước 4 - Investigation:</strong> Search "alice.smith" hoặc "WIN10-FIN-01". Show chi tiết thực thể, mở GeoIP enrichment, VirusTotal mock, xem raw event, audit log, và chạy Path Finding.<br>
+         <strong>Bước 5 - Free Text:</strong> Paste SOC Note vào Ingest. Giải thích AI không tự sinh node/relationship, chỉ trả về Canonical JSON -> nạp vào JSON Parser.<br>
+         <strong>Bước 6 - Kết thúc:</strong> Chuyển tenant Google chứng minh tính cô lập, quay lại slide.
+       </p>`,
+
+      // Slide 9 (Index 8): Results & Achievements
+      `<h4>Slide 9 - Kết quả đạt được (~1 phút)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Sau quá trình phát triển, hệ thống đã hoàn thành các chức năng chính."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Thứ nhất là hỗ trợ ingest từ nhiều nguồn dữ liệu như SIEM, EDR, Cloud và dữ liệu phi cấu trúc."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Thứ hai là xây dựng Entity Graph trên Neo4j phục vụ investigation. Hệ thống cũng hỗ trợ Graph Visualization, Multi-hop Query, Path Finding, Entity Enrichment, RBAC, Audit Log và Raw Event."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Ngoài ra project đã được container hóa bằng Docker Compose và bổ sung Integration Test để kiểm thử các API quan trọng (Pytest đạt 96% coverage)."</p>`,
+
+      // Slide 10 (Index 9): Limitations & Future Work
+      `<h4>Slide 10 - Hạn Chế & Hướng Phát Triển (~1 phút)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Mặc dù hệ thống đã đáp ứng được mục tiêu đề ra, vẫn còn một số điểm có thể tiếp tục cải thiện."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Thứ nhất, việc sinh Relationship hiện vẫn dựa trên schema mapping và event type, chưa khai thác đầy đủ ngữ nghĩa của từng loại sự kiện."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Thứ hai, hệ thống chưa triển khai Entity Resolution để hợp nhất các thực thể tương đương đến từ nhiều nguồn log."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Ngoài ra Correlation Engine và Rule Engine cũng chưa được tích hợp nên việc phát hiện chuỗi tấn công vẫn chủ yếu dựa trên analyst."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Trong tương lai, hệ thống có thể mở rộng bằng Kafka để ingest thời gian thực, bổ sung Correlation Engine và Entity Resolution nhằm nâng cao khả năng điều tra."</p>`,
+
+      // Slide 11 (Index 10): Conclusion
+      `<h4>Slide 11 - Kết luận (~30 giây)</h4>
+       <p style="color: var(--accent-secondary); font-weight: bold; margin-top: 8px;">Lời thoại:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Đề tài tập trung giải quyết bài toán chuẩn hóa dữ liệu phục vụ điều tra SOC bằng Entity Graph."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Điểm nổi bật của hệ thống là hỗ trợ cả dữ liệu có cấu trúc và phi cấu trúc thông qua kiến trúc Multi-layer Parser."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"AI chỉ đảm nhiệm vai trò chuẩn hóa dữ liệu về Canonical Event, còn toàn bộ quá trình xây dựng Entity Graph được thống nhất thông qua Json Parser."</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Nhờ đó hệ thống vừa dễ mở rộng, vừa hạn chế sự phụ thuộc vào AI trong quá trình xử lý."</p>
+       <p style="color: var(--accent-primary); font-weight: bold; margin-top: 10px;">➔ Kết thúc:</p>
+       <p style="color: #e5e7eb; font-style: italic; margin-top: 4px;">"Em xin cảm ơn các anh/chị mentor đã lắng nghe. Em rất sẵn sàng trả lời các câu hỏi và nhận góp ý về đề tài."</p>`
+    ];
+
+    // Timer Variables
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let timerRunning = false;
+
+    // Populate Slide Selector
+    slides.forEach((slide, idx) => {
+      const option = document.createElement('option');
+      option.value = idx;
+      option.textContent = `Slide ${idx + 1}: ${slide.getAttribute('data-slide-name') || 'Unnamed'}`;
+      slideSelector.appendChild(option);
+    });
+
+    function showSlide(index) {
+      if (index < 0 || index >= slides.length) return;
+
+      // Update Slide State
+      slides[currentSlide].classList.remove('active');
+      currentSlide = index;
+      slides[currentSlide].classList.add('active');
+
+      // Sync Slide Selector
+      slideSelector.value = currentSlide;
+
+      // Update Next Slide Preview
+      if (currentSlide + 1 < slides.length) {
+        const nextSlide = slides[currentSlide + 1];
+        nextPreview.innerHTML = `Slide ${currentSlide + 2}: <strong>${nextSlide.getAttribute('data-slide-name') || 'Untitled'}</strong>`;
+      } else {
+        nextPreview.innerHTML = "<strong>Kết thúc buổi bảo vệ</strong>";
+      }
+
+      // Update Speaker Notes
+      if (typeof slideNotes !== 'undefined' && slideNotes[currentSlide]) {
+        notesBox.innerHTML = slideNotes[currentSlide];
+      } else {
+        notesBox.innerHTML = "<p>Không có ghi chú cho slide này.</p>";
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    function jumpToSlide(index) {
+      showSlide(parseInt(index));
+    }
+
+    function togglePresenterMode() {
+      document.body.classList.toggle('presenter-mode');
+      // Trigger resize for SVGs recalculation
+      window.dispatchEvent(new Event('resize'));
+    }
+
+    // Key Listener
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowRight' || e.code === 'Space' || e.code === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.code === 'ArrowLeft' || e.code === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.code === 'KeyP') {
+        e.preventDefault();
+        togglePresenterMode();
+      }
+    });
+
+    // Timer Logic
+    function startTimer() {
+      if (timerRunning) return;
+      timerRunning = true;
+      document.getElementById('timer-control-btn').textContent = "Pause";
+      timerInterval = setInterval(() => {
+        timerSeconds++;
+        const mins = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+        const secs = (timerSeconds % 60).toString().padStart(2, '0');
+        document.getElementById('timer-display').textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      document.getElementById('timer-control-btn').textContent = "Play";
+    }
+
+    function toggleTimer() {
+      if (timerRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerSeconds = 0;
+      document.getElementById('timer-display').textContent = "00:00";
+    }
+
+    // Auto-init Presentation
+    showSlide(0);
+    startTimer();
+  </script>
+</body>
+
+</html>

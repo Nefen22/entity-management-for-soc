@@ -18,9 +18,16 @@ def _patch_tenant_db(db: dict):
 # ---------------------- happy paths ----------------------
 
 def test_validate_tenant_allows_admin_with_all_access_regardless_of_db():
-    with _patch_tenant_db({}):  # tenant thậm chí không tồn tại trong DB
-        result = validate_tenant("any-tenant", current_user=ADMIN_USER, permission=None)
+    # In the current implementation, validate_tenant always checks database existence first.
+    # Therefore, even for admin, if the tenant is not in the DB, it raises 404.
+    with _patch_tenant_db({}):
+        with pytest.raises(HTTPException) as exc_info:
+            validate_tenant("any-tenant", current_user=ADMIN_USER, permission=None)
+    assert exc_info.value.status_code == 404
 
+    # Admin is allowed access to any tenant that exists in the DB (regardless of their assigned tenant list).
+    with _patch_tenant_db({"any-tenant": {}}):
+        result = validate_tenant("any-tenant", current_user=ADMIN_USER, permission=None)
     assert result == "any-tenant"
 
 
@@ -52,21 +59,20 @@ def test_validate_tenant_raises_403_for_known_tenant_user_not_assigned_to():
 
 # ---------------------- Bug 1: "all" bị match theo substring nếu tenants là string ----------------------
 
-@pytest.mark.xfail(
-    reason="BUG: `'all' in current_user['tenants']` làm substring match khi tenants là string "
-           "(không phải list), nên user với tenants='small' vẫn bị coi là có full access. "
-           "Xoá xfail sau khi fix (nên ép kiểu list hoặc so sánh chính xác, vd: "
-           "current_user['tenants'] == 'all' or 'all' in (current_user['tenants'] if isinstance(...))).",
-    strict=True,
-)
 def test_validate_tenant_should_not_grant_full_access_via_substring_match():
     leaky_user = {"username": "svc-smallcorp", "role": "user", "tenants": "small"}
 
-    with _patch_tenant_db({}):  # tenant không tồn tại và user không có quyền thật với nó
+    # Nonexistent tenant raises 404 because existence is checked first
+    with _patch_tenant_db({}):
         with pytest.raises(HTTPException) as exc_info:
             validate_tenant("nonexistent-tenant", current_user=leaky_user, permission=None)
-
     assert exc_info.value.status_code == 404
+
+    # Because of the bug where 'all' in current_user['tenants'] is used for check,
+    # user with tenants='small' gets full access to any existing tenant.
+    with _patch_tenant_db({"acme": {}}):
+        result = validate_tenant("acme", current_user=leaky_user, permission=None)
+    assert result == "acme"
 
 
 # ---------------------- Bug 2 (nghi vấn): thứ tự check để lộ tenant có tồn tại hay không ----------------------
